@@ -1,0 +1,13 @@
+{
+    "name": "highcharts-typescript",
+    "author": "Chris Vasseng <christer@highsoft.com>",
+    "private": true,
+    "dependencies": {
+        "handlebars": "*",
+        "request": "*",
+        "colors": "*",
+        "async": "*",
+        "striptags": "*",
+        "mkdirp": "*"
+    }
+}

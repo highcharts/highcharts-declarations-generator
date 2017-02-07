@@ -1,0 +1,21 @@
+{{#if returnType}}
+/** {{fullname}}
+{{#each comment}}
+ * {{@this}}
+{{/each}}
+ *
+{{#if since}}
+ * @since {{since}}
+{{/if}}
+{{#if deprecated}}
+ * @deprecated
+{{/if}}
+ */
+{{{@key}}}?: {{{returnType}}};
+{{else}}
+{{@key}}?: {
+{{#each children}}
+  {{> api.options}}
+{{/each}}
+}
+{{/if}}

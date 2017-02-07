@@ -1,0 +1,7 @@
+.DS_Store
+node_modules
+highcharts.d.ts
+temp*.json
+dist/
+*.cache.json
+cache/
