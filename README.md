@@ -3,16 +3,16 @@
 Takes recent meta dumps for options + methods, and generates a `.d.ts` file.
 
 ## Running
-       
-    npm install 
-    node bin/generate.js
 
-..puts the dictionary in `dist/`.
+> npm install 
+> npm start
+
+...puts the dictionary in `dist/`.
 
 ## Patches
 
-Some things are hot patched. These are things that make sense in the regular API, 
-but not so much in TypeScript.
+Some things are hot patched. These are things that make sense in the regular
+API, but not so much in TypeScript.
 
 The patches are located in `patches/patches.json`.
 

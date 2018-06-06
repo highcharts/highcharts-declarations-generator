@@ -9,5 +9,8 @@
         "async": "*",
         "striptags": "*",
         "mkdirp": "*"
+    },
+    "scripts": {
+        "start": "node bin/generate.js"
     }
 }
