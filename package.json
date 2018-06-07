@@ -3,11 +3,11 @@
     "author": "Chris Vasseng <christer@highsoft.com>",
     "private": true,
     "dependencies": {
+        "@types/colors": "^1.2.1",
         "@types/node": "^10.3.1",
         "async": "*",
         "colors": "*",
         "handlebars": "*",
-        "highcharts": "^6.1.0",
         "mkdirp": "*",
         "request": "*",
         "striptags": "*",
