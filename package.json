@@ -3,14 +3,17 @@
     "author": "Chris Vasseng <christer@highsoft.com>",
     "private": true,
     "dependencies": {
-        "handlebars": "*",
-        "request": "*",
-        "colors": "*",
+        "@types/node": "^10.3.1",
         "async": "*",
+        "colors": "*",
+        "handlebars": "*",
+        "highcharts": "^6.1.0",
+        "mkdirp": "*",
+        "request": "*",
         "striptags": "*",
-        "mkdirp": "*"
+        "typescript": "^2.9.1"
     },
     "scripts": {
-        "start": "node bin/generate.js"
+        "start": "tsc && node bin/generate.js -r node_modules/request"
     }
 }
