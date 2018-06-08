@@ -2,8 +2,7 @@
 node_modules
 highcharts.d.ts
 temp*.json
-bin/*
-!bin/generate.org.js
+cache/
+code/
 dist/
 *.cache.json
-cache/

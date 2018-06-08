@@ -4,6 +4,7 @@
     "private": true,
     "dependencies": {
         "@types/colors": "^1.2.1",
+        "@types/mkdirp": "^0.5.2",
         "@types/node": "^10.3.1",
         "@types/request": "^2.47.0",
         "async": "*",
