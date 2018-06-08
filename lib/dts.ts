@@ -53,7 +53,7 @@ export abstract class IDefinition extends Object {
     /**
      * Filters a comment for additonal information.
      * 
-     * @param comment {string}
+     * @param {string} comment
      * The comment to filter for additional information.
      * 
      * @return {string}
