@@ -1,5 +1,5 @@
 {
-    "classJsonPath": "../highcharts/class.json",
     "destinationPath": "./dest/",
-    "treeJsonPath": "../highcharts/tree.json"
+    "treeNamespaceJsonPath": "../highcharts/tree-namespace.json",
+    "treeOptionsJsonPath": "../highcharts/tree.json"
 }

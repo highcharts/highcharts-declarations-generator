@@ -9,7 +9,7 @@ const config = require('../config.json') as IConfig;
 export = config;
 
 interface IConfig {
-    classJsonPath: string;
     destinationPath: string;
-    treeJsonPath: string;
+    treeNamespaceJsonPath: string;
+    treeOptionsJsonPath: string;
 }

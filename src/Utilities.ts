@@ -9,21 +9,34 @@ import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as request from 'request';
 
-const SPACE_FILTER: RegExp = new RegExp('\\s+', 'g');
+const FILTER_GENERIC: RegExp = new RegExp('^(\\w+)<(.+)>$', 'g');
+
+const FILTER_SPACE: RegExp = new RegExp('\\s+', 'g');
+
+const FILTER_MAP: Dictionary<string> = {
+    '*': 'any',
+    'Array': 'Array<any>',
+    'Boolean': 'boolean',
+    'Number': 'number',
+    'Object': 'object',
+    'String': 'string'
+};
+
+export interface Dictionary<T> {
+    [key: string]: T;
+}
+
+export class Dictionary<T> {}
 
 export function ajax (url: string): Promise<any> {
     return new Promise((resolve, reject) => {
-        try {
-            request(url, (err, response, body) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    json(body).then(resolve);
-                }
-            });
-        } catch (err) {
-            reject(err);
-        }
+        request(url, (err, response, body) => {
+            if (err) {
+                reject(err);
+            } else {
+                json(body).then(resolve);
+            }
+        });
     });
 }
 
@@ -33,6 +46,52 @@ export function capitalize (str: string): string {
     } else {
         return (str[0].toUpperCase() + str.substr(1));
     }
+}
+
+export function convertType(types: Array<string>): string {
+    return types.map(filterType).join('|');
+}
+
+export function filterType(type: string): string {
+
+    if (FILTER_GENERIC.test(type)) {
+        return type.replace(
+            FILTER_GENERIC,
+            function (match, generic, type) {
+                return generic + '<' + type + '>';
+            }
+        );
+    }
+
+    if (type.indexOf('|') > -1) {
+        return type.split('|')
+            .map(type => filterType(type.trim()))
+            .join('|');
+    }
+
+    if (FILTER_MAP[type]) {
+        return FILTER_MAP[type];
+    }
+
+    return type;
+}
+
+export function getDeclarationFilePath (filePath: string): string {
+
+    let fileExtension = path.extname(filePath);
+
+    if (fileExtension) {
+
+        if (fileExtension === '.ts' &&
+            filePath.lastIndexOf('.d.ts') === (filePath.length - 6)
+        ) {
+            fileExtension = '.d.ts';
+        }
+
+        filePath = filePath.substr(0, fileExtension.length);
+    }
+
+    return (filePath + '.d.ts');
 }
 
 export function json (json: any[] | object | string ): Promise<any> {
@@ -51,50 +110,44 @@ export function json (json: any[] | object | string ): Promise<any> {
 
 export function load (filePath: string): Promise<any> {
     return new Promise((resolve, reject) => {
-        try {
-            fs.readFile(filePath, (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    json(data.toString()).then(resolve);
-                }
-            });
-        } catch (err) {
-            reject(err);
-        }
+
+        filePath = path.resolve(process.cwd(), filePath);
+
+        fs.readFile(filePath, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                json(data.toString()).then(resolve);
+            }
+        });
     });
 }
 
 export function log<T> (obj: T): Promise<T> {
     return new Promise((resolve, reject) => {
-        try {
-            console.log(obj);
-            resolve(obj);
-        } catch (err) {
-            reject(err);
-        }
+        console.log(obj);
+        resolve(obj);
     });
 }
 
 export function normalize (str: string): string {
-    return str.replace(SPACE_FILTER, ' ');
+    return str.replace(FILTER_SPACE, ' ');
 }
 
 export function pad (
     str: string,
     linePrefix: string = '',
-    indent: number = 0,
     wrap: number = 80
 ): string {
+
     let words = normalize(str).split(' '),
-        space = (new Array(indent + 1)).join(' '),
-        line = space + linePrefix + (words.shift() || 0),
+        line = linePrefix + (words.shift() || 0),
         paddedStr = '';
 
     words.forEach(word => {
         if (line.length + word.length + 1 > wrap) {
             paddedStr += line + '\n';
-            line = space + linePrefix + word;
+            line = linePrefix + word;
         } else {
             line += ' ' + word;
         }
@@ -113,6 +166,9 @@ export function pluralize (
 
 export function save (filePath: string, str: string): Promise<void> {
     return new Promise((resolve, reject) => {
+
+        filePath = path.resolve(process.cwd(), filePath);
+
         mkdirp(path.dirname(filePath), err => {
             if (err) {
                 reject(err);
@@ -127,10 +183,4 @@ export function save (filePath: string, str: string): Promise<void> {
             });
         });
     });
-}
-
-export interface Dictionary<T> {
-
-    [key: string]: T;
-
 }

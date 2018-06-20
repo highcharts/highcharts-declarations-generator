@@ -1,21 +1,27 @@
 {
-    "name": "highcharts-typescript",
+    "name": "highcharts-typescript-generator",
+    "version": "1.0.0",
     "author": "Chris Vasseng <christer@highsoft.com>",
     "private": true,
+    "main": "lib/GulpTask.js",
+    "bin": {
+        "highcharts-typescript-generator": "bin/generator.js"
+    },
     "dependencies": {
-        "@types/colors": "^1.2.1",
-        "@types/mkdirp": "^0.5.2",
-        "@types/node": "^10.3.1",
-        "@types/request": "^2.47.0",
+        "@types/colors": "*",
+        "@types/mkdirp": "*",
+        "@types/node": "*",
+        "@types/request": "*",
         "async": "*",
         "colors": "*",
+        "dts-dom": "*",
         "handlebars": "*",
         "mkdirp": "*",
         "request": "*",
         "striptags": "*",
-        "typescript": "^2.9.1"
+        "typescript": "*"
     },
     "scripts": {
-        "start": "tsc && node bin/generate.js -r node_modules/request"
+        "build": "tsc -w"
     }
 }
