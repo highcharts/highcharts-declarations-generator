@@ -10,11 +10,11 @@ import * as utils from './Utilities';
 
 export function splitIntoFiles(
     json: any
-): Promise<utils.Dictionary<NamespaceNode>> {
+): Promise<utils.Dictionary<INode>> {
 
     return new Promise((resolve, reject) => {
 
-        let fileDictionary = new utils.Dictionary<NamespaceNode>();
+        let fileDictionary = new utils.Dictionary<INode>();
 
         transferNodes(json, fileDictionary);
 
@@ -25,10 +25,10 @@ export function splitIntoFiles(
 
 
 function findFileNode(
-    fileDictionary: utils.Dictionary<NamespaceNode>,
+    fileDictionary: utils.Dictionary<INode>,
     filePath: string,
     name: string
-): NamespaceNode {
+): INode {
 
     let node = fileDictionary[filePath];
     
@@ -58,8 +58,8 @@ function findFileNode(
 
 
 function transferNodes(
-    sourceNode: NamespaceNode,
-    fileDictionary: utils.Dictionary<NamespaceNode>
+    sourceNode: INode,
+    fileDictionary: utils.Dictionary<INode>
 ) {
 
     if (sourceNode.doclet &&
@@ -115,32 +115,14 @@ function transferProps(source: any, target: any) {
 
 
 
-export interface NamespaceTree {
-    children?: utils.Dictionary<NamespaceNode>;
-    doclet: {
-        description: string;
-        kind: 'global';
-        longname: string;
-    };
-    meta:  NamespaceMeta & {
-        branch: string;
-        commit: string;
-        date: string;
-        version: string;
-        files?: Array<NamespaceFile>;
-    };
-}
-
-
-
 // Level 1
 
 
 
-export interface NamespaceNode {
-    children?: utils.Dictionary<NamespaceNode>;
-    doclet?: NamespaceDoclet;
-    meta?: NamespaceMeta;
+export interface INode {
+    children?: utils.Dictionary<INode>;
+    doclet?: IDoclet;
+    meta?: IMeta;
 }
 
 
@@ -149,22 +131,24 @@ export interface NamespaceNode {
 
 
 
-export interface NamespaceDoclet {
+export interface IDoclet {
     description: string;
-    kind: NamespaceKind;
+    kind: IKind;
     name: string;
     defaultValue?: (boolean | number | string);
     isDeprecated?: boolean;
     isOptional?: boolean;
-    parameters?: utils.Dictionary<NamespaceParameter>;
-    return?: NamespaceReturn;
-    types?: NamespaceTypes;
+    isPrivate?: boolean;
+    isStatic?: boolean;
+    parameters?: utils.Dictionary<IParameter>;
+    return?: IReturn;
+    types?: ITypes;
 }
 
 
 
-export interface NamespaceMeta {
-    files: Array<NamespaceFile>;
+export interface IMeta {
+    files: Array<IFile>;
 }
 
 
@@ -173,9 +157,11 @@ export interface NamespaceMeta {
 
 
 
-export type NamespaceKind = (
+export type IKind = (
     'class' |
     'function' |
+    'global' |
+    'interface' |
     'member' |
     'namespace' | 
     'typedef'
@@ -183,25 +169,25 @@ export type NamespaceKind = (
 
 
 
-export interface NamespaceParameter {
+export interface IParameter {
     description?: string;
-    types?: NamespaceTypes;
+    types?: ITypes;
 }
 
 
 
-export interface NamespaceReturn {
+export interface IReturn {
     description?: string;
-    types?: NamespaceTypes;
+    types?: ITypes;
 }
 
 
 
-export type NamespaceTypes = Array<string>;
+export type ITypes = Array<string>;
 
 
 
-export interface NamespaceFile {
+export interface IFile {
     path: string;
     line: number;
 }
