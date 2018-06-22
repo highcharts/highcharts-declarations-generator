@@ -9,11 +9,14 @@ import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as request from 'request';
 
-const FILTER_GENERIC: RegExp = new RegExp('^(\\w+)<(.+)>$', 'g');
+const FILTER_NORMALIZE_BREAK: RegExp = /<br>/gm;
+const FILTER_NORMALIZE_PARAGRAPH: RegExp = /\s{2,}/gm;
+const FILTER_NORMALIZE_SPACE: RegExp = /\s+/gm;
 
-const FILTER_SPACE: RegExp = new RegExp('\\s+', 'g');
+const FILTER_PAD_SPACE: RegExp = /\s/gm;
 
-const FILTER_MAP: Dictionary<string> = {
+const FILTER_TYPE_GENERIC: RegExp = /^(\w+)<(.+)>$/gm;
+const FILTER_TYPE_MAP: Dictionary<string> = {
     '*': 'any',
     'Array': 'Array<any>',
     'Boolean': 'boolean',
@@ -54,9 +57,9 @@ export function convertType(types: Array<string>): string {
 
 export function filterType(type: string): string {
 
-    if (FILTER_GENERIC.test(type)) {
+    if (FILTER_TYPE_GENERIC.test(type)) {
         return type.replace(
-            FILTER_GENERIC,
+            FILTER_TYPE_GENERIC,
             function (match, generic, type) {
                 return generic + '<' + type + '>';
             }
@@ -69,8 +72,8 @@ export function filterType(type: string): string {
             .join('|');
     }
 
-    if (FILTER_MAP[type]) {
-        return FILTER_MAP[type];
+    if (FILTER_TYPE_MAP[type]) {
+        return FILTER_TYPE_MAP[type];
     }
 
     return type;
@@ -88,7 +91,7 @@ export function getDeclarationFilePath (filePath: string): string {
             fileExtension = '.d.ts';
         }
 
-        filePath = filePath.substr(0, fileExtension.length);
+        filePath = filePath.substr(0, (filePath.length - fileExtension.length));
     }
 
     return (filePath + '.d.ts');
@@ -130,22 +133,49 @@ export function log<T> (obj: T): Promise<T> {
     });
 }
 
-export function normalize (str: string): string {
-    return str.replace(FILTER_SPACE, ' ');
+export function normalize (
+    str: string,
+    preserveParagraphs: boolean = false
+): string {
+
+    if (!preserveParagraphs) {
+        return str.replace(FILTER_NORMALIZE_SPACE, ' ');
+    } else {
+        return str
+            .replace(FILTER_NORMALIZE_PARAGRAPH, '<br>')
+            .replace(FILTER_NORMALIZE_SPACE, ' ')
+            .replace(FILTER_NORMALIZE_BREAK, '\n\n');
+    }
 }
 
+/**
+ * Returns a padded string, that fits into a specific width and spans over
+ * several lines.
+ * 
+ * @param {string} str
+ * The string to pad.
+ * 
+ * @param {string} linePrefix 
+ * The prefix for each line.
+ * 
+ * @param wrap 
+ * The maximum width of the padded string.
+ */
 export function pad (
     str: string,
     linePrefix: string = '',
     wrap: number = 80
 ): string {
 
-    let words = normalize(str).split(' '),
+    let words = str.split(FILTER_PAD_SPACE),
         line = linePrefix + (words.shift() || 0),
         paddedStr = '';
 
     words.forEach(word => {
-        if (line.length + word.length + 1 > wrap) {
+        if (word === '') {
+            paddedStr += line + '\n\n';
+            line = linePrefix + word;
+        } else if (line.length + word.length + 1 > wrap) {
             paddedStr += line + '\n';
             line = linePrefix + word;
         } else {
@@ -153,7 +183,7 @@ export function pad (
         }
     });
 
-    return paddedStr + line;
+    return paddedStr + line + '\n';
 }
 
 export function pluralize (
