@@ -168,22 +168,22 @@ export function pad (
 ): string {
 
     let words = str.split(FILTER_PAD_SPACE),
-        line = linePrefix + (words.shift() || 0),
+        line = linePrefix + (words.shift() || ''),
         paddedStr = '';
 
     words.forEach(word => {
         if (word === '') {
-            paddedStr += line + '\n\n';
+            paddedStr += line.trimRight() + '\n\n';
             line = linePrefix + word;
         } else if (line.length + word.length + 1 > wrap) {
-            paddedStr += line + '\n';
+            paddedStr += line.trimRight() + '\n';
             line = linePrefix + word;
         } else {
             line += ' ' + word;
         }
     });
 
-    return paddedStr + line + '\n';
+    return paddedStr + line.trimRight() + '\n';
 }
 
 export function pluralize (
