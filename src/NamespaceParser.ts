@@ -14,7 +14,7 @@ export function splitIntoFiles(
 
     return new Promise((resolve, reject) => {
 
-        let fileDictionary = new utils.Dictionary<INode>();
+        let fileDictionary = {};
 
         transferNodes(json, fileDictionary);
 
