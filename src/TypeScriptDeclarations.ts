@@ -57,6 +57,7 @@ export abstract class IDeclaration extends Object {
 
         this._children = {};
         this._description = '';
+        this._isPrivate = false;
         this._parent = undefined;
         this._types = [];
     }
@@ -91,10 +92,21 @@ export abstract class IDeclaration extends Object {
     /**
      * Full qualifierd name of this declaration.
      */
-    public get fullame(): string {
+    public get fullname(): string {
         return this._fullname;
     }
     private _fullname: string;
+
+    /**
+     * Visibility of this TypeScript declaration.
+     */
+    public get isPrivate(): boolean {
+        return this._isPrivate;
+    }
+    public set isPrivate(value: boolean) {
+        this._isPrivate = value;
+    }
+    private _isPrivate: boolean;
 
     /**
      * Parent declaration of this declaration.
@@ -221,6 +233,22 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Returns the visibility string of this TypeScript declaration.
+     */
+    protected renderScopePrefix(): string {
+
+        if (this.parent instanceof ClassDeclaration) {
+            return (this.isPrivate ? 'private ' : 'public ');
+        }
+
+        if (this.parent instanceof NamespaceDeclaration) {
+            return (this.isPrivate ? '' : 'export ');
+        }
+
+        return '';
+    }
+
+    /**
      * Returns the possible types of this TypeScript declaration.
      */
     protected renderTypes(): string {
@@ -255,7 +283,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
         super(name);
 
-        this._isPrivate = false;
         this._parameters = {};
     }
 
@@ -266,17 +293,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      * */
 
     private _parameters: utils.Dictionary<ParameterDeclaration>;
-
-    /**
-     * Visibility of this TypeScript declaration.
-     */
-    public get isPrivate(): boolean {
-        return this._isPrivate;
-    }
-    public set isPrivate(value: boolean) {
-        this._isPrivate = value;
-    }
-    private _isPrivate: boolean;
 
     /* *
      *
@@ -332,29 +348,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             list +
             indent + ' *' + '/\n'
         );
-    }
-
-    /**
-     * Returns the visibility string of this TypeScript declaration.
-     * 
-     * @param {string} suffix
-     * The keyword for this declaration. (default: let)
-     */
-    protected renderScopePrefix(suffix: string = 'let'): string {
-
-        let str = '';
-
-        if (this.parent instanceof ClassDeclaration) {
-            str = (this.isPrivate ? 'private ' : 'public ');
-        } else if (this.parent instanceof NamespaceDeclaration) {
-            str = (this.isPrivate ? '' : 'export ');
-        }
-
-        if (suffix) {
-            str += suffix + ' ';
-        }
-
-        return str;
     }
 
     /**
@@ -439,7 +432,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = (indent + '    '),
-            str = this.renderScopePrefix('class') + this.name;
+            str = this.renderScopePrefix() + 'class ' + this.name;
 
         if (this.types.length > 0) {
             str += ' extends ' + this.renderTypes();
@@ -455,7 +448,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
             this.renderDescription(indent) +
             indent + str + ' {\n' +
             this.renderParametersDescription(childIndent) +
-            childIndent + cstr + ';\n' +
+            childIndent + cstr + ';\n\n' +
             this.renderChildren(childIndent, '\n') +
             indent + '}\n'
         );
@@ -477,11 +470,13 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
         let str = ('function ' + this.name);
 
-        if (this.parent instanceof ClassDeclaration) {
+        if (this.parent instanceof ClassDeclaration ||
+            this.parent instanceof InterfaceDeclaration
+        ) {
             str = this.name;
         }
 
-        str = this.renderScopePrefix(str);
+        str = this.renderScopePrefix() + str;
         str += this.renderParametersBracket();
 
         if (this.types.length > 0) {
@@ -539,7 +534,7 @@ export class InterfaceDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = (indent + '    '),
-            str = 'declare interface ' + this.name;
+            str = this.renderScopePrefix() + 'interface ' + this.name;
 
         if (this.types.length > 0) {
             str += ' extends ' + this.types.join(', ');
@@ -562,13 +557,56 @@ export class MemberDeclaration extends IExtendedDeclaration {
 
     /* *
      *
+     *  Constructor
+     * 
+     * */
+
+    public constructor (name: string) {
+
+        super(name);
+
+        this._isOptional = false;
+    }
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Visibility of this TypeScript declaration.
+     */
+    public get isOptional(): boolean {
+        return this._isOptional;
+    }
+    public set isOptional(value: boolean) {
+        this._isOptional = value;
+    }
+    private _isOptional: boolean;
+
+    /* *
+     *
      *  Functions
      *
      * */
 
     public toString(indent: string = ''): string {
 
-        let str = this.renderScopePrefix('let') + this.name;
+
+        let str = ('let ' + this.name);
+
+        if (this.parent instanceof ClassDeclaration ||
+            this.parent instanceof InterfaceDeclaration
+        ) {
+            str = this.name;
+        }
+
+        if (this.isOptional) {
+            str += '?';
+        }
+
+        str = this.renderScopePrefix() + str;
 
         if (this.types.length > 0) {
             str += ': ' + this.renderTypes();
@@ -651,7 +689,7 @@ export class TypeAlias extends IDeclaration {
 
         return (
             this.renderDescription(indent) +
-            indent + 'type ' + this.name + ' = ' + this.renderTypes() + ';\n'
+            this.renderScopePrefix() + indent + 'type ' + this.name + ' = ' + this.renderTypes() + ';\n'
         );
     }
 }
