@@ -109,7 +109,7 @@ function transferProps(source: any, target: any) {
 
 /* *
  *
- *  JSON Interfaces
+ *  JSON Interface
  * 
  * */
 
