@@ -9,14 +9,13 @@ import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as request from 'request';
 
-const FILTER_NORMALIZE_BREAK: RegExp = /<br>/gm;
-const FILTER_NORMALIZE_PARAGRAPH: RegExp = /\s{2,}/gm;
-const FILTER_NORMALIZE_SPACE: RegExp = /\s+/gm;
+const NORMALIZE_BREAK_FILTER: RegExp = /<br>/gm;
+const NORMALIZE_PARAGRAPH_FILTER: RegExp = /\s{2,}/gm;
+const NORMALIZE_SPACE_FILTER: RegExp = /\s+/gm;
 
-const FILTER_PAD_SPACE: RegExp = /\s/gm;
+const PAD_SPACE_FILTER: RegExp = /\s/gm;
 
-const FILTER_TYPE_GENERIC: RegExp = /^(\w+)<(.+)>$/gm;
-const FILTER_TYPE_MAP: Dictionary<string> = {
+const TYPE_MAPPER_DICTIONARY: Dictionary<string> = {
     '*': 'any',
     'Array': 'Array<any>',
     'Boolean': 'boolean',
@@ -24,6 +23,7 @@ const FILTER_TYPE_MAP: Dictionary<string> = {
     'Object': 'object',
     'String': 'string'
 };
+const TYPE_MAPPER_GENERIC: RegExp = /^(\w+)<(.+)>$/gm;
 
 export interface Dictionary<T> {
     [key: string]: T;
@@ -52,31 +52,7 @@ export function capitalize (str: string): string {
 }
 
 export function convertType(types: Array<string>): string {
-    return types.map(filterType).join('|');
-}
-
-export function filterType(type: string): string {
-
-    if (FILTER_TYPE_GENERIC.test(type)) {
-        return type.replace(
-            FILTER_TYPE_GENERIC,
-            function (match, generic, type) {
-                return generic + '<' + type + '>';
-            }
-        );
-    }
-
-    if (type.indexOf('|') > -1) {
-        return type.split('|')
-            .map(type => filterType(type.trim()))
-            .join('|');
-    }
-
-    if (FILTER_TYPE_MAP[type]) {
-        return FILTER_TYPE_MAP[type];
-    }
-
-    return type;
+    return types.map(typeMapper).join('|');
 }
 
 export function getDeclarationFilePath (filePath: string): string {
@@ -133,18 +109,30 @@ export function log<T> (obj: T): Promise<T> {
     });
 }
 
+export function mergeArray<T>(target: Array<T>, ...sources: Array<Array<T>>): Array<T> {
+
+    sources.forEach(source => source.forEach(item => {
+
+        if (target.indexOf(item) === -1) {
+            target.push(item);
+        }
+    }));
+
+    return target;
+}
+
 export function normalize (
     str: string,
     preserveParagraphs: boolean = false
 ): string {
 
     if (!preserveParagraphs) {
-        return str.replace(FILTER_NORMALIZE_SPACE, ' ');
+        return str.replace(NORMALIZE_SPACE_FILTER, ' ');
     } else {
         return str
-            .replace(FILTER_NORMALIZE_PARAGRAPH, '<br>')
-            .replace(FILTER_NORMALIZE_SPACE, ' ')
-            .replace(FILTER_NORMALIZE_BREAK, '\n\n');
+            .replace(NORMALIZE_PARAGRAPH_FILTER, '<br>')
+            .replace(NORMALIZE_SPACE_FILTER, ' ')
+            .replace(NORMALIZE_BREAK_FILTER, '\n\n');
     }
 }
 
@@ -167,7 +155,7 @@ export function pad (
     wrap: number = 80
 ): string {
 
-    let words = str.split(FILTER_PAD_SPACE),
+    let words = str.split(PAD_SPACE_FILTER),
         line = linePrefix + (words.shift() || ''),
         paddedStr = '';
 
@@ -213,4 +201,28 @@ export function save (filePath: string, str: string): Promise<void> {
             });
         });
     });
+}
+
+export function typeMapper(type: string): string {
+
+    if (TYPE_MAPPER_GENERIC.test(type)) {
+        return type.replace(
+            TYPE_MAPPER_GENERIC,
+            function (match, generic, type) {
+                return generic + '<' + type + '>';
+            }
+        );
+    }
+
+    if (type.indexOf('|') > -1) {
+        return type.split('|')
+            .map(type => typeMapper(type.trim()))
+            .join('|');
+    }
+
+    if (TYPE_MAPPER_DICTIONARY[type]) {
+        return TYPE_MAPPER_DICTIONARY[type];
+    }
+
+    return type;
 }
