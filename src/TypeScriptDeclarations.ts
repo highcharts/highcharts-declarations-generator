@@ -127,6 +127,20 @@ export abstract class IDeclaration extends Object {
     private _description: string;
 
     /**
+     * Returns true, if the declaration contains child declarations.
+     */
+    public get hasChildren(): boolean {
+        return (Object.keys(this._children).length > 0);
+    }
+
+    /**
+     * Returns true, if the declaration includes types.
+     */
+    public get hasTypes(): boolean {
+        return (this._types.length > 0);
+    }
+
+    /**
      * Name of this declaration.
      */
     public get name(): string {
@@ -141,6 +155,28 @@ export abstract class IDeclaration extends Object {
         return this._fullname;
     }
     private _fullname: string;
+
+    /**
+     * Parent relation.
+     */
+    public get isInClass(): boolean {
+
+        return (this._parent && this._parent.kind) === 'class';
+    }
+
+    /**
+     * Parent relation.
+     */
+    public get isInSpace(): boolean {
+
+        switch (this._parent && this._parent.kind) {
+            default:
+                return false;
+            case 'global':
+            case 'namespace':
+                return true;
+        }
+    }
 
     /**
      * Visibility of this TypeScript declaration.
@@ -260,16 +296,6 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
-     * Returns true, if the declaration contains child declarations.
-     * 
-     * @returns {boolean}
-     * True, if child declarations exist
-     */
-    public hasChildren(): boolean {
-        return (Object.keys(this._children).length > 0);
-    }
-
-    /**
      * Removes a child declaration from this declaration.
      *
      * @param {string} name
@@ -334,13 +360,11 @@ export abstract class IDeclaration extends Object {
      */
     protected renderScopePrefix(): string {
 
-        if (this.parent instanceof ClassDeclaration) {
+        if (this.isInClass) {
             return (this.isPrivate ? 'private ' : 'public ');
         }
 
-        if (this.parent instanceof GlobalDeclaration ||
-            this.parent instanceof NamespaceDeclaration
-        ) {
+        if (this.isInSpace) {
             return (this.isPrivate ? '' : 'export ');
         }
 
@@ -393,6 +417,14 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
     private _parameters: utils.Dictionary<ParameterDeclaration>;
 
+    /**
+     * Returns true, if declaration has parameters.
+     */
+    public get hasParameters(): boolean {
+
+        return (Object.keys(this._parameters).length > 0);
+    }
+
     /* *
      *
      *  Functions
@@ -413,13 +445,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     public getParameterNames(): Array<string> {
 
         return Object.keys(this._parameters);
-    }
-    /**
-     * Returns true, if declaration has parameters.
-     */
-    public hasParameters(): boolean {
-
-        return (Object.keys(this._parameters).length > 0);
     }
 
     /**
@@ -536,6 +561,13 @@ export class ClassDeclaration extends IExtendedDeclaration {
      * */
 
     /**
+     * Returns true, if class implements interfaces.
+     */
+    public get hasImplements(): boolean {
+        return (this._implements.length > 0);
+    }
+
+    /**
      * Implemented interfaces of this class declaration.
      */
     public get implements(): Array<string> {
@@ -561,7 +593,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
      */
     public toString(indent: string = ''): string {
 
-        if (this.hasParameters()) {
+        if (this.hasParameters) {
             let constructor = new ConstructorDeclaration();
             constructor.description = this.description;
             this.getParameterNames()
@@ -575,23 +607,32 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
 
         let childIndent = indent + '    ',
-            renderedClass = 'class ' + this.name + ' ';
+            renderedClass = this.name;
 
-        if (this.types.length > 0) {
-            renderedClass += 'extends ' + this.renderTypes();
-        }
+        if (!this.isInSpace) {
+            renderedClass += ': ';
+        } else {
 
-        if (this.implements.length > 0) {
-            renderedClass += 'implements ' + this.implements.join(', ');
+            renderedClass = 'class ' + renderedClass;
+
+            if (this.hasTypes) {
+                renderedClass += 'extends ' + this.renderTypes();
+            }
+
+            if (this.hasImplements) {
+                renderedClass += 'implements ' + this.implements.join(', ');
+            }
         }
 
         renderedClass = this.renderScopePrefix() + renderedClass;
 
         return (
             this.renderDescription(indent) +
-            indent + renderedClass + '{\n\n' +
+            indent + renderedClass + '{\n' +
+            '\n' +
             this.renderChildren(childIndent, '\n') +
-            '\n' + indent+ '}\n'
+            '\n' +
+            indent+ '}\n'
         );
 
         return renderedClass;
@@ -630,11 +671,11 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
 
     public toString (indent: string = ''): string {
 
-        let renderedConstructor = 'constructor ';
+        let renderedConstructor = 'constructor';
         
-        renderedConstructor = this.renderScopePrefix() + renderedConstructor;
+        renderedConstructor += ' ' + this.renderParametersBracket();
 
-        renderedConstructor += this.renderParametersBracket();
+        renderedConstructor = this.renderScopePrefix() + renderedConstructor;
 
         return (
             this.renderParametersDescription(indent) +
@@ -663,18 +704,15 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
     public toString(indent: string = ''): string {
 
-        let renderedFunction = 'function ' + this.name;
+        let renderedFunction = this.name,
+            renderedTypes = this.renderTypes();
 
-        if (this.parent instanceof ClassDeclaration ||
-            this.parent instanceof InterfaceDeclaration
-        ) {
-            renderedFunction = this.name;
-        }
+        renderedFunction += ' ' + this.renderParametersBracket();
 
-        renderedFunction += this.renderParametersBracket();
+        renderedFunction += ': ' + (renderedTypes || 'void');
 
-        if (this.types.length > 0) {
-            renderedFunction += ': ' + this.renderTypes();
+        if (this.isInSpace) {
+            renderedFunction = 'function ' + renderedFunction;
         }
 
         renderedFunction = this.renderScopePrefix() + renderedFunction;
@@ -750,19 +788,28 @@ export class InterfaceDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedInterface = 'interface ' + this.name;
+            renderedInterface = this.name;
 
-        if (this.types.length > 0) {
-            renderedInterface += ' extends ' + this.types.join(', ');
+        if (!this.isInSpace) {
+            renderedInterface += ': ';
+        } else {
+
+            renderedInterface = 'interface ' + this.name ;
+
+            if (this.hasTypes) {
+                renderedInterface += ' extends ' + this.types.join(', ');
+            }
         }
 
         renderedInterface = this.renderScopePrefix() + renderedInterface;
 
         return (
             this.renderDescription(indent) +
-            indent + renderedInterface + '{\n\n' +
+            indent + renderedInterface + ' {\n' +
+            '\n' +
             this.renderChildren(childIndent, '\n') +
-            '\n' + indent + '}\n'
+            '\n' +
+            indent + '}\n'
         );
     }
 }
@@ -790,13 +837,21 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedNamespace = 'declare namespace ' + this.name;
+            renderedNamespace = this.name;
+
+        if (!this.isInSpace) {
+            renderedNamespace += ': ';
+        } else {
+            renderedNamespace = 'declare namespace ' + renderedNamespace;
+        }
 
         return (
             this.renderDescription(indent) +
-            indent + renderedNamespace + '{\n\n' +
+            indent + renderedNamespace + ' {\n' +
+            '\n' +
             this.renderChildren(childIndent, '\n') +
-            '\n' + indent + '}\n' +
+            '\n' + 
+            indent + '}\n' +
             indent + 'export = ' + this.name + ';\n'
         );
     }
@@ -889,24 +944,21 @@ export class PropertyDeclaration extends IExtendedDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedMember = 'let ' + this.name;
-
-        if (this.parent instanceof ClassDeclaration ||
-            this.parent instanceof InterfaceDeclaration ||
-            this.parent instanceof PropertyDeclaration
-        ) {
             renderedMember = this.name;
-        }
-
+            
         if (this.isOptional) {
             renderedMember += '?';
         }
 
+        if (this.isInSpace) {
+            renderedMember = 'let ' + renderedMember;
+        }
+
         renderedMember = this.renderScopePrefix() + renderedMember + ': ';
 
-        if (this.hasChildren()) {
+        if (this.hasChildren) {
             renderedMember += '{' + this.renderChildren(childIndent, '\n') + '}';
-        } else if (this.types.length > 0) {
+        } else if (this.hasTypes) {
             renderedMember += this.renderTypes();
         } else {
             renderedMember += 'any';
@@ -941,15 +993,15 @@ export class TypeDeclaration extends IDeclaration {
 
     public toString(indent: string = ''): string {
 
-        let renderedType = 'type ' + this.name;
+        let renderedType = this.renderTypes();
         
-        renderedType = this.renderScopePrefix() + renderedType;
-
-        if (this.types.length > 0) {
-            renderedType += ' = ' + this.renderTypes();
-        } else {
-            renderedType += ' = any';
+        if (!renderedType) {
+            renderedType = 'any';
         }
+
+        renderedType = 'type ' + this.name + ' = ' + renderedType;
+
+        renderedType = this.renderScopePrefix() + renderedType;
 
         return (
             this.renderDescription(indent) +
