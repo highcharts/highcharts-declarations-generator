@@ -144,13 +144,19 @@ export abstract class IDeclaration extends Object {
         declarations.forEach(declaration => {
 
             if (declaration.parent) {
-                throw new Error('Declaration has already a parent.');
+                throw new Error(
+                    'Declaration has already a parent.' +
+                    ' (' + declaration.parent.name + ')'
+                );
             }
 
             name = declaration.name;
 
             if (children[name]) {
-                throw new Error('Declaration with this name already added.');
+                throw new Error(
+                    'Declaration with this name already added.' +
+                    ' (' + this.name + '.' + name + ')'
+                );
             }
 
             children[name] = declaration;
