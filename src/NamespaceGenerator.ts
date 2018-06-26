@@ -80,7 +80,7 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration,
         sourceDeclaration: tsd.IDeclaration
     ) {
-        console.log('mergeDeclaration', targetDeclaration.name, sourceDeclaration.name);
+
         if (!targetDeclaration.description) {
             targetDeclaration.description = sourceDeclaration.description;
         }
@@ -105,7 +105,6 @@ class Generator extends Object {
             if (targetChild) {
                 Generator.mergeDeclaration(targetChild, sourceChild);
             } else {
-                console.log('addChild', sourceChild.name, sourceChild);
                 targetDeclaration.addChildren(sourceChild);
             }
         });
@@ -151,8 +150,6 @@ class Generator extends Object {
         let childDeclaration = undefined as (tsd.IDeclaration|undefined),
             kind = (sourceNode.doclet && sourceNode.doclet.kind || ''),
             name = (sourceNode.doclet && sourceNode.doclet.name || '');
-
-        // console.log('Generate ' + kind + ' declaration for ' + name);
 
         switch (kind) {
             default:
