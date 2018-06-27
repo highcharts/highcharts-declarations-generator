@@ -9,6 +9,10 @@ import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as request from 'request';
 
+const JSON_ESCAPE_FILTER: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
+const JSON_UNESCAPE_FILTER: RegExp = /^\[(undefined)\]$/gm;
+const JSON_QUOTE_FILTER: RegExp = /['`]/gm;
+
 const NORMALIZE_BREAK_FILTER: RegExp = /<br>/gm;
 const NORMALIZE_PARAGRAPH_FILTER: RegExp = /\s{2,}/gm;
 const NORMALIZE_SPACE_FILTER: RegExp = /\s+/gm;
@@ -39,7 +43,7 @@ export function ajax (url: string): Promise<any> {
             if (err) {
                 reject(err);
             } else {
-                json(body).then(resolve);
+                resolve(json(body));
             }
         });
     });
@@ -75,18 +79,33 @@ export function getDeclarationFilePath (filePath: string): string {
     return (filePath + '.d.ts');
 }
 
-export function json (json: any[] | object | string ): Promise<any> {
-    return new Promise((resolve, reject) => {
-        try {
-            if (typeof json === 'string') {
-                resolve(JSON.parse(json));
-            } else {
-                resolve(JSON.stringify(json));
-            }
-        } catch (err) {
-            reject(err);
-        }
-    });
+export function json (
+    json: (object | string | Array<any>),
+    allowQuirks: boolean = false
+): (object | string | Array<any>) {
+
+    if (typeof json !== 'string') {
+        return JSON.stringify(json);
+    }
+
+    if (!allowQuirks) {
+        return JSON.parse(json);
+    }
+
+    let results = JSON.parse(json
+        .replace(JSON_QUOTE_FILTER, '"')
+        .replace(JSON_ESCAPE_FILTER, '$1"$2"$3')
+    );
+
+    if (typeof results.map === 'function') {
+        results.map((result: any) => (
+            typeof result === 'string' ?
+            result.replace(JSON_UNESCAPE_FILTER, '$1') :
+            result
+        ));
+    }
+
+    return results;
 }
 
 export function load (filePath: string): Promise<any> {
@@ -98,7 +117,7 @@ export function load (filePath: string): Promise<any> {
             if (err) {
                 reject(err);
             } else {
-                json(data.toString()).then(resolve);
+                resolve(json(data.toString()));
             }
         });
     });
@@ -163,7 +182,7 @@ export function pad (
 
     words.forEach(word => {
         if (word === '') {
-            paddedStr += line.trimRight() + '\n\n';
+            paddedStr += line.trimRight() + '\n' + linePrefix + '\n';
             line = linePrefix + word;
         } else if (line.length + word.length + 1 > wrap) {
             paddedStr += line.trimRight() + '\n';
