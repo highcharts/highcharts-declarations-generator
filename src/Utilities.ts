@@ -21,9 +21,11 @@ const TYPE_MAPPER_DICTIONARY: Dictionary<string> = {
     'Boolean': 'boolean',
     'Number': 'number',
     'Object': 'object',
-    'String': 'string'
+    'String': 'string',
+    'array': 'Array',
+    'function': 'Function'
 };
-const TYPE_MAPPER_GENERIC: RegExp = /^(\w+)<(.+)>$/gm;
+const TYPE_MAPPER_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
 
 export interface Dictionary<T> {
     [key: string]: T;
