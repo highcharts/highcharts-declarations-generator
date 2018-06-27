@@ -285,10 +285,9 @@ export abstract class IDeclaration extends Object {
 
                 let index1 = KIND_ORDER.indexOf(children[name1].kind),
                     index2 = KIND_ORDER.indexOf(children[name2].kind);
-                
 
                 if (index1 === index2) {
-                    return (name1 < name2 ? -1 : 1);
+                    return (name1.toLowerCase() < name2.toLowerCase() ? -1 : 1);
                 } else {
                     return (index1 - index2);
                 }
@@ -361,7 +360,18 @@ export abstract class IDeclaration extends Object {
     protected renderScopePrefix(): string {
 
         if (this.isInClass) {
-            return (this.isPrivate ? 'private ' : 'public ');
+
+            let str = 'public ';
+
+            if (this.isPrivate) {
+                str = 'private ';
+            }
+
+            if (this.isStatic) {
+                str += 'static ';
+            }
+
+            return str;
         }
 
         if (this.isInSpace) {
@@ -575,9 +585,10 @@ export class ClassDeclaration extends IExtendedDeclaration {
     }
     private _implements: Array<string>
 
-    public get kind(): Kinds {
-        return 'class';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'class';
 
     /* *
      *
@@ -659,9 +670,10 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
      * 
      * */
 
-    public get kind (): Kinds {
-        return 'constructor';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'constructor';
 
     /* *
      *
@@ -692,8 +704,8 @@ export class FunctionDeclaration extends IExtendedDeclaration {
      * 
      * */
 
-    public get kind (): Kinds {
-        return 'function';
+    public get kind (): ('static function' | 'function') {
+        return (this.isStatic ? 'static function' : 'function');
     }
 
     /* *
@@ -745,9 +757,10 @@ export class GlobalDeclaration extends IDeclaration {
      *
      * */
 
-    public get kind (): Kinds {
-        return 'global';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'global';
 
     /* *
      *
@@ -775,9 +788,10 @@ export class InterfaceDeclaration extends IDeclaration {
      *
      * */
 
-    public get kind (): Kinds {
-        return 'interface';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'interface';
 
     /* *
      *
@@ -824,9 +838,10 @@ export class NamespaceDeclaration extends IDeclaration {
      * 
      * */
 
-    public get kind (): Kinds {
-        return 'namespace';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'namespace';
 
     /* *
      *
@@ -867,9 +882,10 @@ export class ParameterDeclaration extends IDeclaration {
      * 
      * */
 
-    public get kind (): Kinds {
-        return 'parameter';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'parameter';
 
     /* *
      *
@@ -931,7 +947,10 @@ export class PropertyDeclaration extends IExtendedDeclaration {
     }
     private _isOptional: boolean;
 
-    public get kind (): Kinds {
+    /**
+     * Kind of declaration.
+     */
+    public get kind (): ('static property' | 'property') {
         return (this.isStatic ? 'static property' : 'property');
     }
 
@@ -981,9 +1000,10 @@ export class TypeDeclaration extends IDeclaration {
      *
      * */
 
-    public get kind (): Kinds {
-        return 'type';
-    }
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'type';
 
     /* *
      *
