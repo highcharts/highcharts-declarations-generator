@@ -172,7 +172,30 @@ class Generator extends Object {
 
         declaration.isOptional = true;
 
-        if (doclet.type && doclet.type.names) {
+        if (doclet.values) {
+            try {
+                let values = utils.json(doclet.values, true);
+                if (values instanceof Array) {
+                    declaration.types.push(...values
+                        .map(value => {switch(value) {
+                            default:
+                                return '"' + value + '"';
+                            case 'undefined':
+                            case 'null':
+                                return value;
+                        }})
+                    );
+                }
+            } catch (error) {
+                console.log('Error: ', node.meta.fullname, doclet.values);
+                console.error(error);
+            }
+        }
+        
+        if (!declaration.hasTypes &&
+            doclet.type &&
+            doclet.type.names
+        ) {
             declaration.types.push(...doclet.type.names.map(utils.typeMapper));
         }
 
