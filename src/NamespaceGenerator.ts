@@ -228,7 +228,10 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.typeMapper));
+            declaration.types.push(...doclet.types
+                .map(utils.typeMapper)
+                .filter(type => type !== 'object')
+            );
         }
 
         if (node.children) {
@@ -298,7 +301,10 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.typeMapper));
+            declaration.types.push(...doclet.types
+                .map(utils.typeMapper)
+                .filter(type => type !== 'object')
+            );
         }
 
         if (node.children) {
