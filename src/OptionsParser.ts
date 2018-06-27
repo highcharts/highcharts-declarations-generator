@@ -83,13 +83,10 @@ function splitExtendedNodes(node: INode, globalNode: INode) {
                 return;
             }
 
-            let newName = (childNode.meta.name || childName);
+            let newName = (childNode.meta.fullname || childName)
+                .split('.').map(utils.capitalize).join('');
 
-            if (newName.indexOf('Options') === -1) {
-                newName = newName + 'Options';
-            }
-
-            newName = utils.capitalize(newName);
+            newName = newName.replace('Options', '') + 'Options';
 
             let newNode = {
                     children: Object.assign({}, childNode.children),
