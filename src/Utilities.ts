@@ -176,17 +176,27 @@ export function pad (
     wrap: number = 80
 ): string {
 
-    let words = str.split(PAD_SPACE_FILTER),
-        line = linePrefix + (words.shift() || ''),
-        paddedStr = '';
+    let newLine = true,
+        line = '',
+        paddedStr = '',
+        words = str.split(PAD_SPACE_FILTER);
 
     words.forEach(word => {
+
         if (word === '') {
             paddedStr += line.trimRight() + '\n' + linePrefix + '\n';
-            line = linePrefix + word;
-        } else if (line.length + word.length + 1 > wrap) {
+            newLine = true;
+            return;
+        }
+        
+        if (line.length + word.length + 1 > wrap) {
             paddedStr += line.trimRight() + '\n';
+            newLine = true;
+        }
+
+        if (newLine) {
             line = linePrefix + word;
+            newLine = false;
         } else {
             line += ' ' + word;
         }
