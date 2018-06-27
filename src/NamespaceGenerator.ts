@@ -22,9 +22,12 @@ export function saveIntoFiles(
         .forEach(filePath => {
 
             let dtsFilePath = utils.getDeclarationFilePath(filePath),
-                generator = new Generator(filesDictionary[filePath]);
+                generator = new Generator(filesDictionary[filePath]),
+                namespace = generator.global.getChild('Highcharts');
 
-            Generator.mergeDeclaration(generator.global, optionsDeclarations);
+            if (namespace) {
+                Generator.mergeDeclaration(namespace, optionsDeclarations);
+            }
 
             promises.push(
                 utils
@@ -61,6 +64,9 @@ class Generator extends Object {
 
         description = description.replace(
             /\{@link\W+([^\}\|]+)[\S\s]*\}/gm, '$1'
+        );
+        description = description.replace(
+            /\[([^\]]+)\]\([^\)]+\)/gm, '$1'
         );
         description = description.replace(
             /\s+\-\s+/gm, '\n\n- '
@@ -182,13 +188,9 @@ class Generator extends Object {
                 break;
             case 'typedef':
                 if (sourceNode.children) {
-                    this._global.addChildren(
-                        this.generateInterface(sourceNode)
-                    );
+                    childDeclaration = this.generateInterface(sourceNode);
                 } else {
-                    this._global.addChildren(
-                        this.generateType(sourceNode)
-                    );
+                    childDeclaration = this.generateType(sourceNode);
                 }
                 break;
         }
