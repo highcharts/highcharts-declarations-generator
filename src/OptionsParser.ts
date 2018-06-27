@@ -66,7 +66,11 @@ function splitExtendedNodes(node: INode, globalNode: INode) {
         .keys(children)
         .forEach(childName => {
 
-            let childNode = children[childName];
+            let childNode = children[childName],
+                childTypes = (
+                    (childNode.doclet.type && childNode.doclet.type.names) ||
+                    []
+                ).join('|');
 
             prepareName(
                 (node.meta.fullname || node.meta.name),
@@ -100,7 +104,12 @@ function splitExtendedNodes(node: INode, globalNode: INode) {
                 };
 
             childNode.children = {};
-            childNode.doclet.type = { names: [ newName ] };
+
+            if (childTypes.toLowerCase().indexOf('array') >= 0 ) {
+                childNode.doclet.type = { names: [ 'Array<' + newName + '>' ] };
+            } else {
+                childNode.doclet.type = { names: [ newName ] };
+            }
 
             if (globalNode.children[newName]) {
                 mergeNode(globalNode.children[newName], newNode);
@@ -289,8 +298,10 @@ export interface IDoclet {
     sample?: ISample;
     samples?: Array<ISample>;
     since?: string;
+    tags?: Array<ITags>;
     type?: IType;
     undocumented?: boolean;
+    values?: string;
 }
 
 export interface IMeta {
@@ -314,6 +325,13 @@ export interface ISample {
     value: string;
     products: Array<string>
     name?: string;
+}
+
+export interface ITags {
+    originalTitle: string;
+    text: string;
+    title: string;
+    value: string;
 }
 
 export interface IType {
