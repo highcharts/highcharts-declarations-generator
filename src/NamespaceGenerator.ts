@@ -21,7 +21,9 @@ export function saveIntoFiles(
         .keys(filesDictionary)
         .forEach(filePath => {
 
-            let dtsFilePath = utils.getDeclarationFilePath(filePath),
+            let fileBase = utils.base(filePath),
+                dtsFilePath = fileBase + '.d.ts',
+                dtsSourceFilePath = fileBase + '.src.d.ts',
                 generator = new Generator(filesDictionary[filePath]),
                 namespace = generator.global.getChild('Highcharts');
 
@@ -33,6 +35,8 @@ export function saveIntoFiles(
                 utils
                     .save(dtsFilePath, generator.toString())
                     .then(() => console.log('Saved ' + dtsFilePath))
+                    .then(() => utils.copy(dtsFilePath, dtsSourceFilePath))
+                    .then(() => console.log('Saved ' + dtsSourceFilePath))
             );
         })
 
