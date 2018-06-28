@@ -30,6 +30,7 @@ const TYPE_MAPPER_DICTIONARY: Dictionary<string> = {
     'function': 'Function'
 };
 const TYPE_MAPPER_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
+const TYPE_MAPPER_LIST: RegExp = /^\((.+)\)$/gm;
 
 export interface Dictionary<T> {
     [key: string]: T;
@@ -49,6 +50,16 @@ export function ajax (url: string): Promise<any> {
     });
 }
 
+export function base (filePath: string): string {
+    let slashIndex = filePath.lastIndexOf(path.sep),
+        pointIndex = filePath.indexOf('.', slashIndex);
+    if (pointIndex > slashIndex + 1) {
+        return filePath.substring(0, pointIndex);
+    } else {
+        return filePath;
+    }
+}
+
 export function capitalize (str: string): string {
     if (str === '') {
         return str;
@@ -57,26 +68,22 @@ export function capitalize (str: string): string {
     }
 }
 
-export function convertType(types: Array<string>): string {
+export function convertType (types: Array<string>): string {
     return types.map(typeMapper).join('|');
 }
 
-export function getDeclarationFilePath (filePath: string): string {
-
-    let fileExtension = path.extname(filePath);
-
-    if (fileExtension) {
-
-        if (fileExtension === '.ts' &&
-            filePath.lastIndexOf('.d.ts') === (filePath.length - 6)
-        ) {
-            fileExtension = '.d.ts';
-        }
-
-        filePath = filePath.substr(0, (filePath.length - fileExtension.length));
-    }
-
-    return (filePath + '.d.ts');
+export function copy (sourceFilePath: string, targetFilePath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        sourceFilePath = path.resolve(process.cwd(), sourceFilePath);
+        targetFilePath = path.resolve(process.cwd(), targetFilePath);
+        fs.copyFile(sourceFilePath, targetFilePath, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
 }
 
 export function json (
@@ -110,9 +117,7 @@ export function json (
 
 export function load (filePath: string): Promise<any> {
     return new Promise((resolve, reject) => {
-
         filePath = path.resolve(process.cwd(), filePath);
-
         fs.readFile(filePath, (err, data) => {
             if (err) {
                 reject(err);
@@ -236,6 +241,8 @@ export function save (filePath: string, str: string): Promise<void> {
 
 export function typeMapper(type: string): string {
 
+    type = type.replace(TYPE_MAPPER_LIST, '$1');
+
     if (TYPE_MAPPER_GENERIC.test(type)) {
         return type.replace(
             TYPE_MAPPER_GENERIC,
@@ -246,9 +253,7 @@ export function typeMapper(type: string): string {
     }
 
     if (type.indexOf('|') > -1) {
-        return type.split('|')
-            .map(type => typeMapper(type.trim()))
-            .join('|');
+        return type.split('|').map(type => typeMapper(type.trim())).join('|');
     }
 
     if (TYPE_MAPPER_DICTIONARY[type]) {
