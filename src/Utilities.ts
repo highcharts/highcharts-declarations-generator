@@ -240,7 +240,7 @@ export function typeMapper(type: string): string {
         return type.replace(
             TYPE_MAPPER_GENERIC,
             function (match, generic, type) {
-                return generic + '<' + type + '>';
+                return generic + '<' + typeMapper(type.trim()) + '>';
             }
         );
     }
