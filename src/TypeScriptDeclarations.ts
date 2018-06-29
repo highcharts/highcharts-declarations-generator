@@ -93,6 +93,7 @@ export abstract class IDeclaration extends Object {
         this._fullname = name;
 
         this._children = {};
+        this._defaultValue = undefined;
         this._description = '';
         this._isOptional = false;
         this._isPrivate = false;
@@ -107,7 +108,16 @@ export abstract class IDeclaration extends Object {
     * 
     * */
 
-    private _children: utils.Dictionary<IDeclaration>;
+    /**
+     * Default value and type for this declaration.
+     */
+    public get defaultValue(): (boolean|number|string|undefined) {
+        return this._defaultValue;
+    }
+    public set defaultValue(value: (boolean|number|string|undefined)) {
+        this._defaultValue = value;
+    }
+    private _defaultValue: (boolean|number|string|undefined);
 
     /**
      * Description of this declaration.
@@ -126,6 +136,7 @@ export abstract class IDeclaration extends Object {
     public get hasChildren(): boolean {
         return (Object.keys(this._children).length > 0);
     }
+    private _children: utils.Dictionary<IDeclaration>;
 
     /**
      * Returns true, if the declaration includes types.
@@ -339,20 +350,53 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Return the comment string for the default value of this TypeScript
+     * declaration.
+     *
+     * @param {string} indent
+     *        The indentation string for formatting.
+     */
+    protected renderDefaultValue(indent: string = ''): string {
+
+        if (this.defaultValue === undefined) {
+            return '';
+        }
+
+        return (
+            indent + '(Default value: ' + this.defaultValue + ')\n'
+        );
+    }
+
+    /**
      * Returns the comment lines for this TypeScript declaration.
      *
      * @param {string} indent 
      *        The indentation string for formatting.
+     *
+     * @param {boolean} includeDefault
+     *        True for a extra line with the default value;
      */
-    protected renderDescription(indent: string = ''): string {
+    protected renderDescription(
+        indent: string = '', includeDefault: boolean = false
+    ): string {
 
         if (!this.description) {
             return '';
         }
-        
+
+        let renderedDescription = utils.normalize(this.description, true);
+
+        renderedDescription = utils.pad(renderedDescription, (indent + ' * '));
+
+        if (includeDefault &&
+            this.defaultValue !== undefined
+        ) {
+            renderedDescription += this.renderDefaultValue(indent + ' * ');
+        }
+
         return (
             indent + '/**\n' +
-            utils.pad(utils.normalize(this.description, true), (indent + ' * ')) +
+            renderedDescription +
             indent + ' *' + '/\n'
         );
     }
@@ -389,7 +433,11 @@ export abstract class IDeclaration extends Object {
      */
     protected renderTypes(): string {
 
-        return this.types.sort().join('|');
+        if (this.types.length > 1) {
+            return '(' + this.types.sort().join('|') + ')';
+        } else {
+            return this.types.sort().join('|');
+        }
     }
 
     /**
@@ -678,7 +726,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
 
         return (
             this.renderDescription(indent) +
-            indent + renderedClass + '{\n' +
+            indent + renderedClass + ' {\n' +
             '\n' +
             this.renderChildren(childIndent, '\n') +
             '\n' +
@@ -1009,22 +1057,26 @@ export class ParameterDeclaration extends IDeclaration {
      */
     public renderParameterDescription(indent: string = ''): string {
 
-        let renderedTypes = this.renderTypes();
+        let defaultValue = (this.defaultValue || '').toString(),
+            renderedTypes = this.renderTypes();
 
         if (!renderedTypes) {
             renderedTypes = 'any';
         }
 
+        renderedTypes = '@param  {' + renderedTypes + '} ' + this.name;
+
+        if (defaultValue) {
+            defaultValue = '(Default value: ' + defaultValue + ')';
+        }
+
         return (
-            indent + ' * @param  {' + renderedTypes + '} ' + (
-                this.isOptional ?
-                '[' + this.name + ']' :
-                this.name
-            ) + '\n' +
+            indent + ' * ' + renderedTypes + '\n' +
             utils.pad(
                 utils.normalize(this.description),
                 (indent + ' *         ')
-            )
+            ) +
+            this.renderDefaultValue(indent + ' *         ')
         );
     }
 
@@ -1033,9 +1085,15 @@ export class ParameterDeclaration extends IDeclaration {
      */
     public toString(): string {
 
-        return (
-            this.name + (this.isOptional ? '?: ' : ': ') + this.renderTypes()
-        );
+        let renderedParameter = this.name;
+
+        if (this.isOptional) {
+            renderedParameter += '?';
+        }
+
+        renderedParameter += ': ' + this.renderTypes();
+
+        return renderedParameter;
     }
 }
 
@@ -1098,7 +1156,7 @@ export class PropertyDeclaration extends IDeclaration {
         }
 
         return (
-            this.renderDescription(indent) +
+            this.renderDescription(indent, true) +
             indent + renderedMember + ';\n'
         );
     }
