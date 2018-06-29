@@ -1039,6 +1039,25 @@ export class ParameterDeclaration extends IDeclaration {
 
     /* *
      *
+     *  Constructor
+     * 
+     * */
+
+    /**
+     * Initiates a new parameter declaration.
+     *
+     * @param {string} name
+     *        The name of the parameter.
+     */
+    public constructor (name: string) {
+
+        super(name);
+
+        this._isVariable = false;
+    }
+
+    /* *
+     *
      *  Properties
      * 
      * */
@@ -1047,6 +1066,17 @@ export class ParameterDeclaration extends IDeclaration {
      * Kind of declaration.
      */
     public readonly kind = 'parameter';
+
+    /**
+     * Variable number of parameters.
+     */
+    public get isVariable(): boolean {
+        return this._isVariable;
+    }
+    public set isVariable(value: boolean) {
+        this._isVariable = value;
+    }
+    private _isVariable: boolean;
 
     /* *
      *
@@ -1067,6 +1097,10 @@ export class ParameterDeclaration extends IDeclaration {
 
         if (!renderedTypes) {
             renderedTypes = 'any';
+        }
+
+        if (this.isVariable) {
+            renderedTypes = '...Array<' + renderedTypes + '>';
         }
 
         renderedTypes = '@param  {' + renderedTypes + '} ' + this.name;
@@ -1090,13 +1124,19 @@ export class ParameterDeclaration extends IDeclaration {
      */
     public toString(): string {
 
-        let renderedParameter = this.name;
+        let renderedParameter = this.name,
+            renderedTypes = this.renderTypes(true);
 
         if (this.isOptional) {
             renderedParameter += '?';
         }
 
-        renderedParameter += ': ' + this.renderTypes(true);
+        if (this.isVariable) {
+            renderedParameter = '...' + renderedParameter;
+            renderedTypes = 'Array<' + renderedTypes + '>';
+        }
+
+        renderedParameter += ': ' + renderedTypes;
 
         return renderedParameter;
     }
