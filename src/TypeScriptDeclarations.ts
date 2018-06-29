@@ -94,6 +94,7 @@ export abstract class IDeclaration extends Object {
 
         this._children = {};
         this._description = '';
+        this._isOptional = false;
         this._isPrivate = false;
         this._isStatic = false;
         this._parent = undefined;
@@ -170,6 +171,17 @@ export abstract class IDeclaration extends Object {
                 return true;
         }
     }
+
+    /**
+     * Requirement of this TypeScript declaration.
+     */
+    public get isOptional(): boolean {
+        return this._isOptional;
+    }
+    public set isOptional(value: boolean) {
+        this._isOptional = value;
+    }
+    private _isOptional: boolean;
 
     /**
      * Visibility of this TypeScript declaration.
@@ -1004,7 +1016,11 @@ export class ParameterDeclaration extends IDeclaration {
         }
 
         return (
-            indent + ' * @param  {' + renderedTypes + '} ' + this.name + '\n' +
+            indent + ' * @param  {' + renderedTypes + '} ' + (
+                this.isOptional ?
+                '[' + this.name + ']' :
+                this.name
+            ) + '\n' +
             utils.pad(
                 utils.normalize(this.description),
                 (indent + ' *         ')
@@ -1017,7 +1033,9 @@ export class ParameterDeclaration extends IDeclaration {
      */
     public toString(): string {
 
-        return this.name + ': ' + this.renderTypes();
+        return (
+            this.name + (this.isOptional ? '?: ' : ': ') + this.renderTypes()
+        );
     }
 }
 
@@ -1033,39 +1051,9 @@ export class PropertyDeclaration extends IDeclaration {
 
     /* *
      *
-     *  Constructor
-     * 
-     * */
-
-    /**
-     * Initiates a new property declaration.
-     * 
-     * @param {string} name
-     *        The name of the property.
-     */
-    public constructor (name: string) {
-
-        super(name);
-
-        this._isOptional = false;
-    }
-
-    /* *
-     *
      *  Properties
      *
      * */
-
-    /**
-     * Visibility of this TypeScript declaration.
-     */
-    public get isOptional(): boolean {
-        return this._isOptional;
-    }
-    public set isOptional(value: boolean) {
-        this._isOptional = value;
-    }
-    private _isOptional: boolean;
 
     /**
      * Kind of declaration.
