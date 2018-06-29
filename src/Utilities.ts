@@ -253,7 +253,11 @@ export function typeMapper(type: string): string {
     }
 
     if (type.indexOf('|') > -1) {
-        return type.split('|').map(type => typeMapper(type.trim())).join('|');
+        return (
+            '(' +
+            type.split('|').map(type => typeMapper(type.trim())).join('|') +
+            ')'
+        );
     }
 
     if (TYPE_MAPPER_DICTIONARY[type]) {

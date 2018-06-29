@@ -430,10 +430,15 @@ export abstract class IDeclaration extends Object {
 
     /**
      * Returns the possible types of this TypeScript declaration.
+     *
+     * @param {boolean} useParentheses
+     *        Wraps several types in parentheses.
      */
-    protected renderTypes(): string {
+    protected renderTypes(useParentheses: boolean = false): string {
 
-        if (this.types.length > 1) {
+        if (useParentheses &&
+            this.types.length > 1
+        ) {
             return '(' + this.types.sort().join('|') + ')';
         } else {
             return this.types.sort().join('|');
@@ -834,7 +839,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
     public toString(indent: string = ''): string {
 
         let renderedFunction = this.name,
-            renderedTypes = this.renderTypes();
+            renderedTypes = this.renderTypes(true);
 
         renderedFunction += ' ' + this.renderParametersBracket();
 
@@ -1091,7 +1096,7 @@ export class ParameterDeclaration extends IDeclaration {
             renderedParameter += '?';
         }
 
-        renderedParameter += ': ' + this.renderTypes();
+        renderedParameter += ': ' + this.renderTypes(true);
 
         return renderedParameter;
     }
@@ -1148,16 +1153,16 @@ export class PropertyDeclaration extends IDeclaration {
         renderedMember = this.renderScopePrefix() + renderedMember + ': ';
 
         if (this.hasChildren) {
-            renderedMember += '{' + this.renderChildren(childIndent, '\n') + '}';
+            renderedMember += '{\n' + this.renderChildren(childIndent, '\n') + '}';
         } else if (this.hasTypes) {
-            renderedMember += this.renderTypes();
+            renderedMember += this.renderTypes(true) + ';';
         } else {
-            renderedMember += 'any';
+            renderedMember += 'any;';
         }
 
         return (
             this.renderDescription(indent, true) +
-            indent + renderedMember + ';\n'
+            indent + renderedMember + '\n'
         );
     }
 }
@@ -1196,7 +1201,7 @@ export class TypeDeclaration extends IDeclaration {
      */
     public toString(indent: string = ''): string {
 
-        let renderedType = this.renderTypes();
+        let renderedType = this.renderTypes(true);
         
         if (!renderedType) {
             renderedType = 'any';
