@@ -395,6 +395,11 @@ class Generator extends Object {
                     declaration.isOptional = true;
                 }
 
+                if (parameter.isVariable) {
+                    declaration.isOptional = false;
+                    declaration.isVariable = true;
+                }
+
                 if (parameter.types) {
                     declaration.types.push(...parameter.types.map(utils.typeMapper));
                 }
