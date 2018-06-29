@@ -144,7 +144,7 @@ class Generator extends Object {
 
     public static removeLinks(text: string): string {
         return text
-            .replace(/\{@link\W+([^\}\|]+)[\S\s]*\}/gm, '$1')
+            .replace(/\{@link\W+(?:[^\}\|]+\|)?([^\}]+)[\S\s]*\}/gm, '$1')
             .replace(/\[([^\]]+)\]\([^\)]+\)/gm, '$1');
     }
 
@@ -382,6 +382,10 @@ class Generator extends Object {
 
                 declaration = new tsd.ParameterDeclaration(name);
                 parameter = parameters[name];
+
+                if (parameter.defaultValue) {
+                    declaration.defaultValue = parameter.defaultValue;
+                }
 
                 if (parameter.description) {
                     declaration.description = parameter.description;
