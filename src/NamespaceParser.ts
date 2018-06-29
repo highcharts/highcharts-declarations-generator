@@ -171,6 +171,7 @@ export type IKind = (
 
 export interface IParameter {
     description?: string;
+    isOptional?: boolean;
     types?: ITypes;
 }
 
