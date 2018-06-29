@@ -173,6 +173,7 @@ export interface IParameter {
     defaultValue?: (boolean|number|string);
     description?: string;
     isOptional?: boolean;
+    isVariable?: boolean;
     types?: ITypes;
 }
 
