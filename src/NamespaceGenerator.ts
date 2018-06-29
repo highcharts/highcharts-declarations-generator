@@ -66,12 +66,7 @@ class Generator extends Object {
         let description = (doclet.description || '').trim(),
             nameParts = (doclet.name || '').split('.');
 
-        description = description.replace(
-            /\{@link\W+([^\}\|]+)[\S\s]*\}/gm, '$1'
-        );
-        description = description.replace(
-            /\[([^\]]+)\]\([^\)]+\)/gm, '$1'
-        );
+        description = Generator.removeLinks(description);
         description = description.replace(
             /\s+\-\s+/gm, '\n\n- '
         );
@@ -79,6 +74,33 @@ class Generator extends Object {
         doclet.description = description;
         doclet.name = nameParts[nameParts.length - 1].trim();
         
+        if (doclet.parameters) {
+
+            let parameters = doclet.parameters,
+                parameterDescription;
+
+            Object
+                .keys(parameters)
+                .map(name => {
+
+                    parameterDescription = parameters[name].description;
+
+                    if (parameterDescription) {
+                        parameters[name].description = Generator.removeLinks(
+                            parameterDescription
+                        );
+                    }
+                });
+        }
+
+        if (doclet.return &&
+            doclet.return.description
+        ) {
+            doclet.return.description = Generator.removeLinks(
+                doclet.return.description
+            );
+        }
+
         if (doclet.types) {
             doclet.types = doclet.types.map(utils.typeMapper);
         }
@@ -118,6 +140,12 @@ class Generator extends Object {
                 targetDeclaration.addChildren(sourceChild);
             }
         });
+    }
+
+    public static removeLinks(text: string): string {
+        return text
+            .replace(/\{@link\W+([^\}\|]+)[\S\s]*\}/gm, '$1')
+            .replace(/\[([^\]]+)\]\([^\)]+\)/gm, '$1');
     }
 
     /* *
@@ -268,8 +296,15 @@ class Generator extends Object {
             );
         }
 
-        if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.typeMapper));
+        if (doclet.return) {
+            if (doclet.return.description) {
+                declaration.typesDescription = doclet.return.description;
+            }
+            if (doclet.return.types) {
+                declaration.types.push(
+                    ...doclet.return.types.map(utils.typeMapper)
+                );
+            }
         }
 
         if (node.children) {
@@ -350,6 +385,10 @@ class Generator extends Object {
 
                 if (parameter.description) {
                     declaration.description = parameter.description;
+                }
+
+                if (parameter.isOptional) {
+                    declaration.isOptional = true;
                 }
 
                 if (parameter.types) {
