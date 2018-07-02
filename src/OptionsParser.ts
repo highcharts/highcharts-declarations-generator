@@ -84,7 +84,9 @@ function splitExtendedNodes(node: INode, globalNode: INode) {
             }
 
             let newName = (childNode.meta.fullname || childName)
-                .split('.').map(utils.capitalize).join('');
+                .split('.')
+                .map(utils.capitalize)
+                .join('');
 
             newName = newName.replace('Options', '') + 'Options';
 
@@ -102,7 +104,7 @@ function splitExtendedNodes(node: INode, globalNode: INode) {
 
             childNode.children = {};
 
-            if (childTypes.toLowerCase().indexOf('array') >= 0 ) {
+            if (childTypes.toLowerCase().indexOf('array') > -1 ) {
                 childNode.doclet.type = { names: [ 'Array<' + newName + '>' ] };
             } else {
                 childNode.doclet.type = { names: [ newName ] };

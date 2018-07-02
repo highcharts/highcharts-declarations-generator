@@ -9,17 +9,11 @@ import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as request from 'request';
 
-const JSON_ESCAPE_FILTER: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
-const JSON_UNESCAPE_FILTER: RegExp = /^\[(undefined)\]$/gm;
-const JSON_QUOTE_FILTER: RegExp = /['`]/gm;
+const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
+const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
+const JSON_QUOTE: RegExp = /['`]/gm;
 
-const NORMALIZE_BREAK_FILTER: RegExp = /<br>/gm;
-const NORMALIZE_PARAGRAPH_FILTER: RegExp = /\s{2,}/gm;
-const NORMALIZE_SPACE_FILTER: RegExp = /\s+/gm;
-
-const PAD_SPACE_FILTER: RegExp = /\s/gm;
-
-const TYPE_MAPPER_DICTIONARY: Dictionary<string> = {
+const MAP_TYPE_DICTIONARY: Dictionary<string> = {
     '*': 'any',
     'Array': 'Array<any>',
     'Boolean': 'boolean',
@@ -29,14 +23,31 @@ const TYPE_MAPPER_DICTIONARY: Dictionary<string> = {
     'array': 'Array',
     'function': 'Function'
 };
-const TYPE_MAPPER_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
-const TYPE_MAPPER_LIST: RegExp = /^\((.+)\)$/gm;
+const MAP_TYPE_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
+const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
+
+const NORMALIZE_BREAK: RegExp = /<br>/gm;
+const NORMALIZE_PARAGRAPH: RegExp = /\s{2,}/gm;
+const NORMALIZE_SPACE: RegExp = /\s+/gm;
+
+const PAD_SPACE: RegExp = /\s/gm;
+
+const REMOVE_LINK_JSDOC = /\{@link\W+([^\}\|\s]+)(?:\|([^\}]+))?\s*\}/gm;
+const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)\s]+)\)/gm;
+
+const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
 
 export interface Dictionary<T> {
     [key: string]: T;
 }
 
-export class Dictionary<T> {}
+export class Dictionary<T> {
+    public static values<T> (dictionary: Dictionary<T>): Array<T> {
+        return Object
+            .keys(dictionary)
+            .map(key => dictionary[key]);
+    }
+}
 
 export function ajax (url: string): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -100,14 +111,14 @@ export function json (
     }
 
     let results = JSON.parse(json
-        .replace(JSON_QUOTE_FILTER, '"')
-        .replace(JSON_ESCAPE_FILTER, '$1"$2"$3')
+        .replace(JSON_QUOTE, '"')
+        .replace(JSON_ESCAPE, '$1"$2"$3')
     );
 
     if (typeof results.map === 'function') {
         results.map((result: any) => (
             typeof result === 'string' ?
-            result.replace(JSON_UNESCAPE_FILTER, '$1') :
+            result.replace(JSON_UNESCAPE, '$1') :
             result
         ));
     }
@@ -137,11 +148,11 @@ export function log<T> (obj: T): Promise<T> {
 
 export function mapType(type: string): string {
 
-    type = type.replace(TYPE_MAPPER_LIST, '$1');
+    type = type.replace(MAP_TYPE_LIST, '$1');
 
-    if (TYPE_MAPPER_GENERIC.test(type)) {
+    if (MAP_TYPE_GENERIC.test(type)) {
         return type.replace(
-            TYPE_MAPPER_GENERIC,
+            MAP_TYPE_GENERIC,
             function (match, generic, type) {
                 return generic + '<' + mapType(type.trim()) + '>';
             }
@@ -156,8 +167,8 @@ export function mapType(type: string): string {
         );
     }
 
-    if (TYPE_MAPPER_DICTIONARY[type]) {
-        return TYPE_MAPPER_DICTIONARY[type];
+    if (MAP_TYPE_DICTIONARY[type]) {
+        return MAP_TYPE_DICTIONARY[type];
     }
 
     return type;
@@ -181,12 +192,12 @@ export function normalize (
 ): string {
 
     if (!preserveParagraphs) {
-        return str.replace(NORMALIZE_SPACE_FILTER, ' ');
+        return str.replace(NORMALIZE_SPACE, ' ');
     } else {
         return str
-            .replace(NORMALIZE_PARAGRAPH_FILTER, '<br>')
-            .replace(NORMALIZE_SPACE_FILTER, ' ')
-            .replace(NORMALIZE_BREAK_FILTER, '\n\n');
+            .replace(NORMALIZE_PARAGRAPH, '<br>')
+            .replace(NORMALIZE_SPACE, ' ')
+            .replace(NORMALIZE_BREAK, '\n\n');
     }
 }
 
@@ -212,7 +223,7 @@ export function pad (
     let newLine = true,
         line = '',
         paddedStr = '',
-        words = str.split(PAD_SPACE_FILTER);
+        words = str.split(PAD_SPACE);
 
     words.forEach(word => {
 
@@ -246,6 +257,26 @@ export function pluralize (
     return (value.toString() + (value === 1 ? singular : plural));
 }
 
+
+export function removeLinks(
+    text: string, removedLinks?: Array<string>
+): string {
+
+    return text
+        .replace(REMOVE_LINK_JSDOC, (match, link, title) => {
+            if (removedLinks) {
+                removedLinks.push(link);
+            }
+            return (title || link);
+        })
+        .replace(REMOVE_LINK_MARKDOWN, (match, title, link) => {
+            if (removedLinks) {
+                removedLinks.push(link);
+            }
+            return (title || link);
+        });
+}
+
 export function save (filePath: string, str: string): Promise<void> {
     return new Promise((resolve, reject) => {
 
@@ -265,4 +296,26 @@ export function save (filePath: string, str: string): Promise<void> {
             });
         });
     });
+}
+
+export function url (text: string): (string|null) {
+
+    let match = text.match(URL_WEB);
+
+    if (match) {
+        return match[0];
+    } else {
+        return null;
+    }
+}
+
+export function urls (text: string): Array<string> {
+
+    let matches = text.match(URL_WEB);
+
+    if (matches) {
+        return new Array(...matches);
+    } else {
+        return [];
+    }
 }

@@ -55,7 +55,7 @@ class Generator extends Object {
      *
      * */
 
-    private static getDoclet(sourceNode: parser.INode): parser.IDoclet {
+    private static getNormalizedDoclet(sourceNode: parser.INode): parser.IDoclet {
 
         let doclet = (sourceNode.doclet || {
             description: '',
@@ -64,9 +64,10 @@ class Generator extends Object {
         });
 
         let description = (doclet.description || '').trim(),
-            nameParts = (doclet.name || '').split('.');
+            nameParts = (doclet.name || '').split('.'),
+            removedLinks = [] as Array<string>;
 
-        description = Generator.removeLinks(description);
+        description = utils.removeLinks(description, removedLinks);
         description = description.replace(
             /\s+\-\s+/gm, '\n\n- '
         );
@@ -74,9 +75,9 @@ class Generator extends Object {
         doclet.description = description;
         doclet.name = nameParts[nameParts.length - 1].trim();
         
-        if (doclet.parameters) {
+        if (doclet.arguments) {
 
-            let parameters = doclet.parameters,
+            let parameters = doclet.arguments,
                 parameterDescription;
 
             Object
@@ -86,8 +87,8 @@ class Generator extends Object {
                     parameterDescription = parameters[name].description;
 
                     if (parameterDescription) {
-                        parameters[name].description = Generator.removeLinks(
-                            parameterDescription
+                        parameters[name].description = utils.removeLinks(
+                            parameterDescription, removedLinks
                         );
                     }
                 });
@@ -96,13 +97,33 @@ class Generator extends Object {
         if (doclet.return &&
             doclet.return.description
         ) {
-            doclet.return.description = Generator.removeLinks(
-                doclet.return.description
+            doclet.return.description = utils.removeLinks(
+                doclet.return.description, removedLinks
             );
+        }
+
+        if (doclet.see) {
+
+            removedLinks.push(...doclet.see);
+
+            delete doclet.see;
         }
 
         if (doclet.types) {
             doclet.types = doclet.types.map(utils.mapType);
+        }
+
+        if (removedLinks.length > 0) {
+
+            let see = [] as Array<string>;
+
+            removedLinks.forEach(link =>
+                see.push(...utils.urls(link))
+            );
+
+            if (see.length > 0) {
+                doclet.see = see;
+            }
         }
 
         return doclet;
@@ -140,12 +161,6 @@ class Generator extends Object {
                 targetDeclaration.addChildren(sourceChild);
             }
         });
-    }
-
-    public static removeLinks(text: string): string {
-        return text
-            .replace(/\{@link\W+(?:[^\}\|]+\|)?([^\}]+)[\S\s]*\}/gm, '$1')
-            .replace(/\[([^\]]+)\]\([^\)]+\)/gm, '$1');
     }
 
     /* *
@@ -246,17 +261,21 @@ class Generator extends Object {
 
     private generateClass (node: parser.INode): tsd.ClassDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = new tsd.ClassDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
         }
 
-        if (doclet.parameters) {
-            declaration.setParameters(
-                ...this.generateParameters(doclet.parameters)
+        if (doclet.arguments) {
+            declaration.setArguments(
+                ...this.generateParameters(doclet.arguments)
             );
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
         }
 
         if (doclet.types) {
@@ -275,7 +294,7 @@ class Generator extends Object {
 
     private generateFunction (node: parser.INode): tsd.FunctionDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = new tsd.FunctionDeclaration(doclet.name);
 
         if (doclet.description) {
@@ -290,9 +309,9 @@ class Generator extends Object {
             declaration.isStatic = true;
         }
 
-        if (doclet.parameters) {
-            declaration.setParameters(
-                ...this.generateParameters(doclet.parameters)
+        if (doclet.arguments) {
+            declaration.setArguments(
+                ...this.generateParameters(doclet.arguments)
             );
         }
 
@@ -307,6 +326,10 @@ class Generator extends Object {
             }
         }
 
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
         if (node.children) {
             this.generateChildren(node.children, declaration);
         }
@@ -316,11 +339,15 @@ class Generator extends Object {
 
     private generateGlobal (node: parser.INode): tsd.GlobalDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = this._global;
         
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
         }
 
         if (node.children) {
@@ -332,11 +359,15 @@ class Generator extends Object {
 
     private generateInterface (node: parser.INode): tsd.InterfaceDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = new tsd.InterfaceDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
         }
 
         if (doclet.types) {
@@ -355,11 +386,15 @@ class Generator extends Object {
 
     private generateNamespace (node: parser.INode): tsd.NamespaceDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = new tsd.NamespaceDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
         }
 
         if (node.children) {
@@ -370,38 +405,38 @@ class Generator extends Object {
     }
 
     private generateParameters (
-        parameters: utils.Dictionary<parser.IParameter>
-    ): Array<tsd.ParameterDeclaration> {
+        parameters: utils.Dictionary<parser.IArgument>
+    ): Array<tsd.ArgumentDeclaration> {
 
-        let declaration = undefined as (tsd.ParameterDeclaration|undefined),
-            parameter = undefined as (parser.IParameter|undefined);
+        let declaration = undefined as (tsd.ArgumentDeclaration|undefined),
+            argument = undefined as (parser.IArgument|undefined);
 
         return Object
             .keys(parameters)
             .map(name => {
 
-                declaration = new tsd.ParameterDeclaration(name);
-                parameter = parameters[name];
+                declaration = new tsd.ArgumentDeclaration(name);
+                argument = parameters[name];
 
-                if (parameter.defaultValue) {
-                    declaration.defaultValue = parameter.defaultValue;
+                if (argument.defaultValue) {
+                    declaration.defaultValue = argument.defaultValue;
                 }
 
-                if (parameter.description) {
-                    declaration.description = parameter.description;
+                if (argument.description) {
+                    declaration.description = argument.description;
                 }
 
-                if (parameter.isOptional) {
+                if (argument.isOptional) {
                     declaration.isOptional = true;
                 }
 
-                if (parameter.isVariable) {
+                if (argument.isVariable) {
                     declaration.isOptional = false;
                     declaration.isVariable = true;
                 }
 
-                if (parameter.types) {
-                    declaration.types.push(...parameter.types.map(utils.mapType));
+                if (argument.types) {
+                    declaration.types.push(...argument.types.map(utils.mapType));
                 }
 
                 return declaration;
@@ -410,7 +445,7 @@ class Generator extends Object {
 
     private generateProperty (node: parser.INode): tsd.PropertyDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = new tsd.PropertyDeclaration(doclet.name);
 
         if (doclet.description) {
@@ -429,6 +464,10 @@ class Generator extends Object {
             declaration.isStatic = true;
         }
 
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
         if (doclet.types) {
             declaration.types.push(...doclet.types.map(utils.mapType));
         }
@@ -438,11 +477,15 @@ class Generator extends Object {
 
     private generateType (node: parser.INode): tsd.TypeDeclaration {
 
-        let doclet = Generator.getDoclet(node),
+        let doclet = Generator.getNormalizedDoclet(node),
             declaration = new tsd.TypeDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
         }
 
         if (doclet.types) {

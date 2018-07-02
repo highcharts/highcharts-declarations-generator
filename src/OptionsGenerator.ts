@@ -36,9 +36,7 @@ class Generator extends Object {
 
         let description = (node.doclet.description || '').trim();
 
-        description = description.replace(
-            /\[([^\]]+)\]\([^\)]+\)/gm, '$1'
-        );
+        description =  utils.removeLinks(description);
 
         return description;
     }
@@ -699,6 +697,7 @@ interface OptionsDoclet {
     description?: string;
     sample?: OptionsSample;
     samples?: Array<OptionsSample>;
+    see?: Array<string>;
     since?: string;
     undocumented?: boolean;
 }

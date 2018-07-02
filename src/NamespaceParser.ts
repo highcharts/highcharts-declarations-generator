@@ -132,6 +132,7 @@ export interface INode {
 
 
 export interface IDoclet {
+    arguments?: utils.Dictionary<IArgument>;
     description: string;
     kind: IKind;
     name: string;
@@ -140,8 +141,8 @@ export interface IDoclet {
     isOptional?: boolean;
     isPrivate?: boolean;
     isStatic?: boolean;
-    parameters?: utils.Dictionary<IParameter>;
     return?: IReturn;
+    see?: Array<string>;
     types?: ITypes;
 }
 
@@ -169,7 +170,7 @@ export type IKind = (
 
 
 
-export interface IParameter {
+export interface IArgument {
     defaultValue?: (boolean|number|string);
     description?: string;
     isOptional?: boolean;
