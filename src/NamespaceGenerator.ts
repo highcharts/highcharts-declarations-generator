@@ -102,7 +102,7 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            doclet.types = doclet.types.map(utils.typeMapper);
+            doclet.types = doclet.types.map(utils.mapType);
         }
 
         return doclet;
@@ -261,7 +261,7 @@ class Generator extends Object {
 
         if (doclet.types) {
             declaration.types.push(...doclet.types
-                .map(utils.typeMapper)
+                .map(utils.mapType)
                 .filter(type => type !== 'object')
             );
         }
@@ -302,7 +302,7 @@ class Generator extends Object {
             }
             if (doclet.return.types) {
                 declaration.types.push(
-                    ...doclet.return.types.map(utils.typeMapper)
+                    ...doclet.return.types.map(utils.mapType)
                 );
             }
         }
@@ -341,7 +341,7 @@ class Generator extends Object {
 
         if (doclet.types) {
             declaration.types.push(...doclet.types
-                .map(utils.typeMapper)
+                .map(utils.mapType)
                 .filter(type => type !== 'object')
             );
         }
@@ -401,7 +401,7 @@ class Generator extends Object {
                 }
 
                 if (parameter.types) {
-                    declaration.types.push(...parameter.types.map(utils.typeMapper));
+                    declaration.types.push(...parameter.types.map(utils.mapType));
                 }
 
                 return declaration;
@@ -430,7 +430,7 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.typeMapper));
+            declaration.types.push(...doclet.types.map(utils.mapType));
         }
 
         return declaration;
@@ -446,7 +446,7 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.typeMapper));
+            declaration.types.push(...doclet.types.map(utils.mapType));
         }
 
         return declaration;

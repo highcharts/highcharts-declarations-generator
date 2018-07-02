@@ -211,7 +211,7 @@ function prepareType(node: INode) {
 
     if (node.doclet.type && node.doclet.type.names) {
         node.doclet.type = {
-            names: node.doclet.type.names.map(utils.typeMapper)
+            names: node.doclet.type.names.map(utils.mapType)
         };
         return;
     }

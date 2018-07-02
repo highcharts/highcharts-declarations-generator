@@ -196,7 +196,7 @@ class Generator extends Object {
             doclet.type &&
             doclet.type.names
         ) {
-            declaration.types.push(...doclet.type.names.map(utils.typeMapper));
+            declaration.types.push(...doclet.type.names.map(utils.mapType));
         }
 
         return declaration;

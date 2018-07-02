@@ -69,7 +69,7 @@ export function capitalize (str: string): string {
 }
 
 export function convertType (types: Array<string>): string {
-    return types.map(typeMapper).join('|');
+    return types.map(mapType).join('|');
 }
 
 export function copy (sourceFilePath: string, targetFilePath: string): Promise<void> {
@@ -133,6 +133,34 @@ export function log<T> (obj: T): Promise<T> {
         console.log(obj);
         resolve(obj);
     });
+}
+
+export function mapType(type: string): string {
+
+    type = type.replace(TYPE_MAPPER_LIST, '$1');
+
+    if (TYPE_MAPPER_GENERIC.test(type)) {
+        return type.replace(
+            TYPE_MAPPER_GENERIC,
+            function (match, generic, type) {
+                return generic + '<' + mapType(type.trim()) + '>';
+            }
+        );
+    }
+
+    if (type.indexOf('|') > -1) {
+        return (
+            '(' +
+            type.split('|').map(type => mapType(type.trim())).join('|') +
+            ')'
+        );
+    }
+
+    if (TYPE_MAPPER_DICTIONARY[type]) {
+        return TYPE_MAPPER_DICTIONARY[type];
+    }
+
+    return type;
 }
 
 export function mergeArray<T>(target: Array<T>, ...sources: Array<Array<T>>): Array<T> {
@@ -237,32 +265,4 @@ export function save (filePath: string, str: string): Promise<void> {
             });
         });
     });
-}
-
-export function typeMapper(type: string): string {
-
-    type = type.replace(TYPE_MAPPER_LIST, '$1');
-
-    if (TYPE_MAPPER_GENERIC.test(type)) {
-        return type.replace(
-            TYPE_MAPPER_GENERIC,
-            function (match, generic, type) {
-                return generic + '<' + typeMapper(type.trim()) + '>';
-            }
-        );
-    }
-
-    if (type.indexOf('|') > -1) {
-        return (
-            '(' +
-            type.split('|').map(type => typeMapper(type.trim())).join('|') +
-            ')'
-        );
-    }
-
-    if (TYPE_MAPPER_DICTIONARY[type]) {
-        return TYPE_MAPPER_DICTIONARY[type];
-    }
-
-    return type;
 }
