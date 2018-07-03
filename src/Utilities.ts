@@ -332,8 +332,8 @@ export function pad (
             newLine = true;
             return;
         }
-        
-        if (line.length + word.length + 1 > wrap) {
+
+        if (!newLine && line.length + word.length + 1 > wrap) {
             paddedStr += line.trimRight() + '\n';
             newLine = true;
         }
