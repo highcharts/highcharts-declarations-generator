@@ -4,10 +4,14 @@
  * 
  * */
 
+
+
 import * as fs from 'fs';
 import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as request from 'request';
+
+
 
 const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
@@ -26,20 +30,31 @@ const MAP_TYPE_DICTIONARY: Dictionary<string> = {
 const MAP_TYPE_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
 const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
 
-const NORMALIZE_BREAK: RegExp = /<br>/gm;
-const NORMALIZE_PARAGRAPH: RegExp = /\s{2,}/gm;
+const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
 const NORMALIZE_SPACE: RegExp = /\s+/gm;
+const NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
 
 const PAD_SPACE: RegExp = /\s/gm;
+
+const REMOVE_EXAMPLE_HTML = /<pre>([\S\s]*?)<\/pre>/gm;
+const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
+const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
+const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
 
 const REMOVE_LINK_JSDOC = /\{@link\W+([^\}\|\s]+)(?:\|([^\}]+))?\s*\}/gm;
 const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)\s]+)\)/gm;
 
+const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d\.)\s+/gm;
+
 const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
+
+
 
 export interface Dictionary<T> {
     [key: string]: T;
 }
+
+
 
 export class Dictionary<T> {
     public static values<T> (dictionary: Dictionary<T>): Array<T> {
@@ -48,6 +63,8 @@ export class Dictionary<T> {
             .map(key => dictionary[key]);
     }
 }
+
+
 
 export function ajax (url: string): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -61,6 +78,8 @@ export function ajax (url: string): Promise<any> {
     });
 }
 
+
+
 export function base (filePath: string): string {
     let slashIndex = filePath.lastIndexOf(path.sep),
         pointIndex = filePath.indexOf('.', slashIndex);
@@ -71,6 +90,8 @@ export function base (filePath: string): string {
     }
 }
 
+
+
 export function capitalize (str: string): string {
     if (str === '') {
         return str;
@@ -79,9 +100,13 @@ export function capitalize (str: string): string {
     }
 }
 
+
+
 export function convertType (types: Array<string>): string {
     return types.map(mapType).join('|');
 }
+
+
 
 export function copy (sourceFilePath: string, targetFilePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -96,6 +121,59 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<v
         });
     });
 }
+
+
+
+export function duplicateObject (
+    obj: any,
+    maxDepth: number = 3,
+    filterFn?: (item: any, key?: string) => boolean
+): any {
+
+    if (obj === null) {
+        return null;
+    }
+
+    switch (typeof obj) {
+        case 'boolean':
+        case 'function':
+        case 'number':
+        case 'string':
+        case 'symbol':
+        case 'undefined':
+            return obj;
+    }
+
+    maxDepth = (maxDepth - 1);
+
+    if (obj instanceof Array) {
+        if (filterFn) {
+            return obj
+                .filter(item => filterFn(item, undefined))
+                .slice()
+                .map(item => duplicateObject(item, maxDepth, filterFn));
+        } else {
+            return obj
+                .slice()
+                .map(item => duplicateObject(item, maxDepth, filterFn));
+        }
+    }
+
+    let duplicatedObj = {} as any,
+        objKeys = Object.keys(obj);
+
+    if (filterFn) {
+        objKeys = objKeys.filter(key => filterFn(obj[key], key));
+    }
+
+    objKeys.forEach(key => {
+        duplicatedObj[key] = duplicateObject(obj[key], maxDepth, filterFn);
+    });
+
+    return duplicatedObj;
+}
+
+
 
 export function json (
     json: (object | string | Array<any>),
@@ -126,6 +204,8 @@ export function json (
     return results;
 }
 
+
+
 export function load (filePath: string): Promise<any> {
     return new Promise((resolve, reject) => {
         filePath = path.resolve(process.cwd(), filePath);
@@ -139,12 +219,16 @@ export function load (filePath: string): Promise<any> {
     });
 }
 
+
+
 export function log<T> (obj: T): Promise<T> {
     return new Promise((resolve, reject) => {
         console.log(obj);
         resolve(obj);
     });
 }
+
+
 
 export function mapType(type: string): string {
 
@@ -174,7 +258,19 @@ export function mapType(type: string): string {
     return type;
 }
 
-export function mergeArray<T>(target: Array<T>, ...sources: Array<Array<T>>): Array<T> {
+
+
+export function mergeArrays<T>(
+    ...sources: Array<Array<T>>
+): Array<T> {
+
+    let firstSource = sources.shift();
+
+    if (!firstSource) {
+        return [];
+    }
+
+    let target = firstSource.slice();
 
     sources.forEach(source => source.forEach(item => {
 
@@ -186,6 +282,8 @@ export function mergeArray<T>(target: Array<T>, ...sources: Array<Array<T>>): Ar
     return target;
 }
 
+
+
 export function normalize (
     str: string,
     preserveParagraphs: boolean = false
@@ -195,11 +293,13 @@ export function normalize (
         return str.replace(NORMALIZE_SPACE, ' ');
     } else {
         return str
-            .replace(NORMALIZE_PARAGRAPH, '<br>')
+            .replace(NORMALIZE_ESCAPE, '<br>')
             .replace(NORMALIZE_SPACE, ' ')
-            .replace(NORMALIZE_BREAK, '\n\n');
+            .replace(NORMALIZE_UNESCAPE, '\n\n');
     }
 }
+
+
 
 /**
  * Returns a padded string, that fits into a specific width and spans over
@@ -249,6 +349,8 @@ export function pad (
     return paddedStr + line.trimRight() + '\n';
 }
 
+
+
 export function pluralize (
     value: number,
     singular: string,
@@ -256,6 +358,17 @@ export function pluralize (
 ): string {
     return (value.toString() + (value === 1 ? singular : plural));
 }
+
+
+
+export function removeExamples(text: string): string {
+
+    return text
+        .replace(REMOVE_EXAMPLE_HTML, REMOVE_EXAMPLE_REPLACEMENT)
+        .replace(REMOVE_EXAMPLE_JSDOC, REMOVE_EXAMPLE_REPLACEMENT)
+        .replace(REMOVE_EXAMPLE_MARKDOWN, REMOVE_EXAMPLE_REPLACEMENT);
+}
+
 
 
 export function removeLinks(
@@ -276,6 +389,8 @@ export function removeLinks(
             return (title || link);
         });
 }
+
+
 
 export function save (filePath: string, str: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -298,6 +413,15 @@ export function save (filePath: string, str: string): Promise<void> {
     });
 }
 
+
+
+export function transformLists (text: string): string {
+
+    return text.replace(TRANSFORM_LISTS, '\n\n$1 ');
+}
+
+
+
 export function url (text: string): (string|null) {
 
     let match = text.match(URL_WEB);
@@ -308,6 +432,8 @@ export function url (text: string): (string|null) {
         return null;
     }
 }
+
+
 
 export function urls (text: string): Array<string> {
 
