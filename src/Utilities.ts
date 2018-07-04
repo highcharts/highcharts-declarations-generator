@@ -176,12 +176,10 @@ export function duplicateObject (
 
     if (maxDepth === 0) {
         objKeys.forEach(key => {
-            console.log('assign', key);
             duplicatedObj[key] = obj[key];
         });
     } else {
         objKeys.forEach(key => {
-            console.log('duplicate', key);
             duplicatedObj[key] = duplicateObject(obj[key], nextDepth, filterFn);
         });
     }
