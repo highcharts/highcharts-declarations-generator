@@ -127,7 +127,7 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<v
 export function duplicateObject (
     obj: any,
     maxDepth: number = 3,
-    filterFn?: (item: any, key?: string) => boolean
+    filterFn?: (value: any, key: (number|string), parent: any) => boolean
 ): any {
 
     if (obj === null) {
@@ -144,31 +144,47 @@ export function duplicateObject (
             return obj;
     }
 
-    maxDepth = (maxDepth - 1);
+    let nextDepth = (maxDepth - 1);
 
     if (obj instanceof Array) {
+
+        let duplicatedArray = [];
+
         if (filterFn) {
-            return obj
-                .filter(item => filterFn(item, undefined))
-                .slice()
-                .map(item => duplicateObject(item, maxDepth, filterFn));
+            duplicatedArray = obj
+                .filter((item, index) => filterFn(item, index, obj))
+                .slice();
         } else {
-            return obj
-                .slice()
-                .map(item => duplicateObject(item, maxDepth, filterFn));
+            duplicatedArray = obj.slice();
         }
+
+        if (maxDepth > 0) {
+            duplicatedArray.map(
+                item => duplicateObject(item, nextDepth, filterFn)
+            );
+        }
+
+        return duplicatedArray;
     }
 
     let duplicatedObj = {} as any,
         objKeys = Object.keys(obj);
 
     if (filterFn) {
-        objKeys = objKeys.filter(key => filterFn(obj[key], key));
+        objKeys = objKeys.filter(key => filterFn(obj[key], key, obj));
     }
 
-    objKeys.forEach(key => {
-        duplicatedObj[key] = duplicateObject(obj[key], maxDepth, filterFn);
-    });
+    if (maxDepth === 0) {
+        objKeys.forEach(key => {
+            console.log('assign', key);
+            duplicatedObj[key] = obj[key];
+        });
+    } else {
+        objKeys.forEach(key => {
+            console.log('duplicate', key);
+            duplicatedObj[key] = duplicateObject(obj[key], nextDepth, filterFn);
+        });
+    }
 
     return duplicatedObj;
 }
