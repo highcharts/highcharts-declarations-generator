@@ -36,7 +36,9 @@ class Generator extends Object {
 
         let description = (node.doclet.description || '').trim();
 
-        description =  utils.removeLinks(description);
+        description = utils.removeExamples(description);
+        description = utils.removeLinks(description);
+        description = utils.transformLists(description);
 
         return description;
     }
@@ -54,6 +56,7 @@ class Generator extends Object {
             [ '*' ]
         ).join('|');
     }
+
     /* *
      *
      *  Constructor
