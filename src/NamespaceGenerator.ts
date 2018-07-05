@@ -64,20 +64,21 @@ class Generator extends Object {
         });
 
         let description = (doclet.description || '').trim(),
-            nameParts = (doclet.name || '').split('.'),
             removedLinks = [] as Array<string>;
 
+        description = utils.removeExamples(description);
         description = utils.removeLinks(description, removedLinks);
-        description = description.replace(
-            /\s+\-\s+/gm, '\n\n- '
-        );
+        description = utils.transformLists(description);
 
         doclet.description = description;
+
+        let nameParts = (doclet.name || '').split('.');
+
         doclet.name = nameParts[nameParts.length - 1].trim();
         
-        if (doclet.arguments) {
+        if (doclet.parameters) { 
 
-            let parameters = doclet.arguments,
+            let parameters = doclet.parameters,
                 parameterDescription;
 
             Object
@@ -138,7 +139,9 @@ class Generator extends Object {
             targetDeclaration.description = sourceDeclaration.description;
         }
 
-        utils.mergeArray(targetDeclaration.types, sourceDeclaration.types)
+        targetDeclaration.types.push(...utils.mergeArrays(
+            targetDeclaration.types, sourceDeclaration.types
+        ));
 
         let sourceChild = undefined as (tsd.IDeclaration|undefined),
             sourceChildrenNames = sourceDeclaration.getChildrenNames(),
@@ -268,9 +271,9 @@ class Generator extends Object {
             declaration.description = doclet.description;
         }
 
-        if (doclet.arguments) {
+        if (doclet.parameters) {
             declaration.setArguments(
-                ...this.generateParameters(doclet.arguments)
+                ...this.generateArguments(doclet.parameters)
             );
         }
 
@@ -309,9 +312,9 @@ class Generator extends Object {
             declaration.isStatic = true;
         }
 
-        if (doclet.arguments) {
+        if (doclet.parameters) {
             declaration.setArguments(
-                ...this.generateParameters(doclet.arguments)
+                ...this.generateArguments(doclet.parameters)
             );
         }
 
@@ -404,12 +407,12 @@ class Generator extends Object {
         return declaration;
     }
 
-    private generateParameters (
-        parameters: utils.Dictionary<parser.IArgument>
+    private generateArguments (
+        parameters: utils.Dictionary<parser.IParameter>
     ): Array<tsd.ArgumentDeclaration> {
 
         let declaration = undefined as (tsd.ArgumentDeclaration|undefined),
-            argument = undefined as (parser.IArgument|undefined);
+            argument = undefined as (parser.IParameter|undefined);
 
         return Object
             .keys(parameters)
