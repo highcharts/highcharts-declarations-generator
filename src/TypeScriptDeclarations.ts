@@ -1023,7 +1023,7 @@ export class GlobalDeclaration extends IDeclaration {
      */
     public constructor () {
 
-        super('');
+        super('[global]');
     }
 
     /* *
