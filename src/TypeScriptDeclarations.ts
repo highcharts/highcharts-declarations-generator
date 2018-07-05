@@ -23,7 +23,7 @@ type Kinds = (
     'constructor' |
     'property' |
     'function' |
-    'argument'
+    'parameter'
 );
 
 
@@ -43,7 +43,7 @@ const KIND_ORDER = [
     'constructor',
     'property',
     'function',
-    'argument'
+    'parameter'
 ] as Array<Kinds>;
 
 
@@ -483,7 +483,7 @@ export abstract class IDeclaration extends Object {
 
 
 /**
- * Extended base class for TypeScript declarations with arguments and types
+ * Extended base class for TypeScript declarations with parameters and types
  * description. This is used by class, constructor, and function declarations.
  *
  * @extends IDeclaration
@@ -506,7 +506,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
         super(name);
 
-        this._arguments = {};
+        this._parameters = {};
         this._typesDescription = '';
     }
 
@@ -517,12 +517,12 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      * */
 
     /**
-     * Returns true, if declaration has arguments.
+     * Returns true, if declaration has parameters.
      */
-    public get hasArguments(): boolean {
-        return (Object.keys(this._arguments).length > 0);
+    public get hasParameters(): boolean {
+        return (Object.keys(this._parameters).length > 0);
     }
-    private _arguments: utils.Dictionary<ArgumentDeclaration>;
+    private _parameters: utils.Dictionary<ParameterDeclaration>;
 
     /**
      * Returns the description for the return types.
@@ -542,53 +542,53 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      * */
 
     /**
-     * Returns a argument declaration, if founded.
+     * Returns a parameter declaration, if founded.
      */
-    public getArgument(name: string): (ArgumentDeclaration|undefined) {
+    public getParameter(name: string): (ParameterDeclaration|undefined) {
 
-        return this._arguments[name];
+        return this._parameters[name];
     }
 
     /**
-     * Returns an array with the names of all argument declarations.
+     * Returns an array with the names of all parameter declarations.
      */
-    public getArgumentNames(): Array<string> {
+    public getParameterNames(): Array<string> {
 
-        return Object.keys(this._arguments);
+        return Object.keys(this._parameters);
     }
 
     /**
-     * Returns the arguments bracket of this TypeScript declaration.
+     * Returns the parameter brackets of this TypeScript declaration.
      */
-    protected renderArgumentsBracket(): string {
+    protected renderParameterBrackets(): string {
 
-        let allArguments = this._arguments;
+        let parameters = this._parameters;
 
         return (
             '(' +
             Object
-                .keys(allArguments)
-                .map(argumentName => allArguments[argumentName].toString())
+                .keys(parameters)
+                .map(parameterName => parameters[parameterName].toString())
                 .join(', ') +
             ')'
         );
     }
 
     /**
-     * Returns the comment lines with arguments for this TypeScript declaration.
+     * Returns the comment lines with parameters for this TypeScript declaration.
      *
      * @param {string} indent 
      *        The indentation string for formatting.
      */
-    protected renderArgumentsDescription(indent: string = ''): string {
+    protected renderParametersDescription(indent: string = ''): string {
 
-        let allArguments = this._arguments,
+        let parameters = this._parameters,
             list = '';
         
         list += Object
-            .keys(allArguments)
-            .map(argumentName => allArguments[argumentName]
-                .renderArgumentDescription(indent)
+            .keys(parameters)
+            .map(parameterName => parameters[parameterName]
+                .renderParameterDescription(indent)
             )
             .join(indent + ' *\n');
 
@@ -600,7 +600,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             );
         }
 
-        if (this.see.length > -1) {
+        if (this.see.length > 0) {
             list += this.renderSee(indent + ' * ');
         }
 
@@ -623,29 +623,29 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     }
 
     /**
-     * Adds argument declarations to this TypeScriot declaration.
+     * Adds parameter declarations to this TypeScriot declaration.
      *
-     * @param {Array<ArgumentDeclaration>} declarations
-     *        The argument declarations to add.
+     * @param {Array<ParameterDeclaration>} declarations
+     *        The parameter declarations to add.
      */
-    public setArguments(...declarations: Array<ArgumentDeclaration>) {
+    public setParameters(...declarations: Array<ParameterDeclaration>) {
 
-        let allArguments = this._arguments,
+        let parameters = this._parameters,
             name = '';
 
         declarations.forEach(declaration => {
 
             if (declaration.parent) {
-                throw new Error('Argument declaration has already a parent.');
+                throw new Error('Parameter declaration has already a parent.');
             }
 
             name = declaration.name;
 
-            if (allArguments[name]) {
-                throw new Error('Argument declaration with this name already added.');
+            if (parameters[name]) {
+                throw new Error('Parameter declaration with this name already added.');
             }
 
-            allArguments[name] = declaration;
+            parameters[name] = declaration;
         });
     }
 
@@ -656,121 +656,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      *        The indentation string for formatting.
      */
     public abstract toString(indent?: string): string;
-}
-
-
-
-/**
- * Class for argument declarations in TypeScript, that are used in the
- * constructor and functions.
- *
- * @extends {IDeclaration}
- */
-export class ArgumentDeclaration extends IDeclaration {
-
-    /* *
-     *
-     *  Constructor
-     *
-     * */
-
-    /**
-     * Initiates a new argument declaration.
-     *
-     * @param {string} name
-     *        The name of the argument.
-     */
-    public constructor (name: string) {
-
-        super(name);
-
-        this._isVariable = false;
-    }
-
-    /* *
-     *
-     *  Properties
-     *
-     * */
-
-    /**
-     * Kind of declaration.
-     */
-    public readonly kind = 'argument';
-
-    /**
-     * Variable number of arguments.
-     */
-    public get isVariable(): boolean {
-        return this._isVariable;
-    }
-    public set isVariable(value: boolean) {
-        this._isVariable = value;
-    }
-    private _isVariable: boolean;
-
-    /* *
-     *
-     *  Functions
-     *
-     * */
-
-    /**
-     * Returns a rendered string of the comment part for arguments.
-     *
-     * @param {string} indent
-     *        The indentation string for formatting.
-     */
-    public renderArgumentDescription(indent: string = ''): string {
-
-        let defaultValue = (this.defaultValue || '').toString(),
-            renderedTypes = this.renderTypes();
-
-        if (!renderedTypes) {
-            renderedTypes = 'any';
-        }
-
-        if (this.isVariable) {
-            renderedTypes = '...Array<' + renderedTypes + '>';
-        }
-
-        renderedTypes = '@param  {' + renderedTypes + '} ' + this.name;
-
-        if (defaultValue) {
-            defaultValue = '(Default value: ' + defaultValue + ')';
-        }
-
-        return (
-            indent + ' * ' + renderedTypes + '\n' +
-            utils.pad(
-                utils.normalize(this.description),
-                (indent + ' *         ')
-            ) +
-            this.renderDefaultValue(indent + ' *         ')
-        );
-    }
-
-    /**
-     * Returns a rendered string of this argument declaration.
-     */
-    public toString(): string {
-
-        let renderedArgument = this.name,
-            renderedTypes = this.renderTypes(true);
-
-        if (this.isOptional) {
-            renderedArgument += '?';
-        }
-
-        if (this.isVariable) {
-            renderedArgument = '...' + renderedArgument;
-            renderedTypes = 'Array<' + renderedTypes + '>';
-        }
-
-        renderedArgument += ': ' + renderedTypes;
-
-        return renderedArgument;
-    }
 }
 
 
@@ -841,14 +726,14 @@ export class ClassDeclaration extends IExtendedDeclaration {
      */
     public toString(indent: string = ''): string {
 
-        if (this.hasArguments) {
+        if (this.hasParameters) {
             let constructor = new ConstructorDeclaration();
             constructor.description = this.description;
-            this.getArgumentNames()
-                .map(argumentName => this.getArgument(argumentName))
-                .forEach(argument => {
-                    if (argument) {
-                        constructor.setArguments(argument);
+            this.getParameterNames()
+                .map(parameterName => this.getParameter(parameterName))
+                .forEach(parameter => {
+                    if (parameter) {
+                        constructor.setParameters(parameter);
                     }
                 });
             this.addChildren(constructor);
@@ -938,12 +823,12 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
 
         let renderedConstructor = 'constructor';
         
-        renderedConstructor += ' ' + this.renderArgumentsBracket();
+        renderedConstructor += ' ' + this.renderParameterBrackets();
 
         renderedConstructor = this.renderScopePrefix() + renderedConstructor;
 
         return (
-            this.renderArgumentsDescription(indent) +
+            this.renderParametersDescription(indent) +
             indent + renderedConstructor + ';\n'
         );
     }
@@ -986,7 +871,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         let renderedFunction = this.name,
             renderedTypes = this.renderTypes(true);
 
-        renderedFunction += ' ' + this.renderArgumentsBracket();
+        renderedFunction += ' ' + this.renderParameterBrackets();
 
         renderedFunction += ': ' + (renderedTypes || 'void');
 
@@ -997,7 +882,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         renderedFunction = this.renderScopePrefix() + renderedFunction;
 
         return (
-            this.renderArgumentsDescription(indent) +
+            this.renderParametersDescription(indent) +
             indent + renderedFunction + ';\n'
         );
     }
@@ -1169,6 +1054,121 @@ export class NamespaceDeclaration extends IDeclaration {
             indent + '}\n' +
             indent + 'export = ' + this.name + ';\n'
         );
+    }
+}
+
+
+
+/**
+ * Class for parameter declarations in TypeScript, that are used in the
+ * constructor and functions.
+ *
+ * @extends {IDeclaration}
+ */
+export class ParameterDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Constructor
+     *
+     * */
+
+    /**
+     * Initiates a new parameter declaration.
+     *
+     * @param {string} name
+     *        The name of the parameter.
+     */
+    public constructor (name: string) {
+
+        super(name);
+
+        this._isVariable = false;
+    }
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'parameter';
+
+    /**
+     * Variable number of parameters.
+     */
+    public get isVariable(): boolean {
+        return this._isVariable;
+    }
+    public set isVariable(value: boolean) {
+        this._isVariable = value;
+    }
+    private _isVariable: boolean;
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a rendered string of the comment part for the parameter.
+     *
+     * @param {string} indent
+     *        The indentation string for formatting.
+     */
+    public renderParameterDescription(indent: string = ''): string {
+
+        let defaultValue = (this.defaultValue || '').toString(),
+            renderedTypes = this.renderTypes();
+
+        if (!renderedTypes) {
+            renderedTypes = 'any';
+        }
+
+        if (this.isVariable) {
+            renderedTypes = '...Array<' + renderedTypes + '>';
+        }
+
+        renderedTypes = '@param  {' + renderedTypes + '} ' + this.name;
+
+        if (defaultValue) {
+            defaultValue = '(Default value: ' + defaultValue + ')';
+        }
+
+        return (
+            indent + ' * ' + renderedTypes + '\n' +
+            utils.pad(
+                utils.normalize(this.description),
+                (indent + ' *         ')
+            ) +
+            this.renderDefaultValue(indent + ' *         ')
+        );
+    }
+
+    /**
+     * Returns a rendered string of this parameter declaration.
+     */
+    public toString(): string {
+
+        let renderedParameter = this.name,
+            renderedTypes = this.renderTypes(true);
+
+        if (this.isOptional) {
+            renderedParameter += '?';
+        }
+
+        if (this.isVariable) {
+            renderedParameter = '...' + renderedParameter;
+            renderedTypes = 'Array<' + renderedTypes + '>';
+        }
+
+        renderedParameter += ': ' + renderedTypes;
+
+        return renderedParameter;
     }
 }
 
