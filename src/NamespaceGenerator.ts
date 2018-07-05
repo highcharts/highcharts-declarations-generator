@@ -76,7 +76,7 @@ class Generator extends Object {
 
         doclet.name = nameParts[nameParts.length - 1].trim();
         
-        if (doclet.parameters) { 
+        if (doclet.parameters) {
 
             let parameters = doclet.parameters,
                 parameterDescription;
@@ -272,8 +272,8 @@ class Generator extends Object {
         }
 
         if (doclet.parameters) {
-            declaration.setArguments(
-                ...this.generateArguments(doclet.parameters)
+            declaration.setParameters(
+                ...this.generateParameters(doclet.parameters)
             );
         }
 
@@ -313,8 +313,8 @@ class Generator extends Object {
         }
 
         if (doclet.parameters) {
-            declaration.setArguments(
-                ...this.generateArguments(doclet.parameters)
+            declaration.setParameters(
+                ...this.generateParameters(doclet.parameters)
             );
         }
 
@@ -407,39 +407,39 @@ class Generator extends Object {
         return declaration;
     }
 
-    private generateArguments (
+    private generateParameters (
         parameters: utils.Dictionary<parser.IParameter>
-    ): Array<tsd.ArgumentDeclaration> {
+    ): Array<tsd.ParameterDeclaration> {
 
-        let declaration = undefined as (tsd.ArgumentDeclaration|undefined),
-            argument = undefined as (parser.IParameter|undefined);
+        let declaration = undefined as (tsd.ParameterDeclaration|undefined),
+            parameter = undefined as (parser.IParameter|undefined);
 
         return Object
             .keys(parameters)
             .map(name => {
 
-                declaration = new tsd.ArgumentDeclaration(name);
-                argument = parameters[name];
+                declaration = new tsd.ParameterDeclaration(name);
+                parameter = parameters[name];
 
-                if (argument.defaultValue) {
-                    declaration.defaultValue = argument.defaultValue;
+                if (parameter.defaultValue) {
+                    declaration.defaultValue = parameter.defaultValue;
                 }
 
-                if (argument.description) {
-                    declaration.description = argument.description;
+                if (parameter.description) {
+                    declaration.description = parameter.description;
                 }
 
-                if (argument.isOptional) {
+                if (parameter.isOptional) {
                     declaration.isOptional = true;
                 }
 
-                if (argument.isVariable) {
+                if (parameter.isVariable) {
                     declaration.isOptional = false;
                     declaration.isVariable = true;
                 }
 
-                if (argument.types) {
-                    declaration.types.push(...argument.types.map(utils.mapType));
+                if (parameter.types) {
+                    declaration.types.push(...parameter.types.map(utils.mapType));
                 }
 
                 return declaration;
