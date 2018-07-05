@@ -380,7 +380,7 @@ export function pad (
 
     words.forEach(word => {
 
-        if (word === '') {
+        if (!newLine && word === '') {
             paddedStr += line.trimRight() + '\n' + linePrefix + '\n';
             newLine = true;
             return;
