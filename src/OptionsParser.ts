@@ -14,11 +14,17 @@ export function parse(json: any): Promise<INode> {
 
         let globalNode = createGlobalNode(json);
 
-        splitExtendedNodes(globalNode, globalNode);
+        prepareNode(globalNode);
+        splitLargeNodes(globalNode, globalNode);
+        extendNodes(globalNode);
 
         resolve(globalNode);
     });
 }
+
+
+
+let nodeDictionary = new utils.Dictionary<INode>();
 
 
 
@@ -57,136 +63,155 @@ function createGlobalNode(json: utils.Dictionary<INode>): INode {
 
 
 
-function splitExtendedNodes(node: INode, globalNode: INode) {
+function extendNodes (node: INode) {
 
-    let children = (node.children || {}),
-        newName = '';
+    let children = node.children,
+        exclude = (node.doclet.exclude || []),
+        sourceNames = (node.doclet.extends || '');
+
+    if (sourceNames) {
+
+        sourceNames
+            .split(',')
+            .map(sourceName =>
+                sourceName === 'series' ?
+                'plotOptions.series' :
+                sourceName
+            )
+            .forEach(sourceName => {
+
+                let sourceNode = nodeDictionary[sourceName];
+
+                if (!sourceNode) {
+                    return;
+                }
+
+                mergeNode(node, sourceNode, true, true);
+
+                Object
+                    .keys(sourceNode.children)
+                    .filter(childName => exclude.indexOf(childName) === -1)
+                    .forEach(childName => {
+
+                        if (children[childName]) {
+                            return;
+                        }
+
+                        children[childName] = utils.duplicateObject(
+                            sourceNode.children[childName]
+                        );
+                    });
+            });
+    }
 
     Object
         .keys(children)
-        .forEach(childName => {
-
-            let childNode = children[childName],
-                childTypes = (
-                    (childNode.doclet.type && childNode.doclet.type.names) ||
-                    []
-                ).join('|');
-
-            prepareName(
-                (node.meta.fullname || node.meta.name),
-                childName,
-                childNode
-            );
-
-            if (Object.keys(childNode.children).length === 0) {
-                prepareType(node);
-                return;
-            }
-
-            let newName = (childNode.meta.fullname || childName)
-                .split('.')
-                .map(utils.capitalize)
-                .join('');
-
-            newName = newName.replace('Options', '') + 'Options';
-
-            let newNode = {
-                    children: Object.assign({}, childNode.children),
-                    doclet: Object.assign({}, childNode.doclet),
-                    meta: Object.assign({}, childNode.meta, {
-                        fullname: newName,
-                        name: newName
-                    })
-                },
-                oldNode = {
-
-                };
-
-            childNode.children = {};
-
-            if (childTypes.toLowerCase().indexOf('array') > -1 ) {
-                childNode.doclet.type = { names: [ 'Array<' + newName + '>' ] };
-            } else {
-                childNode.doclet.type = { names: [ newName ] };
-            }
-
-            if (globalNode.children[newName]) {
-                mergeNode(globalNode.children[newName], newNode);
-            } else {
-                globalNode.children[newName] = newNode;
-            }
-
-            splitExtendedNodes(newNode, globalNode);
-        })
+        .forEach(childName => extendNodes(children[childName]));
 }
 
 
 
-function mergeNode(targetNode: INode, sourceNode: INode): INode {
+function generateOptionsTypeName (name: string): string {
+
+    if (name[0] === '{') {
+        console.error('Invalid name: ', name);
+        name = name.substr(1, name.length - 2);
+    }
+
+    if (name === 'series') {
+        name = 'PlotSeriesOptions';
+    } else {
+        name = name
+            .split('.')
+            .map(utils.capitalize)
+            .join('');
+        name = name.replace('Options', '') + 'Options';
+    }
+
+    name = (INTERFACE_MAPPING[name] || name);
+
+    return name;
+}
+
+
+
+/**
+ * Merge properties of a node by replacing basic types and joining arrays.
+ */
+function mergeNode(
+    targetNode: INode,
+    sourceNode: INode,
+    targetWins: boolean = false,
+    skipChildren: boolean = false,
+): INode {
 
     let sourceChildren = sourceNode.children,
         sourceDoclet = sourceNode.doclet,
-        sourceMeta = sourceNode.meta,
         targetChildren = targetNode.children,
-        targetDoclet = targetNode.doclet,
-        targetMeta = targetNode.meta;
-
-    let mergedExclude = [] as Array<string>,
-        mergedProducts = [] as Array<string>,
-        mergedSamples = [] as Array<ISample>,
-        mergedTypeNames = [] as Array<string>;
-
-    utils.mergeArray(
-        mergedExclude,
-        (targetDoclet.exclude || []),
-        (sourceDoclet.exclude || [])
-    );
-
-    utils.mergeArray(
-        mergedProducts,
-        (targetDoclet.products || []),
-        (sourceDoclet.products || [])
-    );
-
-    utils.mergeArray(
-        mergedSamples,
-        (targetDoclet.samples || []),
-        (sourceDoclet.samples || [])
-    );
-
-    utils.mergeArray(
-        mergedTypeNames,
-        (targetDoclet.type && targetDoclet.type.names || []),
-        (sourceDoclet.type && sourceDoclet.type.names || [])
-    );
-
-    Object.assign(targetDoclet, sourceDoclet, {
-        defaultByProduct: Object.assign(
-            (targetDoclet.defaultByProduct || {}),
-            (sourceDoclet.defaultByProduct || {})
-        ),
-        exclude: mergedExclude,
-        products: mergedProducts,
-        samples: mergedSamples,
-        type: {
-            names: mergedTypeNames
-        }
-    });
+        targetDoclet = targetNode.doclet;
 
     Object
-        .keys(sourceChildren)
-        .forEach(sourceChildName => {
-            if (targetChildren[sourceChildName]) {
-                mergeNode(
-                    targetChildren[sourceChildName],
-                    sourceChildren[sourceChildName]
-                );
-            } else {
-                targetChildren[sourceChildName] = (
-                    sourceChildren[sourceChildName]
-                );
+        .keys(sourceDoclet)
+        .forEach(key => {
+            switch (key) {
+                case 'defaultByProduct':
+                    if (targetWins) {
+                        targetDoclet[key] = Object.assign(
+                            (sourceDoclet[key] || {}),
+                            (targetDoclet[key] || {})
+                        );
+                    } else {
+                        targetDoclet[key] = Object.assign(
+                            (targetDoclet[key] || {}),
+                            (sourceDoclet[key] || {})
+                        );
+                    }
+                    return;
+                case 'exclude':
+                case 'products':
+                case 'samples':
+                    (targetDoclet as any)[key] = utils.mergeArrays(
+                        ((targetDoclet as any)[key] || []),
+                        ((sourceDoclet as any)[key] || [])
+                    );
+                    return;
+                case 'type':
+                case 'values':
+                    targetDoclet[key] = sourceDoclet[key];
+                    return;
+                default:
+                    if (targetWins) {
+                        (targetDoclet as any)[key] = (
+                            (targetDoclet as any)[key] ||
+                            (sourceDoclet as any)[key]
+                        );
+                    } else {
+                        (targetDoclet as any)[key] = (
+                            (sourceDoclet as any)[key] ||
+                            (targetDoclet as any)[key]
+                        );
+                    }
+                    return;
             }
         });
+
+    if (!skipChildren) {
+        Object
+            .keys(sourceChildren)
+            .forEach(sourceChildName => {
+                if (targetChildren[sourceChildName]) {
+                    mergeNode(
+                        targetChildren[sourceChildName],
+                        sourceChildren[sourceChildName],
+                        targetWins
+                    );
+                } else {
+                    targetChildren[sourceChildName] = (
+                        sourceChildren[sourceChildName]
+                    );
+                }
+            });
+    }
 
     return targetNode;
 }
@@ -205,6 +230,45 @@ function prepareName(parentName: string = '', name: string, node: INode) {
         }
         node.meta.fullname += node.meta.name;
     }
+}
+
+
+
+function prepareNode (node: INode) {
+
+    let children = node.children,
+        childNames = Object.keys(children),
+        name = node.meta.fullname;
+
+    if (name && childNames.length > 0) {
+        nodeDictionary[name] = node;
+    }
+
+    childNames
+        .forEach(childName => {
+
+            let childNode = children[childName];
+
+            prepareName(
+                (node.meta.fullname || node.meta.name),
+                childName,
+                childNode
+            );
+
+            if (childNode.meta.fullname) {
+                nodeDictionary[childNode.meta.fullname] = childNode;
+            }
+
+            if (Object.keys(childNode.children).length === 0) {
+                prepareType(childNode);
+            }
+
+            if (childNode.doclet.deprecated === true) {
+                delete children[childName];
+            } else {
+                prepareNode(childNode);
+            }
+        });
 }
 
 
@@ -269,6 +333,56 @@ function prepareType(node: INode) {
 
 
 
+function splitLargeNodes (node: INode, globalNode: INode) {
+
+    let children = (node.children || {}),
+        newName = '';
+
+    Object
+        .keys(children)
+        .forEach(childName => {
+
+            let childNode = children[childName],
+                childTypes = (
+                    (childNode.doclet.type && childNode.doclet.type.names) ||
+                    []
+                ).join('|');
+
+            if (Object.keys(childNode.children).length === 0) {
+                return;
+            }
+
+            let newName = generateOptionsTypeName(
+                    childNode.meta.fullname || childName
+                ),
+                newFullname = 'Highcharts.' + newName,
+                newNode = utils.duplicateObject(childNode, 1);
+
+            newNode.meta.fullname = newFullname;
+            newNode.meta.name = newName;
+
+            childNode.children = {};
+
+            if (childTypes.indexOf('Array') === 0 ) {
+                childNode.doclet.type = { names: [ 'Array<' + newFullname + '>' ] };
+            } else {
+                childNode.doclet.type = { names: [ newFullname ] };
+            }
+
+            let globalChildren = globalNode.children;
+
+            if (globalChildren[newName]) {
+                mergeNode(globalChildren[newName], newNode);
+            } else {
+                globalChildren[newName] = newNode;
+            }
+
+            splitLargeNodes(newNode, globalNode);
+        })
+}
+
+
+
 /* *
  *
  *  JSON Interface
@@ -290,6 +404,7 @@ export interface IDoclet {
     default?: IDefault;
     defaultByProduct?: utils.Dictionary<string>;
     defaultvalue?: string;
+    deprecated?: boolean;
     description?: string;
     exclude?: Array<string>;
     extends?: string;
@@ -335,4 +450,15 @@ export interface ITags {
 
 export interface IType {
     names: Array<string>;
+}
+
+
+
+/* *
+ *
+ *  TypeScript Interface Mapping
+ *
+ * */
+
+export const INTERFACE_MAPPING: utils.Dictionary<string> = {
 }
