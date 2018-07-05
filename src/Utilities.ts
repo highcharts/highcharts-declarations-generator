@@ -21,6 +21,7 @@ const MAP_TYPE_DICTIONARY: Dictionary<string> = {
     '*': 'any',
     'Array': 'Array<any>',
     'Boolean': 'boolean',
+    'Color': 'Highcharts.ColorString',
     'Number': 'number',
     'Object': 'object',
     'String': 'string',
@@ -50,18 +51,33 @@ const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
 
 
 
-export interface Dictionary<T> {
-    [key: string]: T;
-}
-
-
-
+/**
+ * 
+ */
 export class Dictionary<T> {
+
+    /* *
+     *
+     *  Static Functions
+     *
+     * */
+
+    /**
+     * 
+     * @param {Dictionary} dictionary 
+     */
     public static values<T> (dictionary: Dictionary<T>): Array<T> {
         return Object
             .keys(dictionary)
             .map(key => dictionary[key]);
     }
+
+    /* *
+     *
+     *  Static Properties
+     *
+     * */
+    [key: string]: T;
 }
 
 
@@ -124,24 +140,16 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<v
 
 
 
-export function duplicateObject (
-    obj: any,
+export function duplicateObject<T> (
+    obj: T,
     maxDepth: number = 3,
-    filterFn?: (value: any, key: (number|string), parent: any) => boolean
-): any {
+    filterFn?: (value: any, key: (number|string), obj: T) => boolean
+): T {
 
-    if (obj === null) {
-        return null;
-    }
-
-    switch (typeof obj) {
-        case 'boolean':
-        case 'function':
-        case 'number':
-        case 'string':
-        case 'symbol':
-        case 'undefined':
-            return obj;
+    if (obj === null ||
+        isBasicType(typeof obj)
+    ) {
+        return obj;
     }
 
     let nextDepth = (maxDepth - 1);
@@ -164,27 +172,58 @@ export function duplicateObject (
             );
         }
 
-        return duplicatedArray;
+        return duplicatedArray as any;
     }
 
-    let duplicatedObj = {} as any,
-        objKeys = Object.keys(obj);
+    let originalObj = obj as any,
+        duplicatedObj = {} as any,
+        keys = Object.keys(originalObj);
+
 
     if (filterFn) {
-        objKeys = objKeys.filter(key => filterFn(obj[key], key, obj));
+        keys = keys.filter(key => filterFn(originalObj[key], key, obj));
     }
 
     if (maxDepth === 0) {
-        objKeys.forEach(key => {
-            duplicatedObj[key] = obj[key];
+        keys.forEach(key => {
+            duplicatedObj[key] = originalObj[key];
         });
     } else {
-        objKeys.forEach(key => {
-            duplicatedObj[key] = duplicateObject(obj[key], nextDepth, filterFn);
+        keys.forEach(key => {
+            duplicatedObj[key] = duplicateObject(
+                originalObj[key], nextDepth, filterFn
+            );
         });
     }
 
     return duplicatedObj;
+}
+
+
+
+export function isBasicType (typeName: string): boolean {
+
+    switch (typeName) {
+        default:
+            return false;
+        case 'boolean':
+        case 'function':
+        case 'number':
+        case 'string':
+        case 'symbol':
+        case 'undefined':
+            return true;
+    }
+}
+
+
+export function isCoreType (typeName: string): boolean {
+
+    if (typeName.indexOf('Array') === 0) {
+        return true;
+    } else {
+        return isBasicType(typeName);
+    }
 }
 
 
