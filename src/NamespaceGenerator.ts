@@ -143,25 +143,18 @@ class Generator extends Object {
             targetDeclaration.types, sourceDeclaration.types
         ));
 
-        let sourceChild = undefined as (tsd.IDeclaration|undefined),
-            sourceChildrenNames = sourceDeclaration.getChildrenNames(),
+        let sourceChildren = sourceDeclaration.getChildren(),
             targetChild = undefined as (tsd.IDeclaration|undefined),
             targetChildrenNames = targetDeclaration.getChildrenNames();
 
-        sourceChildrenNames.forEach(childName => {
+        sourceChildren.forEach(sourceChild => {
 
-            sourceChild = sourceDeclaration.removeChild(childName);
-
-            if (!sourceChild) {
-                return;
-            }
-
-            targetChild = targetDeclaration.getChild(childName);
+            targetChild = targetDeclaration.getChild(sourceChild.name);
 
             if (targetChild) {
                 Generator.mergeDeclaration(targetChild, sourceChild);
             } else {
-                targetDeclaration.addChildren(sourceChild);
+                targetDeclaration.addChildren(sourceChild.clone());
             }
         });
     }
