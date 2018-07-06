@@ -4,12 +4,16 @@
  * 
  * */
 
-import * as utils from './Utilities';
 
 
+/* *
+ *
+ *  Types
+ *
+ * */
 
 /**
- * The declaration kinds as a typed string.
+ * Declaration kinds as a typed string.
  */
 type Kinds = (
     'global' |
@@ -28,8 +32,27 @@ type Kinds = (
 
 
 
+/* *
+ *
+ *  Interfaces
+ *
+ * */
+
 /**
- * The order of the different declaration kinds.
+ * Generic dictionary
+ */
+interface Dictionary<T> { [key: string]: T };
+
+
+
+/* *
+ *
+ *  Constants
+ *
+ * */
+
+/**
+ * Order of the different declaration kinds.
  */
 const KIND_ORDER = [
     'global',
@@ -46,7 +69,33 @@ const KIND_ORDER = [
     'parameter'
 ] as Array<Kinds>;
 
+/**
+ * Escape double lines like in Markdown.
+ */
+const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
 
+/**
+ * Reduce spaces and line breaks to one space character.
+ */
+const NORMALIZE_SPACE: RegExp = /\s+/gm;
+
+/**
+ * Unescape double lines.
+ */
+const NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
+
+/**
+ * Split strings between spaces and line breaks.
+ */
+const PAD_SPACE: RegExp = /\s/gm;
+
+
+
+/* *
+ *
+ *  Classes
+ *
+ * */
 
 /**
  * Base class for TypeScript declarations.
@@ -60,6 +109,76 @@ export abstract class IDeclaration extends Object {
      *  Static Functions
      *
      * */
+
+    /**
+     * Returns a indented string, that fits into a specific width and spans over
+     * several lines.
+     * 
+     * @param {string} text
+     *        The string to pad.
+     * 
+     * @param {string} linePrefix 
+     *        The prefix for each line.
+     * 
+     * @param {number} wrap 
+     *        The maximum width of the padded string.
+     */
+    protected static indent (
+        text: string, linePrefix: string = '', wrap: number = 80
+    ): string {
+
+        let newLine = true,
+            line = '',
+            paddedStr = '',
+            words = text.split(PAD_SPACE);
+
+        words.forEach(word => {
+
+            if (!newLine && word === '') {
+                paddedStr += line.trimRight() + '\n' + linePrefix + '\n';
+                newLine = true;
+                return;
+            }
+
+            if (!newLine && line.length + word.length + 1 > wrap) {
+                paddedStr += line.trimRight() + '\n';
+                newLine = true;
+            }
+
+            if (newLine) {
+                line = linePrefix + word;
+                newLine = false;
+            } else {
+                line += ' ' + word;
+            }
+        });
+
+        return paddedStr + line.trimRight() + '\n';
+    }
+
+    /**
+     * Reduce space and line breaks to one space character and returns the
+     * normalized text.
+     *
+     * @param {string} text
+     *        The text string to normalize.
+     *
+     * @param {string} preserveParagraphs 
+     *        Preserve double line breaks.
+     */
+    protected static normalize (
+        text: string, preserveParagraphs: boolean = false
+    ): string {
+
+        if (!preserveParagraphs) {
+            return text.replace(NORMALIZE_SPACE, ' ');
+        } else {
+            return text
+                .replace(NORMALIZE_ESCAPE, '<br>')
+                .replace(NORMALIZE_SPACE, ' ')
+                .replace(NORMALIZE_UNESCAPE, '\n\n');
+        }
+    }
 
     /**
      * Returns a simplified name of a provided full qualified name.
@@ -137,7 +256,7 @@ export abstract class IDeclaration extends Object {
     public get hasChildren(): boolean {
         return (Object.keys(this._children).length > 0);
     }
-    private _children: utils.Dictionary<IDeclaration>;
+    private _children: Dictionary<IDeclaration>;
 
     /**
      * Returns true, if the declaration includes types.
@@ -298,6 +417,23 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Returns a clone of this declaration.
+     */
+    public abstract clone(): IDeclaration;
+
+    /**
+     * Returns an array with all child declarations.
+     */
+    public getChildren(): Array<IDeclaration> {
+
+        let children = this._children;
+
+        return this
+            .getChildrenNames()
+            .map(name => children[name]);
+    }
+
+    /**
      * Returns an array with the names of all child declarations.
      */
     public getChildrenNames(): Array<string> {
@@ -353,8 +489,8 @@ export abstract class IDeclaration extends Object {
         let children = this._children;
 
         return this
-            .getChildrenNames()
-            .map(name => children[name].toString(indent))
+            .getChildren()
+            .map(child => child.toString(indent))
             .join(infix);
     }
 
@@ -393,9 +529,13 @@ export abstract class IDeclaration extends Object {
             return '';
         }
 
-        let renderedDescription = utils.normalize(this.description, true);
+        let renderedDescription = IDeclaration.normalize(
+            this.description, true
+        );
 
-        renderedDescription = utils.pad(renderedDescription, (indent + ' * '));
+        renderedDescription = IDeclaration.indent(
+            renderedDescription, (indent + ' * ')
+        );
 
         if (includeMeta) {
             renderedDescription += this.renderDefaultValue(indent + ' * ');
@@ -522,7 +662,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     public get hasParameters(): boolean {
         return (Object.keys(this._parameters).length > 0);
     }
-    private _parameters: utils.Dictionary<ParameterDeclaration>;
+    private _parameters: Dictionary<ParameterDeclaration>;
 
     /**
      * Returns the description for the return types.
@@ -547,6 +687,15 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     public getParameter(name: string): (ParameterDeclaration|undefined) {
 
         return this._parameters[name];
+    }
+
+    public getParameters(): Array<ParameterDeclaration> {
+
+        let parameters = this._parameters;
+
+        return this
+            .getParameterNames()
+            .map(name => parameters[name]);
     }
 
     /**
@@ -596,7 +745,9 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             list += (
                 indent + ' *\n' +
                 indent + ' * @return {' + this.renderTypes() + '}\n' +
-                utils.pad(this.typesDescription, (indent + ' *         '))
+                IDeclaration.indent(
+                    this.typesDescription, (indent + ' *         ')
+                )
             );
         }
 
@@ -614,8 +765,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
         return (
             indent + '/**\n' +
-            utils.pad(
-                utils.normalize(this.description, true), (indent + ' * ')
+            IDeclaration.indent(
+                IDeclaration.normalize(this.description, true), (indent + ' * ')
             ) +
             list +
             indent + ' *' + '/\n'
@@ -693,7 +844,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
      * */
 
     /**
-     * Returns true, if class implements interfaces.
+     * True, if class implements interfaces.
      */
     public get hasImplements(): boolean {
         return (this._implements.length > 0);
@@ -719,23 +870,40 @@ export class ClassDeclaration extends IExtendedDeclaration {
      * */
 
     /**
+     * Returns a clone of this class declaration.
+     */
+    public clone (): ClassDeclaration {
+
+        let clone = new ClassDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.typesDescription = this.typesDescription;
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+        clone.setParameters(...this.getParameters().map(
+            parameter => parameter.clone()
+        ));
+
+        return clone;
+    }
+
+    /**
      * Returns a rendered string of this class declaration.
      *
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    public toString(indent: string = ''): string {
+    public toString (indent: string = ''): string {
 
         if (this.hasParameters) {
             let constructor = new ConstructorDeclaration();
             constructor.description = this.description;
-            this.getParameterNames()
-                .map(parameterName => this.getParameter(parameterName))
-                .forEach(parameter => {
-                    if (parameter) {
-                        constructor.setParameters(parameter);
-                    }
-                });
+            constructor.setParameters(...this.getParameters());
             this.addChildren(constructor);
         }
 
@@ -814,6 +982,29 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
      * */
 
     /**
+     * Returns a clone of this constructor declaration.
+     */
+    public clone (): ConstructorDeclaration {
+
+        let clone = new ConstructorDeclaration();
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.typesDescription = this.typesDescription;
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+        clone.setParameters(...this.getParameters().map(
+            parameter => parameter.clone()
+        ));
+
+        return clone;
+    }
+
+    /**
      * Returns a rendered string of this constructor declaration.
      *
      * @param {string} indent
@@ -859,6 +1050,29 @@ export class FunctionDeclaration extends IExtendedDeclaration {
      *  Functions
      *
      * */
+
+    /**
+     * Returns a clone of this function declaration.
+     */
+    public clone(): FunctionDeclaration {
+
+        let clone = new FunctionDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.typesDescription = this.typesDescription;
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+        clone.setParameters(...this.getParameters().map(
+            parameter => parameter.clone()
+        ));
+
+        return clone;
+    }
 
     /**
      * Returns a rendered string of this function declaration.
@@ -929,6 +1143,25 @@ export class GlobalDeclaration extends IDeclaration {
      * */
 
     /**
+     * Returns a clone of this global declaration.
+     */
+    public clone(): GlobalDeclaration {
+
+        let clone = new GlobalDeclaration();
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
      * Returns a rendered string of this global declaration.
      */
     public toString(): string {
@@ -966,6 +1199,25 @@ export class InterfaceDeclaration extends IDeclaration {
      *  Functions
      *
      * */
+
+    /**
+     * Returns a clone of this interface declaration.
+     */
+    public clone (): InterfaceDeclaration {
+
+        let clone = new InterfaceDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
 
     /**
      * Returns a rendered string of this interface declaration.
@@ -1029,12 +1281,31 @@ export class NamespaceDeclaration extends IDeclaration {
      * */
 
     /**
+     * Returns a clone of this namespace declaration.
+     */
+    public clone (): NamespaceDeclaration {
+
+        let clone = new NamespaceDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
      * Returns a rendered string of this namespace declaration.
      *
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    public toString(indent: string = ''): string {
+    public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
             renderedNamespace = this.name;
@@ -1100,10 +1371,10 @@ export class ParameterDeclaration extends IDeclaration {
     /**
      * Variable number of parameters.
      */
-    public get isVariable(): boolean {
+    public get isVariable (): boolean {
         return this._isVariable;
     }
-    public set isVariable(value: boolean) {
+    public set isVariable (value: boolean) {
         this._isVariable = value;
     }
     private _isVariable: boolean;
@@ -1115,12 +1386,32 @@ export class ParameterDeclaration extends IDeclaration {
      * */
 
     /**
+     * Returns a clone of this parameter declaration.
+     */
+    public clone (): ParameterDeclaration {
+
+        let clone = new ParameterDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.isVariable = this.isVariable;
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
      * Returns a rendered string of the comment part for the parameter.
      *
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    public renderParameterDescription(indent: string = ''): string {
+    public renderParameterDescription (indent: string = ''): string {
 
         let defaultValue = (this.defaultValue || '').toString(),
             renderedTypes = this.renderTypes();
@@ -1141,8 +1432,8 @@ export class ParameterDeclaration extends IDeclaration {
 
         return (
             indent + ' * ' + renderedTypes + '\n' +
-            utils.pad(
-                utils.normalize(this.description),
+            IDeclaration.indent(
+                IDeclaration.normalize(this.description),
                 (indent + ' *         ')
             ) +
             this.renderDefaultValue(indent + ' *         ')
@@ -1152,7 +1443,7 @@ export class ParameterDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this parameter declaration.
      */
-    public toString(): string {
+    public toString (): string {
 
         let renderedParameter = this.name,
             renderedTypes = this.renderTypes(true);
@@ -1202,12 +1493,32 @@ export class PropertyDeclaration extends IDeclaration {
      * */
 
     /**
+     * Returns a clone of this property declaration.
+     */
+    public clone (): PropertyDeclaration {
+
+        let clone = new PropertyDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+
+    /**
      * Returns a rendered string of this property declaration.
      *
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    public toString(indent: string = ''): string {
+    public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
             renderedMember = this.name;
@@ -1262,6 +1573,25 @@ export class TypeDeclaration extends IDeclaration {
      *  Functions
      *
      * */
+
+    /**
+     * Returns a clone of this type declaration.
+     */
+    public clone (): TypeDeclaration {
+
+        let clone = new TypeDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
 
     /**
      * Returns a rendered string of this type declaration.
