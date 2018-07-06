@@ -31,13 +31,7 @@ const MAP_TYPE_DICTIONARY: Dictionary<string> = {
 const MAP_TYPE_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
 const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
 
-const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
-const NORMALIZE_SPACE: RegExp = /\s+/gm;
-const NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
-
-const PAD_SPACE: RegExp = /\s/gm;
-
-const REMOVE_EXAMPLE_HTML = /<pre>([\S\s]*?)<\/pre>/gm;
+const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/gm;
 const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
 const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
 const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
@@ -333,73 +327,6 @@ export function mergeArrays<T>(
     }));
 
     return target;
-}
-
-
-
-export function normalize (
-    str: string,
-    preserveParagraphs: boolean = false
-): string {
-
-    if (!preserveParagraphs) {
-        return str.replace(NORMALIZE_SPACE, ' ');
-    } else {
-        return str
-            .replace(NORMALIZE_ESCAPE, '<br>')
-            .replace(NORMALIZE_SPACE, ' ')
-            .replace(NORMALIZE_UNESCAPE, '\n\n');
-    }
-}
-
-
-
-/**
- * Returns a padded string, that fits into a specific width and spans over
- * several lines.
- * 
- * @param {string} str
- * The string to pad.
- * 
- * @param {string} linePrefix 
- * The prefix for each line.
- * 
- * @param wrap 
- * The maximum width of the padded string.
- */
-export function pad (
-    str: string,
-    linePrefix: string = '',
-    wrap: number = 80
-): string {
-
-    let newLine = true,
-        line = '',
-        paddedStr = '',
-        words = str.split(PAD_SPACE);
-
-    words.forEach(word => {
-
-        if (!newLine && word === '') {
-            paddedStr += line.trimRight() + '\n' + linePrefix + '\n';
-            newLine = true;
-            return;
-        }
-
-        if (!newLine && line.length + word.length + 1 > wrap) {
-            paddedStr += line.trimRight() + '\n';
-            newLine = true;
-        }
-
-        if (newLine) {
-            line = linePrefix + word;
-            newLine = false;
-        } else {
-            line += ' ' + word;
-        }
-    });
-
-    return paddedStr + line.trimRight() + '\n';
 }
 
 
