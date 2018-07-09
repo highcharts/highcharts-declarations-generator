@@ -1123,6 +1123,8 @@ export class GlobalDeclaration extends IDeclaration {
     public constructor () {
 
         super('[global]');
+
+        this._imports = [];
     }
 
     /* *
@@ -1135,6 +1137,14 @@ export class GlobalDeclaration extends IDeclaration {
      * Kind of declaration.
      */
     public readonly kind = 'global';
+
+    /**
+     * Import statemens.
+     */
+    public get imports (): Array<string> {
+        return this._imports;
+    }
+    private _imports: Array<string>;
 
     /* *
      *
@@ -1161,6 +1171,17 @@ export class GlobalDeclaration extends IDeclaration {
         return clone;
     }
 
+    protected renderImports(): string {
+
+        let renderedImports = '';
+
+        return (
+            '\n' +
+            this.imports.join('\n') +
+            '\n'
+        );
+    }
+
     /**
      * Returns a rendered string of this global declaration.
      */
@@ -1168,6 +1189,8 @@ export class GlobalDeclaration extends IDeclaration {
 
         return (
             this.renderDescription('') +
+            '\n' +
+            this.renderImports() +
             '\n' +
             this.renderChildren('', '\n')
         );
