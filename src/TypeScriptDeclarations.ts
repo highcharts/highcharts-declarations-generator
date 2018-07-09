@@ -1176,7 +1176,6 @@ export class GlobalDeclaration extends IDeclaration {
         let renderedImports = '';
 
         return (
-            '\n' +
             this.imports.join('\n') +
             '\n'
         );
