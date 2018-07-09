@@ -17,20 +17,6 @@ const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
 const JSON_QUOTE: RegExp = /['`]/gm;
 
-const MAP_TYPE_DICTIONARY: Dictionary<string> = {
-    '*': 'any',
-    'Array': 'Array<any>',
-    'Boolean': 'boolean',
-    'Color': 'Highcharts.ColorString',
-    'Number': 'number',
-    'Object': 'object',
-    'String': 'string',
-    'array': 'Array',
-    'function': 'Function'
-};
-const MAP_TYPE_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
-const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
-
 const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/gm;
 const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
 const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
@@ -108,12 +94,6 @@ export function capitalize (str: string): string {
     } else {
         return (str[0].toUpperCase() + str.substr(1));
     }
-}
-
-
-
-export function convertType (types: Array<string>): string {
-    return types.map(mapType).join('|');
 }
 
 
@@ -211,6 +191,7 @@ export function isBasicType (typeName: string): boolean {
 }
 
 
+
 export function isCoreType (typeName: string): boolean {
 
     if (typeName.indexOf('Array') === 0) {
@@ -273,36 +254,6 @@ export function log<T> (obj: T): Promise<T> {
         console.log(obj);
         resolve(obj);
     });
-}
-
-
-
-export function mapType(type: string): string {
-
-    type = type.replace(MAP_TYPE_LIST, '$1');
-
-    if (MAP_TYPE_GENERIC.test(type)) {
-        return type.replace(
-            MAP_TYPE_GENERIC,
-            function (match, generic, type) {
-                return generic + '<' + mapType(type.trim()) + '>';
-            }
-        );
-    }
-
-    if (type.indexOf('|') > -1) {
-        return (
-            '(' +
-            type.split('|').map(type => mapType(type.trim())).join('|') +
-            ')'
-        );
-    }
-
-    if (MAP_TYPE_DICTIONARY[type]) {
-        return MAP_TYPE_DICTIONARY[type];
-    }
-
-    return type;
 }
 
 

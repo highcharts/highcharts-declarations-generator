@@ -1,5 +1,0 @@
-{
-    "destinationPath": "./dest/",
-    "treeNamespaceJsonPath": "../highcharts/tree-namespace.json",
-    "treeOptionsJsonPath": "../highcharts/tree.json"
-}
