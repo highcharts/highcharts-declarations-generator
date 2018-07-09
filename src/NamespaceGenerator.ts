@@ -4,6 +4,7 @@
  * 
  * */
 
+import * as config from './Config';
 import * as parser from './NamespaceParser';
 import * as tsd from './TypeScriptDeclarations';
 import * as utils from './Utilities';
@@ -12,7 +13,7 @@ import * as utils from './Utilities';
 
 export function saveIntoFiles(
     filesDictionary: utils.Dictionary<parser.INode>,
-    optionsDeclarations: tsd.IDeclaration
+    globalDeclarations: tsd.GlobalDeclaration
 ): Promise<void> {
 
     let promises = [] as Array<Promise<void>>;
@@ -24,12 +25,8 @@ export function saveIntoFiles(
             let fileBase = utils.base(filePath),
                 dtsFilePath = fileBase + '.d.ts',
                 dtsSourceFilePath = fileBase + '.src.d.ts',
-                generator = new Generator(filesDictionary[filePath]),
-                namespace = generator.global.getChild('Highcharts');
-
-            if (namespace) {
-                Generator.mergeDeclaration(namespace, optionsDeclarations);
-            }
+                generator = new Generator(filesDictionary[filePath], globalDeclarations),
+                namespace = generator.root.getChild('Highcharts');
 
             promises.push(
                 utils
@@ -44,6 +41,11 @@ export function saveIntoFiles(
         .all(promises)
         .then(() => undefined);
 }
+
+
+
+const API_BASE_URL = 'https://api.highcharts.com/'
+const NAME_LAST = /\.(\w+)$/gm;
 
 
 
@@ -111,7 +113,7 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            doclet.types = doclet.types.map(utils.mapType);
+            doclet.types = doclet.types.map(config.mapType);
         }
 
         if (removedLinks.length > 0) {
@@ -165,11 +167,12 @@ class Generator extends Object {
      *
      * */
 
-    public constructor (node: parser.INode) {
+    public constructor (node: parser.INode, globalDeclaration: tsd.GlobalDeclaration) {
 
         super();
 
         this._global = new tsd.GlobalDeclaration();
+        this._root = new tsd.GlobalDeclaration();
 
         this.generate(node);
     }
@@ -185,6 +188,11 @@ class Generator extends Object {
     }
     private _global: tsd.GlobalDeclaration;
 
+    public get root(): tsd.GlobalDeclaration {
+        return this._root;
+    }
+    private _root: tsd.GlobalDeclaration;
+
     /* *
      *
      *  Functions
@@ -193,7 +201,7 @@ class Generator extends Object {
 
     private generate(
         sourceNode: parser.INode,
-        targetDeclaration: tsd.IDeclaration = this._global
+        targetDeclaration: tsd.IDeclaration = this._root
     ) {
 
         let childDeclaration = undefined as (tsd.IDeclaration|undefined),
@@ -221,7 +229,7 @@ class Generator extends Object {
                 }
                 break;
             case 'global':
-                this._global = this.generateGlobal(sourceNode);
+                this._root = this.generateGlobal(sourceNode);
                 break;
             case 'namespace':
                 childDeclaration = this.generateNamespace(sourceNode);
@@ -231,9 +239,9 @@ class Generator extends Object {
                 break;
             case 'typedef':
                 if (sourceNode.children) {
-                    childDeclaration = this.generateInterface(sourceNode);
+                    this._global.addChildren(this.generateInterface(sourceNode));
                 } else {
-                    childDeclaration = this.generateType(sourceNode);
+                    this._global.addChildren(this.generateType(sourceNode));
                 }
                 break;
         }
@@ -276,7 +284,7 @@ class Generator extends Object {
 
         if (doclet.types) {
             declaration.types.push(...doclet.types
-                .map(utils.mapType)
+                .map(config.mapType)
                 .filter(type => type !== 'object')
             );
         }
@@ -317,7 +325,7 @@ class Generator extends Object {
             }
             if (doclet.return.types) {
                 declaration.types.push(
-                    ...doclet.return.types.map(utils.mapType)
+                    ...doclet.return.types.map(config.mapType)
                 );
             }
         }
@@ -336,7 +344,7 @@ class Generator extends Object {
     private generateGlobal (node: parser.INode): tsd.GlobalDeclaration {
 
         let doclet = Generator.getNormalizedDoclet(node),
-            declaration = this._global;
+            declaration = this._root;
         
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -368,7 +376,7 @@ class Generator extends Object {
 
         if (doclet.types) {
             declaration.types.push(...doclet.types
-                .map(utils.mapType)
+                .map(config.mapType)
                 .filter(type => type !== 'object')
             );
         }
@@ -432,7 +440,7 @@ class Generator extends Object {
                 }
 
                 if (parameter.types) {
-                    declaration.types.push(...parameter.types.map(utils.mapType));
+                    declaration.types.push(...parameter.types.map(config.mapType));
                 }
 
                 return declaration;
@@ -465,10 +473,39 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.mapType));
+            declaration.types.push(...doclet.types.map(config.mapType));
         }
 
         return declaration;
+    }
+
+    private generateSeeApiDocumentation (declaration: tsd.IDeclaration) {
+
+        switch (declaration.kind) {
+            default:
+                return '';
+            case 'global':
+                return API_BASE_URL + 'highcharts/class-reference/';
+            case 'class':
+            case 'namespace':
+                return (
+                    API_BASE_URL +
+                    'highcharts/class-reference/Highcharts.' +
+                    declaration.fullname
+                );
+            case 'function':
+            case 'property':
+                return (
+                    API_BASE_URL +
+                    'highcharts/class-reference/' +
+                    declaration.fullname.replace(NAME_LAST, '#.$1')
+                )
+            case 'interface':
+                return (
+                    API_BASE_URL +
+                    'highcharts/options/'
+                )
+        }
     }
 
     private generateType (node: parser.INode): tsd.TypeDeclaration {
@@ -485,7 +522,7 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.map(utils.mapType));
+            declaration.types.push(...doclet.types.map(config.mapType));
         }
 
         return declaration;
@@ -493,6 +530,6 @@ class Generator extends Object {
 
     public toString(): string {
 
-        return this._global.toString();
+        return this._root.toString();
     }
 }

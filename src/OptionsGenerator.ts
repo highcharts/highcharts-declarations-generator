@@ -11,18 +11,18 @@ import * as utils from './Utilities';
 
 
 export function generate(
-    optionsDictionary: parser.INode
-): Promise<tsd.IDeclaration> {
+    optionsJSON: parser.INode
+): Promise<tsd.GlobalDeclaration> {
 
     return new Promise((resolve, reject) => {
 
-        let generator = new Generator(optionsDictionary);
+        let generator = new Generator(optionsJSON);
 
-        console.log('Generated options.');
-
-        resolve(generator.root);
+        return generator.root;
     });
 }
+
+
 
 class Generator extends Object {
 
@@ -78,10 +78,10 @@ class Generator extends Object {
      *
      * */
 
-    public get root(): tsd.IDeclaration {
+    public get root(): tsd.GlobalDeclaration {
         return this._root;
     }
-    private _root: tsd.IDeclaration;
+    private _root: tsd.GlobalDeclaration;
 
     /* *
      *
@@ -193,11 +193,8 @@ class Generator extends Object {
             }
         }
         
-        if (!declaration.hasTypes &&
-            doclet.type &&
-            doclet.type.names
-        ) {
-            declaration.types.push(...doclet.type.names.map(utils.mapType));
+        if (!declaration.hasTypes && doclet.type) {
+            declaration.types.push(...doclet.type.names);
         }
 
         return declaration;

@@ -4,6 +4,7 @@
  * 
  * */
 
+import * as config from './Config';
 import * as utils from './Utilities';
 
 
@@ -277,7 +278,7 @@ function prepareType(node: INode) {
 
     if (node.doclet.type && node.doclet.type.names) {
         node.doclet.type = {
-            names: node.doclet.type.names.map(utils.mapType)
+            names: node.doclet.type.names.map(config.mapType)
         };
         return;
     }

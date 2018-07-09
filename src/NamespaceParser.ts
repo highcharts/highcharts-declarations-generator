@@ -8,9 +8,7 @@ import * as utils from './Utilities';
 
 
 
-export function splitIntoFiles(
-    json: any
-): Promise<utils.Dictionary<INode>> {
+export function splitIntoFiles(json: any): Promise<utils.Dictionary<INode>> {
 
     return new Promise((resolve, reject) => {
 
@@ -25,9 +23,7 @@ export function splitIntoFiles(
 
 
 function findFileNode(
-    fileDictionary: utils.Dictionary<INode>,
-    filePath: string,
-    name: string
+    fileDictionary: utils.Dictionary<INode>, filePath: string, name: string
 ): INode {
 
     let node = fileDictionary[filePath];
@@ -58,8 +54,7 @@ function findFileNode(
 
 
 function transferNodes(
-    sourceNode: INode,
-    fileDictionary: utils.Dictionary<INode>
+    sourceNode: INode, fileDictionary: utils.Dictionary<INode>
 ) {
 
     if (sourceNode.doclet &&
