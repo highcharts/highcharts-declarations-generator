@@ -98,7 +98,7 @@ export function capitalize (str: string): string {
 
 
 
-export function copy (sourceFilePath: string, targetFilePath: string): Promise<void> {
+export function copy (sourceFilePath: string, targetFilePath: string): Promise<string> {
     return new Promise((resolve, reject) => {
         sourceFilePath = path.resolve(process.cwd(), sourceFilePath);
         targetFilePath = path.resolve(process.cwd(), targetFilePath);
@@ -106,7 +106,7 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<v
             if (err) {
                 reject(err);
             } else {
-                resolve();
+                resolve(targetFilePath);
             }
         });
     });
@@ -323,7 +323,7 @@ export function removeLinks(
 
 
 
-export function save (filePath: string, str: string): Promise<void> {
+export function save (filePath: string, str: string): Promise<string> {
     return new Promise((resolve, reject) => {
 
         filePath = path.resolve(process.cwd(), filePath);
@@ -337,7 +337,7 @@ export function save (filePath: string, str: string): Promise<void> {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve();
+                    resolve(filePath);
                 }
             });
         });
