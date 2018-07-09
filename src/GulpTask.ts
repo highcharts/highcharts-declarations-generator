@@ -18,37 +18,26 @@ import * as utils from './Utilities';
 export function task (done: Function) {
 
     console.log(colors.yellow.bold(
-        'Started creating TypeScript declarations...'
+        'Start creating TypeScript declarations...'
     ));
-
-    return generateHighchartsOptions()
-        .then(generateHighchartsNamespace)
-        .then(() => console.log(colors.green.bold(
-            'Finished creating TypeScript declarations.'
-        )));
-}
-
-
-
-function generateHighchartsOptions ():
-Promise<tsd.IDeclaration> {
 
     return utils
         .load(config.treeOptionsJsonPath)
         .then(optionsParser.parse)
-        .then(optionsGenerator.generate);
+        .then(optionsGenerator.generate)
+        .then(typeDeclarations => utils
+            .load(config.treeNamespaceJsonPath)
+            .then(namespaceParser.splitIntoFiles)
+            .then(filesDictionary => namespaceGenerator
+                .saveIntoFiles(filesDictionary, typeDeclarations)
+            )
+            .then(() => typeDeclarations)
+        )
+        .then(typeDeclarations => utils
+            .save('code/highcharts-types.d.ts', typeDeclarations.toString())
+            .then(filePath => console.log('Saved ' + filePath))
+        )
+        .then(() => console.log(colors.green.bold(
+            'Finished creating TypeScript declarations.'
+        )));
 }
-
-
-
-function generateHighchartsNamespace (
-    optionsDeclarations: tsd.IDeclaration
-): Promise<void> {
-
-    return utils
-        .load(config.treeNamespaceJsonPath)
-        .then(namespaceParser.splitIntoFiles)
-        .then(filesDictionary => namespaceGenerator
-            .saveIntoFiles(filesDictionary, optionsDeclarations)
-        );
-}  
