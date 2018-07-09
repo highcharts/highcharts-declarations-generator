@@ -292,7 +292,44 @@ export function pluralize (
 
 
 
-export function removeExamples(text: string): string {
+export function relative (fromPath: string, toPath: string): string {
+
+    let fromDirectory = fromPath,
+        toDirectory = toPath,
+        isFromFile = false,
+        isToFile = false;
+
+    if (path.extname(fromPath)) {
+        fromDirectory = path.dirname(fromDirectory);
+        isFromFile = true;
+    }
+
+    if (path.extname(toPath)) {
+        toDirectory = path.dirname(toDirectory);
+        isToFile = true;
+    }
+
+    let relativePath = path.relative(
+        fromDirectory, toDirectory
+    );
+
+    if (relativePath[0] !== '.') {
+        if (relativePath[0] !== path.sep) {
+            relativePath = path.sep + relativePath;
+        }
+        relativePath = '.' + relativePath;
+    }
+
+    if (isToFile) {
+        return (relativePath + path.basename(toPath));
+    } else {
+        return relativePath;
+    }
+}
+
+
+
+export function removeExamples (text: string): string {
 
     return text
         .replace(REMOVE_EXAMPLE_HTML, REMOVE_EXAMPLE_REPLACEMENT)
