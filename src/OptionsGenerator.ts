@@ -18,7 +18,7 @@ export function generate(
 
         let generator = new Generator(optionsJSON);
 
-        return generator.root;
+        resolve(generator.root);
     });
 }
 
