@@ -955,7 +955,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
 
         let childIndent = indent + '    ',
-            renderedClass = this.renderScopePrefix() + 'class ' + this.name;
+            renderedClass = 'class ' + this.name;
 
         if (this.hasTypes) {
             renderedClass += 'extends ' + this.renderTypes();
@@ -1130,9 +1130,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         renderedFunction += ': ' + (renderedTypes || 'void');
 
         if (this.isInSpace) {
-            renderedFunction = (
-                this.renderScopePrefix() + 'function ' + renderedFunction
-            );
+            renderedFunction = 'function ' + renderedFunction;
         }
 
         renderedFunction = this.renderScopePrefix() + renderedFunction;
@@ -1306,9 +1304,7 @@ export class InterfaceDeclaration extends IDeclaration {
             renderedInterface = this.name;
 
         if (this.isInSpace) {
-            renderedInterface = (
-                this.renderScopePrefix() + 'interface ' + renderedInterface
-            );
+            renderedInterface = 'interface ' + renderedInterface;
             if (this.hasTypes) {
                 renderedInterface += ' extends ' + this.types.join(', ');
             }
@@ -1406,9 +1402,9 @@ export class ModuleDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedModule = (
-                this.renderScopePrefix() + 'module "' + this.path + '"'
-            );
+            renderedModule = 'module "' + this.path + '"';
+
+        renderedModule = this.renderScopePrefix() + renderedModule;
 
         return (
             this.renderDescription(indent) +
@@ -1473,9 +1469,9 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedNamespace = (
-                this.renderScopePrefix() + 'namespace ' + this.name
-            );
+            renderedNamespace = 'namespace ' + this.name;
+
+        renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
         return (
             this.renderDescription(indent) +
@@ -1693,15 +1689,15 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember = 'let ' + renderedMember;
         }
 
-        renderedMember = this.renderScopePrefix() + renderedMember + ': ';
-
         if (this.hasChildren) {
-            renderedMember += '{\n' + this.renderChildren(childIndent, '\n') + '}';
+            renderedMember += ': {\n' + this.renderChildren(childIndent, '\n') + '}';
         } else if (this.hasTypes) {
-            renderedMember += this.renderTypes(true) + ';';
+            renderedMember += ': ' + this.renderTypes(true) + ';';
         } else {
-            renderedMember += 'any;';
+            renderedMember += ': any;';
         }
+
+        renderedMember = this.renderScopePrefix() + renderedMember;
 
         return (
             this.renderDescription(indent, true) +
