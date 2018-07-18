@@ -1221,7 +1221,7 @@ export class GlobalDeclaration extends IDeclaration {
     }
 
     /**
-     * Returns a rendered string of assigned import statements.
+     * Returns a rendered string of assigned exports statements.
      */
     protected renderExports(): string {
 
@@ -1229,6 +1229,7 @@ export class GlobalDeclaration extends IDeclaration {
             return '';
         } else {
             return (
+                '\n' +
                 this.exports.join('\n') +
                 '\n'
             );
@@ -1244,6 +1245,7 @@ export class GlobalDeclaration extends IDeclaration {
             return '';
         } else {
             return (
+                '\n' +
                 this.imports.join('\n') +
                 '\n'
             );
@@ -1259,8 +1261,8 @@ export class GlobalDeclaration extends IDeclaration {
             this.renderDescription('') +
             '\n' +
             this.renderImports() +
-            '\n' +
-            this.renderChildren('', '\n')
+            this.renderChildren('', '\n') +
+            this.renderExports()
         );
     }
 }
