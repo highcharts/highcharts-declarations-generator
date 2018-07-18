@@ -1,3 +1,5 @@
+import { splitIntoFiles } from "./NamespaceParser";
+
 /* *
  *
  *  Copyright (c) Highsoft AS. All rights reserved.
@@ -17,6 +19,7 @@
  */
 type Kinds = (
     'global' |
+    'module' |
     'namespace' |
     'type' |
     'interface' |
@@ -43,6 +46,18 @@ type Kinds = (
  */
 interface Dictionary<T> { [key: string]: T };
 
+/**
+ * Path elements
+ */
+interface PathElements {
+    directories: string[];
+    extension: string;
+    file: string;
+    name: string;
+    path: string;
+    scope: string;
+}
+
 
 
 /* *
@@ -56,6 +71,7 @@ interface Dictionary<T> { [key: string]: T };
  */
 const KIND_ORDER = [
     'global',
+    'module',
     'namespace',
     'type',
     'interface',
@@ -88,6 +104,16 @@ const NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
  * Split strings between spaces and line breaks.
  */
 const PAD_SPACE: RegExp = /\s/gm;
+
+/**
+ * Splits a path in four groups: scope, path, name, and extension.
+ */
+const PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/gm;
+
+/**
+ * Split pathes
+ */
+const PATH_SEPARATOR: RegExp = /\/\\/gm;
 
 
 
@@ -193,6 +219,27 @@ export abstract class IDeclaration extends Object {
         return nameParts[nameParts.length-1];
     }
 
+    /**
+     * Returns a dictionary of path elements (directories, extension, file,
+     * name, path, and scope).
+     *
+     * @param  {string} path
+     *         The path to parse.
+     */
+    protected static pathElements (path: string): PathElements {
+
+        let match = (path.match(PATH_ELEMENTS) || [])[0];
+
+        return {
+            directories: match[2].split(PATH_SEPARATOR),
+            extension: match[4],
+            file: match[3] + match[4],
+            name: match[3],
+            path: match[1] + match[2],
+            scope: match[1]
+        };
+    }
+
     /* *
     *
     *  Constructor
@@ -284,23 +331,8 @@ export abstract class IDeclaration extends Object {
     /**
      * Parent relation.
      */
-    public get isInClass(): boolean {
-
-        return (this._parent && this._parent.kind) === 'class';
-    }
-
-    /**
-     * Parent relation.
-     */
     public get isInSpace(): boolean {
-
-        switch (this._parent && this._parent.kind) {
-            default:
-                return false;
-            case 'global':
-            case 'namespace':
-                return true;
-        }
+        return this.isIn('global', 'module', 'namespace');
     }
 
     /**
@@ -456,13 +488,26 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Test parent relation and returns true if parent kind matchs.
+     *
+     * @param {Array<Kinds>} kinds
+     *        The possible kinds to test again.
+     */
+    public isIn (...kinds: Array<Kinds>): boolean {
+
+        let parentKind = (this.parent && this.parent.kind);
+
+        return kinds.some(kind => kind === parentKind);
+    }
+
+    /**
      * Removes a child declaration from this declaration and returns the child
      * declaration, if founded.
      *
      * @param {string} name
      *        Name of the child declaration.
      */
-    public removeChild(name: string): (IDeclaration|undefined) {
+    public removeChild (name: string): (IDeclaration|undefined) {
 
         let children = this._children,
             declaration = children[name];
@@ -484,7 +529,7 @@ export abstract class IDeclaration extends Object {
      * @param {string} infix
      *        The separation string between children.
      */
-    protected renderChildren(indent: string = '', infix: string = ''): string {
+    protected renderChildren (indent: string = '', infix: string = ''): string {
 
         let children = this._children;
 
@@ -501,7 +546,7 @@ export abstract class IDeclaration extends Object {
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    protected renderDefaultValue(indent: string = ''): string {
+    protected renderDefaultValue (indent: string = ''): string {
 
         if (this.defaultValue === undefined) {
             return '';
@@ -521,7 +566,7 @@ export abstract class IDeclaration extends Object {
      * @param {boolean} includeMeta
      *        True for extra lines with additional information;
      */
-    protected renderDescription(
+    protected renderDescription (
         indent: string = '', includeMeta: boolean = false
     ): string {
 
@@ -552,28 +597,25 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns the visibility string of this TypeScript declaration.
      */
-    protected renderScopePrefix(): string {
+    protected renderScopePrefix (): string {
 
-        if (this.isInClass) {
-
-            let str = 'public ';
-
-            if (this.isPrivate) {
-                str = 'private ';
-            }
-
-            if (this.isStatic) {
-                str += 'static ';
-            }
-
-            return str;
+        switch (this.parent && this.parent.kind) {
+            default:
+                return '';
+            case 'class':
+                let str = 'public ';
+                if (this.isPrivate) {
+                    str = 'private ';
+                }
+                if (this.isStatic) {
+                    str += 'static ';
+                }
+                return str;
+            case 'global':
+                return 'declare ';
+            case 'module':
+                return 'export ';
         }
-
-        if (this.isInSpace) {
-            return (this.isPrivate ? '' : 'export ');
-        }
-
-        return '';
     }
 
     /**
@@ -583,7 +625,7 @@ export abstract class IDeclaration extends Object {
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    protected renderSee(indent: string = ''): string {
+    protected renderSee (indent: string = ''): string {
 
         if (this.see.length === 0) {
             return '';
@@ -601,7 +643,7 @@ export abstract class IDeclaration extends Object {
      * @param {boolean} useParentheses
      *        Wraps several types in parentheses.
      */
-    protected renderTypes(useParentheses: boolean = false): string {
+    protected renderTypes (useParentheses: boolean = false): string {
 
         if (useParentheses &&
             this.types.length > 1
@@ -618,7 +660,7 @@ export abstract class IDeclaration extends Object {
      * @param {string} indent
      *        The indentation string for formatting.
      */
-    public abstract toString(indent?: string): string;
+    public abstract toString (indent?: string): string;
 }
 
 
@@ -900,7 +942,9 @@ export class ClassDeclaration extends IExtendedDeclaration {
      */
     public toString (indent: string = ''): string {
 
-        if (this.hasParameters) {
+        if (this.hasParameters &&
+            !this.getChild('constructor')
+        ) {
             let constructor = new ConstructorDeclaration();
             constructor.description = this.description;
             constructor.setParameters(...this.getParameters());
@@ -908,21 +952,14 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
 
         let childIndent = indent + '    ',
-            renderedClass = this.name;
+            renderedClass = this.renderScopePrefix() + 'class ' + this.name;
 
-        if (!this.isInSpace) {
-            renderedClass += ': ';
-        } else {
+        if (this.hasTypes) {
+            renderedClass += 'extends ' + this.renderTypes();
+        }
 
-            renderedClass = 'class ' + renderedClass;
-
-            if (this.hasTypes) {
-                renderedClass += 'extends ' + this.renderTypes();
-            }
-
-            if (this.hasImplements) {
-                renderedClass += 'implements ' + this.implements.join(', ');
-            }
+        if (this.hasImplements) {
+            renderedClass += 'implements ' + this.implements.join(', ');
         }
 
         renderedClass = this.renderScopePrefix() + renderedClass;
@@ -961,7 +998,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
      */
     public constructor () {
 
-        super('');
+        super('constructor');
     }
 
     /* *
@@ -1090,7 +1127,9 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         renderedFunction += ': ' + (renderedTypes || 'void');
 
         if (this.isInSpace) {
-            renderedFunction = 'function ' + renderedFunction;
+            renderedFunction = (
+                this.renderScopePrefix() + 'function ' + renderedFunction
+            );
         }
 
         renderedFunction = this.renderScopePrefix() + renderedFunction;
@@ -1124,6 +1163,7 @@ export class GlobalDeclaration extends IDeclaration {
 
         super('[global]');
 
+        this._exports = [];
         this._imports = [];
     }
 
@@ -1134,9 +1174,12 @@ export class GlobalDeclaration extends IDeclaration {
      * */
 
     /**
-     * Kind of declaration.
+     * Import statemens.
      */
-    public readonly kind = 'global';
+    public get exports (): Array<string> {
+        return this._exports;
+    }
+    private _exports: Array<string>;
 
     /**
      * Import statemens.
@@ -1145,6 +1188,11 @@ export class GlobalDeclaration extends IDeclaration {
         return this._imports;
     }
     private _imports: Array<string>;
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'global';
 
     /* *
      *
@@ -1164,6 +1212,8 @@ export class GlobalDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
+        clone.exports.push(...this.exports);
+        clone.imports.push(...this.imports);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -1252,15 +1302,15 @@ export class InterfaceDeclaration extends IDeclaration {
         let childIndent = indent + '    ',
             renderedInterface = this.name;
 
-        if (!this.isInSpace) {
-            renderedInterface += ': ';
-        } else {
-
-            renderedInterface = 'interface ' + this.name ;
-
+        if (this.isInSpace) {
+            renderedInterface = (
+                this.renderScopePrefix() + 'interface ' + renderedInterface
+            );
             if (this.hasTypes) {
                 renderedInterface += ' extends ' + this.types.join(', ');
             }
+        } else {
+            renderedInterface += ': ';
         }
 
         renderedInterface = this.renderScopePrefix() + renderedInterface;
@@ -1277,6 +1327,96 @@ export class InterfaceDeclaration extends IDeclaration {
 }
 
 
+
+/**
+ * Class for module declarations in TypeScript.
+ * 
+ * @extends {IDeclaration}
+ */
+export class ModuleDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Constructor
+     *
+     * */
+
+    public constructor (relativePath: string) {
+
+        super(IDeclaration.pathElements(relativePath).name);
+
+        this._path = relativePath;
+
+    }
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'module';
+
+    public get path (): string {
+        return this._path;
+    }
+    public set path (value: string) {
+        this._path = value;
+    }
+    private _path: string;
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this namespace declaration.
+     */
+    public clone (): ModuleDeclaration {
+
+        let clone = new ModuleDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.path = this.path;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of this namespace declaration.
+     *
+     * @param {string} indent
+     *        The indentation string for formatting.
+     */
+    public toString (indent: string = ''): string {
+
+        let childIndent = indent + '    ',
+            renderedModule = (
+                this.renderScopePrefix() + 'module "' + this.path + '"'
+            );
+
+        return (
+            this.renderDescription(indent) +
+            indent + renderedModule + ' {\n' +
+            '\n' +
+            this.renderChildren(childIndent, '\n') +
+            '\n' +
+            indent + '}\n'
+        );
+    }
+}
 
 /**
  * Class for namespace declarations in TypeScript.
@@ -1330,21 +1470,18 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedNamespace = this.name;
-
-        if (!this.isInSpace) {
-            renderedNamespace += ': ';
-        } else {
-            renderedNamespace = 'declare namespace ' + renderedNamespace;
-        }
+            renderedNamespace = (
+                this.renderScopePrefix() + 'namespace ' + this.name
+            );
 
         return (
             this.renderDescription(indent) +
             indent + renderedNamespace + ' {\n' +
             '\n' +
             this.renderChildren(childIndent, '\n') +
-            '\n' + 
+            '\n' +
             indent + '}\n' +
+            '\n' +
             indent + 'export = ' + this.name + ';\n'
         );
     }
