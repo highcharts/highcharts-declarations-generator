@@ -613,8 +613,6 @@ export abstract class IDeclaration extends Object {
                 return str;
             case 'global':
                 return 'declare ';
-            case 'module':
-                return 'export ';
         }
     }
 
@@ -1222,14 +1220,34 @@ export class GlobalDeclaration extends IDeclaration {
         return clone;
     }
 
+    /**
+     * Returns a rendered string of assigned import statements.
+     */
+    protected renderExports(): string {
+
+        if (this.exports.length === 0) {
+            return '';
+        } else {
+            return (
+                this.exports.join('\n') +
+                '\n'
+            );
+        }
+    }
+
+    /**
+     * Returns a rendered string of assigned import statements.
+     */
     protected renderImports(): string {
 
-        let renderedImports = '';
-
-        return (
-            this.imports.join('\n') +
-            '\n'
-        );
+        if (this.imports.length === 0) {
+            return '';
+        } else {
+            return (
+                this.imports.join('\n') +
+                '\n'
+            );
+        }
     }
 
     /**
@@ -1479,9 +1497,7 @@ export class NamespaceDeclaration extends IDeclaration {
             '\n' +
             this.renderChildren(childIndent, '\n') +
             '\n' +
-            indent + '}\n' +
-            '\n' +
-            indent + 'export = ' + this.name + ';\n'
+            indent + '}\n'
         );
     }
 }
