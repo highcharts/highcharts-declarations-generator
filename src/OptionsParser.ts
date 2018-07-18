@@ -98,7 +98,7 @@ function extendNodes (node: INode) {
                             return;
                         }
 
-                        children[childName] = utils.duplicateObject(
+                        children[childName] = utils.clone(
                             sourceNode.children[childName]
                         );
                     });
@@ -357,7 +357,7 @@ function splitLargeNodes (node: INode, globalNode: INode) {
                     childNode.meta.fullname || childName
                 ),
                 newFullname = 'Highcharts.' + newName,
-                newNode = utils.duplicateObject(childNode, 1);
+                newNode = utils.clone(childNode, 1);
 
             newNode.meta.fullname = newFullname;
             newNode.meta.name = newName;
