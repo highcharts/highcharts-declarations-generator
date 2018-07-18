@@ -196,13 +196,13 @@ export abstract class IDeclaration extends Object {
         text: string, preserveParagraphs: boolean = false
     ): string {
 
-        if (!preserveParagraphs) {
-            return text.replace(NORMALIZE_SPACE, ' ');
-        } else {
+        if (preserveParagraphs) {
             return text
                 .replace(NORMALIZE_ESCAPE, '<br>')
                 .replace(NORMALIZE_SPACE, ' ')
                 .replace(NORMALIZE_UNESCAPE, '\n\n');
+        } else {
+            return text.replace(NORMALIZE_SPACE, ' ');
         }
     }
 
@@ -790,7 +790,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             list += (
                 indent + ' * @return {' + this.renderTypes() + '}\n' +
                 IDeclaration.indent(
-                    this.typesDescription, (indent + ' *         ')
+                    IDeclaration.normalize(this.typesDescription),
+                    (indent + ' *         ')
                 )
             );
         }
