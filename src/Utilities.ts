@@ -325,10 +325,15 @@ export function relative (
         if (relativePath[0] !== path.sep) {
             relativePath = path.sep + relativePath;
         }
-        relativePath = './' + relativePath;
+        relativePath = '.' + relativePath;
     }
 
     if (isToFile) {
+        if (relativePath &&
+            relativePath[relativePath.length-1] !== path.sep
+        ) {
+            relativePath += path.sep;
+        }
         return relativePath + path.basename(toPath);
     } else {
         return relativePath;
