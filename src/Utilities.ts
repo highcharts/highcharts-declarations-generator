@@ -336,6 +336,11 @@ export function relative (
         }
         return relativePath + path.basename(toPath);
     } else {
+        if (relativePath &&
+            relativePath[relativePath.length-1] === path.sep
+        ) {
+            relativePath = relativePath.substr(0, (relativePath.length - 1));
+        }
         return relativePath;
     }
 }
