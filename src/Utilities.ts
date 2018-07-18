@@ -98,29 +98,14 @@ export function capitalize (str: string): string {
 
 
 
-export function copy (sourceFilePath: string, targetFilePath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        sourceFilePath = path.resolve(process.cwd(), sourceFilePath);
-        targetFilePath = path.resolve(process.cwd(), targetFilePath);
-        fs.copyFile(sourceFilePath, targetFilePath, (err) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(targetFilePath);
-            }
-        });
-    });
-}
-
-
-
-export function duplicateObject<T> (
+export function clone<T> (
     obj: T,
     maxDepth: number = 3,
     filterFn?: (value: any, key: (number|string), obj: T) => boolean
 ): T {
 
     if (obj === null ||
+        obj === undefined ||
         isBasicType(typeof obj)
     ) {
         return obj;
@@ -142,17 +127,20 @@ export function duplicateObject<T> (
 
         if (maxDepth > 0) {
             duplicatedArray.map(
-                item => duplicateObject(item, nextDepth, filterFn)
+                item => clone(item, nextDepth, filterFn)
             );
         }
 
         return duplicatedArray as any;
     }
 
+    if (obj.constructor.prototype !== Object.prototype) {
+        return obj;
+    }
+
     let originalObj = obj as any,
         duplicatedObj = {} as any,
         keys = Object.keys(originalObj);
-
 
     if (filterFn) {
         keys = keys.filter(key => filterFn(originalObj[key], key, obj));
@@ -164,13 +152,29 @@ export function duplicateObject<T> (
         });
     } else {
         keys.forEach(key => {
-            duplicatedObj[key] = duplicateObject(
+            duplicatedObj[key] = clone(
                 originalObj[key], nextDepth, filterFn
             );
         });
     }
 
     return duplicatedObj;
+}
+
+
+
+export function copy (sourceFilePath: string, targetFilePath: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        sourceFilePath = path.resolve(process.cwd(), sourceFilePath);
+        targetFilePath = path.resolve(process.cwd(), targetFilePath);
+        fs.copyFile(sourceFilePath, targetFilePath, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(targetFilePath);
+            }
+        });
+    });
 }
 
 
@@ -292,19 +296,21 @@ export function pluralize (
 
 
 
-export function relative (fromPath: string, toPath: string): string {
+export function relative (
+    fromPath: string, toPath: string, moduleMode: boolean = false
+): string {
 
     let fromDirectory = fromPath,
         toDirectory = toPath,
         isFromFile = false,
         isToFile = false;
 
-    if (path.extname(fromPath)) {
+    if (moduleMode || path.extname(fromPath)) {
         fromDirectory = path.dirname(fromDirectory);
         isFromFile = true;
     }
 
-    if (path.extname(toPath)) {
+    if (moduleMode || path.extname(toPath)) {
         toDirectory = path.dirname(toDirectory);
         isToFile = true;
     }
@@ -313,15 +319,17 @@ export function relative (fromPath: string, toPath: string): string {
         fromDirectory, toDirectory
     );
 
-    if (relativePath[0] !== '.') {
+    if (moduleMode &&
+        relativePath[0] !== '.'
+    ) {
         if (relativePath[0] !== path.sep) {
             relativePath = path.sep + relativePath;
         }
-        relativePath = '.' + relativePath;
+        relativePath = './' + relativePath;
     }
 
     if (isToFile) {
-        return (relativePath + path.basename(toPath));
+        return relativePath + path.basename(toPath);
     } else {
         return relativePath;
     }
@@ -330,7 +338,6 @@ export function relative (fromPath: string, toPath: string): string {
 
 
 export function removeExamples (text: string): string {
-
     return text
         .replace(REMOVE_EXAMPLE_HTML, REMOVE_EXAMPLE_REPLACEMENT)
         .replace(REMOVE_EXAMPLE_JSDOC, REMOVE_EXAMPLE_REPLACEMENT)
