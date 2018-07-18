@@ -784,8 +784,10 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             .join(indent + ' *\n');
 
         if (this.typesDescription) {
+            if (list) {
+                list += indent + ' *\n';
+            }
             list += (
-                indent + ' *\n' +
                 indent + ' * @return {' + this.renderTypes() + '}\n' +
                 IDeclaration.indent(
                     this.typesDescription, (indent + ' *         ')
