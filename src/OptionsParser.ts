@@ -326,14 +326,3 @@ export interface ITags {
 export interface IType {
     names: Array<string>;
 }
-
-
-
-/* *
- *
- *  TypeScript Interface Mapping
- *
- * */
-
-export const INTERFACE_MAPPING: utils.Dictionary<string> = {
-}
