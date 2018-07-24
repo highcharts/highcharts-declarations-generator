@@ -1,16 +1,17 @@
 {
-    "destinationPath": "./dest/",
-    "treeNamespaceJsonPath": "../highcharts/tree-namespace.json",
-    "treeOptionsJsonPath": "../highcharts/tree.json",
+    "mainModule": "code/highcharts",
+    "treeNamespaceJsonPath": "tree-namespace.json",
+    "treeOptionsJsonPath": "tree.json",
     "typeMapping": {
         "*": "any",
         "Array": "Array<any>",
         "Boolean": "boolean",
         "Color": "Highcharts.ColorString",
         "Number": "number",
-        "Object": "object",
+        "Object": "any",
         "String": "string",
         "array": "Array",
-        "function": "Function"
+        "function": "Function",
+        "object": "any"
     }
 }

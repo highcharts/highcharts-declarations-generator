@@ -15,6 +15,7 @@ const config = (function () {
     }
 }()) as IConfig;
 
+config.cwd = process.cwd();
 config.mapType = function (type: string): string {
 
     type = type.replace(MAP_TYPE_LIST, '$1');
@@ -46,9 +47,11 @@ config.mapType = function (type: string): string {
 export = config;
 
 interface IConfig {
-    destinationPath: string;
+    cwd: string;
+    mainModule: string;
     treeNamespaceJsonPath: string;
     treeOptionsJsonPath: string;
     typeMapping: { [key: string]: string };
+    typeModule: string;
     mapType (type: string): string; 
 }
