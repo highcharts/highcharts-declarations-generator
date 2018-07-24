@@ -89,6 +89,11 @@ const KIND_ORDER = [
 const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
 
 /**
+ * Escape lists like in Markdown.
+ */
+const NORMALIZE_LIST: RegExp = /\n- /gm;
+
+/**
  * Reduce spaces and line breaks to one space character.
  */
 const NORMALIZE_SPACE: RegExp = /\s+/gm;
@@ -197,6 +202,7 @@ export abstract class IDeclaration extends Object {
         if (preserveParagraphs) {
             return text
                 .replace(NORMALIZE_ESCAPE, '<br>')
+                .replace(NORMALIZE_LIST, '<br>-')
                 .replace(NORMALIZE_SPACE, ' ')
                 .replace(NORMALIZE_UNESCAPE, '\n\n');
         } else {
@@ -570,7 +576,7 @@ export abstract class IDeclaration extends Object {
         }
 
         return (
-            indent + '(Default value: ' + this.defaultValue + ')\n'
+            indent + ' * (Default value: ' + this.defaultValue + ')\n'
         );
     }
 
@@ -596,12 +602,13 @@ export abstract class IDeclaration extends Object {
         );
 
         renderedDescription = IDeclaration.indent(
-            renderedDescription, (indent + ' * ')
+            renderedDescription,
+            indent + ' * '
         );
 
         if (includeMeta) {
-            renderedDescription += this.renderDefaultValue(indent + ' * ');
-            renderedDescription += this.renderSee(indent + ' * ');
+            renderedDescription += this.renderDefaultValue(indent);
+            renderedDescription += this.renderSee(indent);
         }
 
         return (
@@ -649,8 +656,9 @@ export abstract class IDeclaration extends Object {
         return (
             indent + ' * \n' +
             this.see.map(link => IDeclaration.indent(
-                '@see ' + IDeclaration.normalize(link), indent + ' * '
-            )).join('') + '\n'
+                '@see ' + IDeclaration.normalize(link),
+                indent + ' * '
+            )).join('')
         );
     }
 
@@ -808,13 +816,13 @@ export abstract class IExtendedDeclaration extends IDeclaration {
                 indent + ' * @return {' + this.renderTypes() + '}\n' +
                 IDeclaration.indent(
                     IDeclaration.normalize(this.typesDescription),
-                    (indent + ' *         ')
+                    indent + ' *         '
                 )
             );
         }
 
         if (this.see.length > 0) {
-            list += this.renderSee(indent + ' * ');
+            list += this.renderSee(indent);
         }
 
         if (list) {
@@ -828,7 +836,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         return (
             indent + '/**\n' +
             IDeclaration.indent(
-                IDeclaration.normalize(this.description, true), (indent + ' * ')
+                IDeclaration.normalize(this.description, true),
+                indent + ' * '
             ) +
             list +
             indent + ' *' + '/\n'
@@ -1629,7 +1638,7 @@ export class ParameterDeclaration extends IDeclaration {
             indent + ' * ' + renderedTypes + '\n' +
             IDeclaration.indent(
                 IDeclaration.normalize(this.description),
-                (indent + ' *         ')
+                indent + ' *         '
             ) +
             this.renderDefaultValue(indent + ' *         ')
         );
