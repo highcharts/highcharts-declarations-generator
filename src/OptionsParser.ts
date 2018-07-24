@@ -9,377 +9,250 @@ import * as utils from './Utilities';
 
 
 
-export function parse(json: any): Promise<INode> {
-
+/**
+ * Parse options JSON and returns a dictionary of options nodes.
+ *
+ * @param {Dictionary<INode>} optionsJSON
+ *        The JSON dictionary to parse.
+ */
+export function parse(optionsJSON: utils.Dictionary<INode>): Promise<utils.Dictionary<INode>> {
     return new Promise((resolve, reject) => {
-
-        let globalNode = createGlobalNode(json);
-
-        prepareNode(globalNode);
-        splitLargeNodes(globalNode, globalNode);
-        extendNodes(globalNode);
-
-        resolve(globalNode);
+        let parsedOptions = new Parser(optionsJSON);
+        utils
+            .save('tree-complete.json', JSON.stringify(optionsJSON, (key, value) => (
+                key === 'doclet' ? undefined : value
+            ), '\t'))
+            .then(() => resolve(parsedOptions.options));
     });
 }
 
 
 
-let nodeDictionary = new utils.Dictionary<INode>();
+class Parser extends Object {
 
+    /* *
+     *
+     *  Constructor
+     *
+     * */
 
+    /**
+     * Complete nodes in the JSON dictionary with inherited children.
+     *
+     * @param {Dictionary<INode>} optionsJSON
+     *        The JSON dictionary to complete.
+     */
+    public constructor (optionsJSON: utils.Dictionary<INode>) {
 
-function createGlobalNode(json: utils.Dictionary<INode>): INode {
+        super();
 
-    let optionsNode = {
-            children: Object.assign({}, json),
-            doclet: {
-                type: { names: [ 'object' ] }
-            },
-            meta: {
-                filename: '',
-                fullname: 'Options',
-                line: 0,
-                lineEnd: 0,
-                name: 'Options'
-            }
+        this._options = optionsJSON;
+
+        Object
+            .keys(optionsJSON)
+            .forEach(key => {
+                if (!optionsJSON[key].doclet) {
+                    delete optionsJSON[key];
+                } else {
+                    this.completeNodeExtensions(optionsJSON[key]);
+                    this.completeNodeNames(optionsJSON[key], key);
+                    this.completeNodeTypes(optionsJSON[key]);
+                }
+            });
+    }
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+    private _clone?: INode;
+    public get options(): utils.Dictionary<INode> {
+        return this._options;
+    }
+    private _options: utils.Dictionary<INode>;
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Completes nodes with inherited children and returns number of failed
+     * attempts.
+     *
+     * @param {INode} node
+     *        The node to complete.
+     */
+    private completeNodeExtensions(node: INode) {
+
+        let nodeChildren = node.children,
+            nodeExcludes = (node.doclet.exclude || []),
+            nodeExtends = (node.doclet.extends || '');
+
+        if (nodeExtends) {
+            nodeExtends
+                .split(',')
+                .sort(xName => xName === 'series' ? 1 : 0)
+                .map(xName => xName === 'series' ? 'plotOptions.series' : xName)
+                .forEach(xName => {
+
+                    let xNode = this.findNode(xName);
+
+                    if (!xNode) {
+                        return;
+                    }
+
+                    let xChildren = xNode.children;
+
+                    Object
+                        .keys(xChildren)
+                        .forEach(xChildName => {
+                            if (!nodeChildren[xChildName] &&
+                                nodeExcludes.indexOf(xChildName) === -1
+                            ) {
+                                nodeChildren[xChildName] = utils.clone(
+                                    xChildren[xChildName],
+                                    Number.MAX_SAFE_INTEGER
+                                );
+                            }
+                        });
+                });
+        }
+
+        Object
+            .keys(nodeChildren)
+            .forEach(nodeChildName => this.completeNodeExtensions(
+                nodeChildren[nodeChildName]
+            ));
+    }
+
+    /**
+     * Update the node names with the give one.
+     *
+     * @param {INode} node
+     *        Node to update.
+     *
+     * @param {string} nodeName
+     *        New fullname.
+     */
+    private completeNodeNames (node: INode, nodeName: string) {
+
+        let children = node.children,
+            lastPointIndex = nodeName.lastIndexOf('.');
+
+        node.meta.fullname = nodeName;
+
+        if (lastPointIndex === -1) {
+            node.meta.name = nodeName;
+        } else {
+            node.meta.name = nodeName.substr(lastPointIndex + 1);
+        }
+
+        Object
+            .keys(children)
+            .forEach(childName => this.completeNodeNames(
+                children[childName], nodeName + '.' + childName
+            ));
+    }
+
+    /**
+     * Update the type of the node, and determines a type, if no is set.
+     *
+     * @param {INode} node
+     *        Node to update.
+     */
+    private completeNodeTypes (node: INode) {
+
+        if (node.doclet.type && node.doclet.type.names) {
+            node.doclet.type = {
+                names: node.doclet.type.names.map(config.mapType)
+            };
+            return;
+        }
+
+        if (node.meta.default) {
+            node.doclet.type = { names: [ typeof node.meta.default ] };
+            return;
+        }
+
+        let defaultValue = (
+            node.doclet.default && node.doclet.default.value ||
+            node.doclet.defaultvalue
+        );
+
+        if (!defaultValue && node.doclet.defaultByProduct) {
+
+            let productDefaults = node.doclet.defaultByProduct;
+
+            Object.keys(productDefaults).some(key => {
+                defaultValue = productDefaults[key];
+                return true;
+            })
+        }
+
+        if (!defaultValue) {
+            node.doclet.type = { names: [ 'object' ] };
+            return;
+        }
+
+        switch (defaultValue) {
+            case 'false':
+            case 'true':
+                node.doclet.type = { names: [ 'boolean' ] };
+                return;
+            case '0':
+            case '1':
+                node.doclet.type = { names: [ 'number ' ] };
+                return;
+            case 'null':
+            case 'undefined':
+                node.doclet.type = { names: [ '*' ] };
+                return;
+        }
+
+        if (parseInt(defaultValue) !== NaN ||
+            parseFloat(defaultValue) !== NaN
+        ) {
+            node.doclet.type = { names: [ 'number' ] };
+        } else {
+            node.doclet.type = { names: [ 'string' ] };
+        }
+
+        let children = node.children;
+
+        Object
+            .keys(children)
+            .forEach(childName => this.completeNodeTypes(children[childName]));
+    }
+
+    /**
+     * Finds a node in the json dictionary.
+     *
+     * @param {string} nodeName
+     *        The name of the node to find.
+     */
+    private findNode (nodeName: string): (INode | undefined) {
+
+        if (!nodeName) {
+            throw new Error('No node name has been provided.');
+        }
+
+        let currentNode = {
+            children: this.options
         } as INode;
 
-    delete optionsNode.children['_meta'];
-
-    return {
-        children: { 'Options': optionsNode },
-        doclet: {
-            type: { names: [ 'global' ] }
-        },
-        meta: {
-            filename: '',
-            fullname: '',
-            line: 0,
-            lineEnd: 0,
-            name: ''
-       }
-    };
-}
-
-
-
-function extendNodes (node: INode) {
-
-    let children = node.children,
-        exclude = (node.doclet.exclude || []),
-        sourceNames = (node.doclet.extends || '');
-
-    if (sourceNames) {
-
-        sourceNames
-            .split(',')
-            .map(sourceName =>
-                sourceName === 'series' ?
-                'plotOptions.series' :
-                sourceName
-            )
-            .forEach(sourceName => {
-
-                let sourceNode = nodeDictionary[sourceName];
-
-                if (!sourceNode) {
-                    return;
-                }
-
-                mergeNode(node, sourceNode, true, true);
-
-                Object
-                    .keys(sourceNode.children)
-                    .filter(childName => exclude.indexOf(childName) === -1)
-                    .forEach(childName => {
-
-                        if (children[childName]) {
-                            return;
-                        }
-
-                        children[childName] = utils.clone(
-                            sourceNode.children[childName]
-                        );
-                    });
-            });
-    }
-
-    Object
-        .keys(children)
-        .forEach(childName => extendNodes(children[childName]));
-}
-
-
-
-function generateOptionsTypeName (name: string): string {
-
-    if (name[0] === '{') {
-        console.error('Invalid name: ', name);
-        name = name.substr(1, name.length - 2);
-    }
-
-    if (name === 'series') {
-        name = 'PlotSeriesOptions';
-    } else {
-        name = name
+        nodeName
             .split('.')
-            .map(utils.capitalize)
-            .join('');
-        name = name.replace('Options', '') + 'Options';
-    }
-
-    name = (INTERFACE_MAPPING[name] || name);
-
-    return name;
-}
-
-
-
-/**
- * Merge properties of a node by replacing basic types and joining arrays.
- */
-function mergeNode(
-    targetNode: INode,
-    sourceNode: INode,
-    targetWins: boolean = false,
-    skipChildren: boolean = false,
-): INode {
-
-    let sourceChildren = sourceNode.children,
-        sourceDoclet = sourceNode.doclet,
-        targetChildren = targetNode.children,
-        targetDoclet = targetNode.doclet;
-
-    Object
-        .keys(sourceDoclet)
-        .forEach(key => {
-            switch (key) {
-                case 'defaultByProduct':
-                    if (targetWins) {
-                        targetDoclet[key] = Object.assign(
-                            (sourceDoclet[key] || {}),
-                            (targetDoclet[key] || {})
-                        );
-                    } else {
-                        targetDoclet[key] = Object.assign(
-                            (targetDoclet[key] || {}),
-                            (sourceDoclet[key] || {})
-                        );
-                    }
-                    return;
-                case 'exclude':
-                case 'products':
-                case 'samples':
-                    (targetDoclet as any)[key] = utils.mergeArrays(
-                        ((targetDoclet as any)[key] || []),
-                        ((sourceDoclet as any)[key] || [])
-                    );
-                    return;
-                case 'type':
-                case 'values':
-                    targetDoclet[key] = sourceDoclet[key];
-                    return;
-                default:
-                    if (targetWins) {
-                        (targetDoclet as any)[key] = (
-                            (targetDoclet as any)[key] ||
-                            (sourceDoclet as any)[key]
-                        );
-                    } else {
-                        (targetDoclet as any)[key] = (
-                            (sourceDoclet as any)[key] ||
-                            (targetDoclet as any)[key]
-                        );
-                    }
-                    return;
-            }
-        });
-
-    if (!skipChildren) {
-        Object
-            .keys(sourceChildren)
-            .forEach(sourceChildName => {
-                if (targetChildren[sourceChildName]) {
-                    mergeNode(
-                        targetChildren[sourceChildName],
-                        sourceChildren[sourceChildName],
-                        targetWins
-                    );
-                } else {
-                    targetChildren[sourceChildName] = (
-                        sourceChildren[sourceChildName]
-                    );
+            .forEach(childName => {
+                if (currentNode) {
+                    currentNode = currentNode.children[childName];
                 }
             });
+
+        return currentNode;
     }
-
-    return targetNode;
-}
-
-
-
-function prepareName(parentName: string = '', name: string, node: INode) {
-
-    if (!node.meta.name) {
-        node.meta.name = name;
-    }
-
-    if (!node.meta.fullname) {
-        if (parentName) {
-            node.meta.fullname = parentName + '.';
-        }
-        node.meta.fullname += node.meta.name;
-    }
-}
-
-
-
-function prepareNode (node: INode) {
-
-    let children = node.children,
-        childNames = Object.keys(children),
-        name = node.meta.fullname;
-
-    if (name && childNames.length > 0) {
-        nodeDictionary[name] = node;
-    }
-
-    childNames
-        .forEach(childName => {
-
-            let childNode = children[childName];
-
-            prepareName(
-                (node.meta.fullname || node.meta.name),
-                childName,
-                childNode
-            );
-
-            if (childNode.meta.fullname) {
-                nodeDictionary[childNode.meta.fullname] = childNode;
-            }
-
-            if (Object.keys(childNode.children).length === 0) {
-                prepareType(childNode);
-            }
-
-            if (childNode.doclet.deprecated === true) {
-                delete children[childName];
-            } else {
-                prepareNode(childNode);
-            }
-        });
-}
-
-
-
-function prepareType(node: INode) {
-
-    if (node.doclet.type && node.doclet.type.names) {
-        node.doclet.type = {
-            names: node.doclet.type.names.map(config.mapType)
-        };
-        return;
-    }
-
-    if (node.meta.default) {
-        node.doclet.type = { names: [ typeof node.meta.default ] };
-        return;
-    }
-
-    let defaultValue = (
-        node.doclet.default && node.doclet.default.value ||
-        node.doclet.defaultvalue
-    );
-
-    if (!defaultValue && node.doclet.defaultByProduct) {
-
-        let productDefaults = node.doclet.defaultByProduct;
-
-        Object.keys(productDefaults).some(key => {
-            defaultValue = productDefaults[key];
-            return true;
-        })
-    }
-
-    if (!defaultValue) {
-        node.doclet.type = { names: [ 'object' ] };
-        return;
-    }
-
-    switch (defaultValue) {
-        case 'false':
-        case 'true':
-            node.doclet.type = { names: [ 'boolean' ] };
-            return;
-        case '0':
-        case '1':
-            node.doclet.type = { names: [ 'number ' ] };
-            return;
-        case 'null':
-        case 'undefined':
-            node.doclet.type = { names: [ '*' ] };
-            return;
-    }
-
-    if (parseInt(defaultValue) !== NaN ||
-        parseFloat(defaultValue) !== NaN
-    ) {
-        node.doclet.type = { names: [ 'number' ] };
-    } else {
-        node.doclet.type = { names: [ 'string' ] };
-    }
-}
-
-
-
-function splitLargeNodes (node: INode, globalNode: INode) {
-
-    let children = (node.children || {}),
-        newName = '';
-
-    Object
-        .keys(children)
-        .forEach(childName => {
-
-            let childNode = children[childName],
-                childTypes = (
-                    (childNode.doclet.type && childNode.doclet.type.names) ||
-                    []
-                ).join('|');
-
-            if (Object.keys(childNode.children).length === 0) {
-                return;
-            }
-
-            let newName = generateOptionsTypeName(
-                    childNode.meta.fullname || childName
-                ),
-                newFullname = 'Highcharts.' + newName,
-                newNode = utils.clone(childNode, 1);
-
-            newNode.meta.fullname = newFullname;
-            newNode.meta.name = newName;
-
-            childNode.children = {};
-
-            if (childTypes.indexOf('Array') === 0 ) {
-                childNode.doclet.type = { names: [ 'Array<' + newFullname + '>' ] };
-            } else {
-                childNode.doclet.type = { names: [ newFullname ] };
-            }
-
-            let globalChildren = globalNode.children;
-
-            if (globalChildren[newName]) {
-                mergeNode(globalChildren[newName], newNode);
-            } else {
-                globalChildren[newName] = newNode;
-            }
-
-            splitLargeNodes(newNode, globalNode);
-        })
 }
 
 
@@ -412,6 +285,7 @@ export interface IDoclet {
     products?: Array<string>;
     sample?: ISample;
     samples?: Array<ISample>;
+    see?: Array<string>;
     since?: string;
     tags?: Array<ITags>;
     type?: IType;
