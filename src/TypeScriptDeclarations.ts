@@ -1,5 +1,3 @@
-import { splitIntoFiles } from "./NamespaceParser";
-
 /* *
  *
  *  Copyright (c) Highsoft AS. All rights reserved.
@@ -521,6 +519,25 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Removes all child declarations from this declaration and returns them as
+     * an array.
+     */
+    public removeChildren (): Array<IDeclaration> {
+
+        let children = [] as Array<IDeclaration>;
+
+        this.getChildrenNames()
+            .forEach(childName => {
+                let child = this.removeChild(childName);
+                if (child) {
+                    children.push(child);
+                }
+            });
+
+        return children;
+    }
+
+    /**
      * Returns the TypeScript declarations of all children as a joined string.
      *
      * @param {string} indent
@@ -630,8 +647,10 @@ export abstract class IDeclaration extends Object {
         }
 
         return (
-            indent + '\n' +
-            this.see.map(link => indent + '@see ' + link).join('\n') + '\n'
+            indent + ' * \n' +
+            this.see.map(link => IDeclaration.indent(
+                '@see ' + IDeclaration.normalize(link), indent + ' * '
+            )).join('') + '\n'
         );
     }
 
