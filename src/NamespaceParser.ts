@@ -43,9 +43,11 @@ function transferNodes (
         let sourceDoclet = sourceNode.doclet,
             sourceMeta = sourceNode.meta;
 
-        (sourceMeta.files || []).forEach(file => {
+        (sourceMeta.files || [])
+            .map(file => utils.base(file.path))
+            .forEach(modulePath => {
 
-            let moduleNode = prepareModule(targetModules, file.path),
+            let moduleNode = prepareModule(targetModules, modulePath),
                 targetName = (sourceDoclet.name || ''),
                 targetNode = (
                     findNode(moduleNode, targetName) ||
