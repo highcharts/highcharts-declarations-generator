@@ -27,15 +27,11 @@ export function task (done: Function) {
         .then(optionsGenerator.generate)
         .then(typeDeclarations => utils
             .load(config.treeNamespaceJsonPath)
-            .then(namespaceParser.splitIntoFiles)
+            .then(namespaceParser.parseIntoFiles)
             .then(filesDictionary => namespaceGenerator
                 .saveIntoFiles(filesDictionary, typeDeclarations)
             )
             .then(() => typeDeclarations)
-        )
-        .then(typeDeclarations => utils
-            .save('code/highcharts-types.d.ts', typeDeclarations.toString())
-            .then(filePath => console.log('Saved ' + filePath))
         )
         .then(() => console.log(colors.green.bold(
             'Finished creating TypeScript declarations.'
