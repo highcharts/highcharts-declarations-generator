@@ -98,6 +98,15 @@ class Parser extends Object {
                 .map(xName => xName === 'series' ? 'plotOptions.series' : xName)
                 .forEach(xName => {
 
+                    if (xName.indexOf('{') > -1) {
+                        console.error(
+                            'Extends: ' +
+                            'Curly brackets notation should be avoided.',
+                            xName
+                        );
+                        xName = xName.substr(1, xName.length - 2);
+                    }
+
                     let xNode = this.findNode(xName);
 
                     if (!xNode) {
