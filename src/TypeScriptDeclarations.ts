@@ -1640,7 +1640,7 @@ export class ParameterDeclaration extends IDeclaration {
                 IDeclaration.normalize(this.description),
                 indent + ' *         '
             ) +
-            this.renderDefaultValue(indent + ' *         ')
+            indent + ' *         (Default value: ' + this.defaultValue + ')\n'
         );
     }
 
