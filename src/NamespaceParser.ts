@@ -156,29 +156,6 @@ function findNode (
 
 
 /**
- * Update the type of the node.
- *
- * @param {INode} node
- *        The node to update.
- */
-function mapNodeTypes (node: INode) {
-
-    let types = (node.doclet && node.doclet.types)
-
-    if (!node.doclet) {
-        return;
-    }
-
-    if (!node.doclet.types) {
-        node.doclet.types = [ 'any' ];
-    } else {
-        node.doclet.types.map(config.mapType);
-    }
-}
-
-
-
-/**
  * Prepares and returns the specified module.
  *
  * @param {Dictionary<INode>} modules

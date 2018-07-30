@@ -4,6 +4,7 @@
  * 
  * */
 
+import * as config from './Config';
 import * as parser from './OptionsParser';
 import * as tsd from './TypeScriptDeclarations';
 import * as utils from './Utilities';
@@ -43,6 +44,14 @@ class Generator extends Object {
         if (doclet.see) {
             removedLinks.push(...doclet.see);
             delete doclet.see;
+        }
+
+        if (doclet.type &&
+            doclet.type.names
+        ) {
+            doclet.type.names = doclet.type.names.map(config.mapType);
+        } else {
+            doclet.type = { names: [ 'any' ] };
         }
 
         if (removedLinks.length > 0) {

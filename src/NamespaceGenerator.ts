@@ -56,7 +56,7 @@ export function saveIntoFiles(
 
 
 
-const API_BASE_URL = 'https://api.highcharts.com/'
+const API_BASE_URL = 'https://api.highcharts.com/';
 const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/gm;
 const IMPORT_HIGHCHARTS_MODULE = /(import \* as Highcharts from ")(.*highcharts)(";)/gm;
 const NAME_LAST = /\.(\w+)$/gm;
@@ -122,6 +122,12 @@ class Generator extends Object {
         if (doclet.see) {
             removedLinks.push(...doclet.see);
             delete doclet.see;
+        }
+
+        if (doclet.types) {
+            doclet.types = doclet.types.map(config.mapType);
+        } else {
+            doclet.types = [ 'any' ];
         }
 
         if (removedLinks.length > 0) {
@@ -302,9 +308,9 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.filter(
-                type => type !== 'any' && type !== 'object'
-            ));
+            declaration.types.push(
+                ...doclet.types.filter(type => type !== 'any')
+            );
         }
 
         targetDeclaration.addChildren(declaration);
@@ -407,9 +413,9 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(...doclet.types.filter(
-                type => type !== 'any' && type !== 'object'
-            ));
+            declaration.types.push(
+                ...doclet.types.filter(type => type !== 'any')
+            );
         }
 
         let existingChild = targetDeclaration.getChild(declaration.name);

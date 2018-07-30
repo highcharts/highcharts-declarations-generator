@@ -166,9 +166,6 @@ class Parser extends Object {
     private completeNodeTypes (node: INode) {
 
         if (node.doclet.type && node.doclet.type.names) {
-            node.doclet.type = {
-                names: node.doclet.type.names.map(config.mapType)
-            };
             return;
         }
 
