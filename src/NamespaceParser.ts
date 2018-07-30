@@ -240,6 +240,7 @@ export interface IDoclet {
     name: string;
     defaultValue?: (boolean | number | string);
     isDeprecated?: boolean;
+    isGlobal?: boolean;
     isOptional?: boolean;
     isPrivate?: boolean;
     isStatic?: boolean;
