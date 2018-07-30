@@ -302,9 +302,9 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(
-                ...doclet.types.filter(type => type !== 'any')
-            );
+            declaration.types.push(...doclet.types.filter(
+                type => type !== 'any' && type !== 'object'
+            ));
         }
 
         targetDeclaration.addChildren(declaration);
@@ -407,9 +407,9 @@ class Generator extends Object {
         }
 
         if (doclet.types) {
-            declaration.types.push(
-                ...doclet.types.filter(type => type !== 'any')
-            );
+            declaration.types.push(...doclet.types.filter(
+                type => type !== 'any' && type !== 'object'
+            ));
         }
 
         let existingChild = targetDeclaration.getChild(declaration.name);
