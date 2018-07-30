@@ -4,7 +4,7 @@
  * 
  * */
 
-const MAP_TYPE_GENERIC: RegExp = /^(\w+)\.?<(.+)>$/gm;
+const MAP_TYPE_GENERIC: RegExp = /^([\w\.]+?)\.?<(.+)>$/gm;
 const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
 
 const config = (function () {
@@ -23,18 +23,35 @@ config.mapType = function (type: string): string {
     if (MAP_TYPE_GENERIC.test(type)) {
         return type.replace(
             MAP_TYPE_GENERIC,
-            function (match, generic, type) {
-                return generic + '<' + config.mapType(type.trim()) + '>';
+            (match, generic, genericType) => {
+                return generic + '<' + config.mapType(genericType) + '>';
             }
         );
     }
 
-    if (type.indexOf('|') > -1) {
-        return (
-            '(' +
-            type.split('|').map(type => config.mapType(type.trim())).join('|') +
-            ')'
-        );
+    if (type.indexOf('|') > 0) {
+
+        let genericLevel = 0,
+            typeSplit = [] as Array<string>;
+
+        type.split('|')
+            .forEach(type => {
+                if (type.indexOf('<') > 0) {
+                    if (type.indexOf('>') === -1) {
+                        genericLevel++;
+                    }
+                    typeSplit.push(type);
+                } else if (genericLevel > 0) {
+                    if (type.indexOf('>') > 0) {
+                        genericLevel--;
+                    }
+                    typeSplit[typeSplit.length-1] += '|' + type;
+                } else {
+                    typeSplit.push(type)
+                }
+            });
+
+        return '(' + typeSplit.map(config.mapType).join('|') + ')';
     }
 
     if (config.typeMapping[type]) {
