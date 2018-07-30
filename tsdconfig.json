@@ -6,7 +6,6 @@
         "*": "any",
         "Array": "Array<any>",
         "Boolean": "boolean",
-        "Color": "Highcharts.ColorString",
         "Number": "number",
         "Object": "any",
         "String": "string",
