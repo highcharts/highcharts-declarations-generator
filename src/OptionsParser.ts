@@ -54,6 +54,7 @@ class Parser extends Object {
                 if (!optionsJSON[key].doclet) {
                     delete optionsJSON[key];
                 } else {
+                    this.completeNodeNames(optionsJSON[key], key);
                     this.completeNodeExtensions(optionsJSON[key]);
                     this.completeNodeNames(optionsJSON[key], key);
                     this.completeNodeTypes(optionsJSON[key]);
@@ -92,6 +93,9 @@ class Parser extends Object {
             nodeExtends = (node.doclet.extends || '');
 
         if (nodeExtends) {
+
+            delete node.doclet.extends;
+
             nodeExtends
                 .split(',')
                 .sort(xName => xName === 'series' ? 1 : 0)
@@ -110,6 +114,10 @@ class Parser extends Object {
                     let xNode = this.findNode(xName);
 
                     if (!xNode) {
+                        console.error(
+                            'Extends: Node ' + xName + ' not found.',
+                            node.meta.fullname || node.meta.name
+                        );
                         return;
                     }
 
@@ -246,15 +254,22 @@ class Parser extends Object {
         }
 
         let currentNode = {
-            children: this.options
+            children: this.options,
+            doclet: {},
+            meta: {}
         } as INode;
 
         nodeName
             .split('.')
-            .forEach(childName => {
-                if (currentNode) {
-                    currentNode = currentNode.children[childName];
+            .every(childName => {
+                currentNode = currentNode.children[childName];
+                if (!currentNode) {
+                    return false;
                 }
+                if (currentNode.doclet.extends) {
+                    this.completeNodeExtensions(currentNode);
+                }
+                return true;
             });
 
         return currentNode;
