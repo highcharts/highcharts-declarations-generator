@@ -17,6 +17,8 @@ const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
 const JSON_QUOTE: RegExp = /['`]/gm;
 
+const NAMESPACES_SUBSPACE = /(?:\<.+\>|\[\w+\:.+\])$/gm;
+
 const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/gm;
 const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
 const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
@@ -24,6 +26,9 @@ const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
 
 const REMOVE_LINK_JSDOC = /\{@link\W+([^\}\|\s]+)(?:\|([^\}]+))?\s*\}/gm;
 const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)\s]+)\)/gm;
+
+const SEE_LINK_BASE_URL = 'https://api.highcharts.com/';
+const SEE_LINK_NAME_LAST = /\.(\w+)$/gm;
 
 const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d\.)\s+/gm;
 
@@ -286,6 +291,25 @@ export function mergeArrays<T>(
 
 
 
+export function namespaces (name: string): Array<string> {
+
+    let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
+
+    if (subspace) {
+        name = name.substr(0, name.length - subspace.length);
+    }
+
+    let namespaces = name.split('.');
+
+    if (subspace) {
+        namespaces[namespaces.length-1] += subspace;
+    }
+
+    return namespaces;
+}
+
+
+
 export function pluralize (
     value: number,
     singular: string,
@@ -396,6 +420,33 @@ export function save (filePath: string, str: string): Promise<string> {
             });
         });
     });
+}
+
+
+
+export function seeLink (name: string, kind: string, product?: string) {
+
+    product = (product || 'highcharts');
+
+    switch (kind) {
+        default:
+            return '';
+        case 'global':
+            return SEE_LINK_BASE_URL + 'highcharts/class-reference/';
+        case 'class':
+        case 'member':
+        case 'namespace':
+            return SEE_LINK_BASE_URL + 'highcharts/class-reference/' + name;
+        case 'function':
+        case 'property':
+            return (
+                SEE_LINK_BASE_URL + 'highcharts/class-reference/' +
+                name.replace(SEE_LINK_NAME_LAST, '#.$1')
+            )
+        case 'interface':
+        case 'option':
+            return SEE_LINK_BASE_URL + product + '/' + name;
+    }
 }
 
 
