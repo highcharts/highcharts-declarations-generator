@@ -812,11 +812,13 @@ export abstract class IExtendedDeclaration extends IDeclaration {
                 list += indent + ' *\n';
             }
             list += (
-                indent + ' * @return {' + this.renderTypes() + '}\n' +
-                IDeclaration.indent(
-                    IDeclaration.normalize(this.typesDescription),
-                    indent + ' *         '
-                )
+                indent + ' * @return ' +
+                IDeclaration
+                    .indent(
+                        IDeclaration.normalize(this.typesDescription),
+                        indent + ' *         '
+                    )
+                    .substr(indent.length + 11)
             );
         }
 
