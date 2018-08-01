@@ -59,6 +59,12 @@ config.mapType = function (type: string): string {
         return config.typeMapping[type];
     }
 
+    if (type.indexOf('global.') === 0 ||
+        type.indexOf('window.') === 0
+    ) {
+        return type.substr(7);
+    }
+
     return type;
 };
 
@@ -118,7 +124,6 @@ interface IConfig {
     treeNamespaceJsonPath: string;
     treeOptionsJsonPath: string;
     typeMapping: { [key: string]: string };
-    typeModule: string;
     mapType (type: string): string;
     mapValue (value: any): string;
     seeLink (name: string, kind: string, product?: string): string;

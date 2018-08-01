@@ -1,5 +1,6 @@
 {
     "mainModule": "code/highcharts",
+    "seeBaseUrl": "https://api.highcharts.com/",
     "treeNamespaceJsonPath": "tree-namespace.json",
     "treeOptionsJsonPath": "tree.json",
     "typeMapping": {
