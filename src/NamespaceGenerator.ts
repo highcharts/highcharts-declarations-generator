@@ -56,10 +56,8 @@ export function saveIntoFiles(
 
 
 
-const API_BASE_URL = 'https://api.highcharts.com/';
 const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/gm;
 const IMPORT_HIGHCHARTS_MODULE = /(import \* as Highcharts from ")(.*highcharts)(";)/gm;
-const NAME_LAST = /\.(\w+)$/gm;
 
 
 
@@ -88,9 +86,9 @@ class Generator extends Object {
 
         doclet.description = description;
 
-        let nameParts = (doclet.name || '').split('.');
+        let namespaces = utils.namespaces(doclet.name || '');
 
-        doclet.name = nameParts[nameParts.length - 1].trim();
+        doclet.name = namespaces[namespaces.length - 1];
         
         if (doclet.parameters) {
 
@@ -124,7 +122,14 @@ class Generator extends Object {
             delete doclet.see;
         }
 
-        if (doclet.types) {
+        if (doclet.values) {
+            let values = utils.json(doclet.values, true);
+            if (values instanceof Array) {
+                doclet.types = values.map(config.mapValue);
+            } else {
+                doclet.types = (doclet.types || []).map(config.mapType);
+            }
+        } else if (doclet.types) {
             doclet.types = doclet.types.map(config.mapType);
         } else {
             doclet.types = [ 'any' ];
@@ -139,7 +144,7 @@ class Generator extends Object {
             );
 
             if (see.length > 0) {
-                doclet.see = see;
+                doclet.see = [ utils.seeLink(doclet.name, doclet.kind) ];
             }
         }
 
@@ -559,35 +564,6 @@ class Generator extends Object {
         targetDeclaration.addChildren(declaration);
 
         return declaration;
-    }
-
-    private generateSeeApiDocumentation (targetDeclaration: tsd.IDeclaration) {
-
-        switch (targetDeclaration.kind) {
-            default:
-                return '';
-            case 'global':
-                return API_BASE_URL + 'highcharts/class-reference/';
-            case 'class':
-            case 'namespace':
-                return (
-                    API_BASE_URL +
-                    'highcharts/class-reference/Highcharts.' +
-                    targetDeclaration.fullname
-                );
-            case 'function':
-            case 'property':
-                return (
-                    API_BASE_URL +
-                    'highcharts/class-reference/' +
-                    targetDeclaration.fullname.replace(NAME_LAST, '#.$1')
-                )
-            case 'interface':
-                return (
-                    API_BASE_URL +
-                    'highcharts/options/'
-                )
-        }
     }
 
     private generateType (
