@@ -7,6 +7,8 @@
 const MAP_TYPE_GENERIC: RegExp = /^([\w\.]+?)\.?<(.+)>$/gm;
 const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
 
+const SEE_LINK_NAME_LAST = /\.(\w+)$/gm;
+
 const config = (function () {
     try {
         return require(process.cwd() + '/tsdconfig.json');
@@ -78,15 +80,46 @@ config.mapValue = function (value: any): string {
 
 };
 
+config.seeLink = function (name: string, kind: string, product?: string) {
+
+    product = (product || 'highcharts');
+
+    switch (kind) {
+        default:
+            return '';
+        case 'global':
+            return config.seeBaseUrl + 'class-reference/';
+        case 'class':
+        case 'namespace':
+            return config.seeBaseUrl + 'class-reference/' + name;
+        case 'function':
+            return (
+                config.seeBaseUrl + 'class-reference/' +
+                name.replace(SEE_LINK_NAME_LAST, '#$1')
+            )
+        case 'member':
+            return (
+                config.seeBaseUrl + 'class-reference/' +
+                name.replace(SEE_LINK_NAME_LAST, '#.$1')
+            )
+        case 'interface':
+        case 'option':
+        case 'typedef':
+            return config.seeBaseUrl + product + '/' + name;
+    }
+}
+
 export = config;
 
 interface IConfig {
     cwd: string;
     mainModule: string;
+    seeBaseUrl: string;
     treeNamespaceJsonPath: string;
     treeOptionsJsonPath: string;
     typeMapping: { [key: string]: string };
     typeModule: string;
     mapType (type: string): string;
     mapValue (value: any): string;
+    seeLink (name: string, kind: string, product?: string): string;
 }

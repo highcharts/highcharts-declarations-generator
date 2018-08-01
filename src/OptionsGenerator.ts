@@ -33,6 +33,7 @@ class Generator extends Object {
 
         let doclet = node.doclet,
             description = (node.doclet.description || '').trim(),
+            name = (node.meta && (node.meta.fullname || node.meta.name) || ''),
             removedLinks = [] as Array<string>;
 
         description = utils.removeExamples(description);
@@ -46,9 +47,7 @@ class Generator extends Object {
             delete doclet.see;
         }
 
-        if (doclet.type &&
-            doclet.type.names
-        ) {
+        if (doclet.type && doclet.type.names) {
             doclet.type.names = doclet.type.names.map(config.mapType);
         } else {
             doclet.type = { names: [ 'any' ] };
@@ -62,8 +61,15 @@ class Generator extends Object {
                 see.push(...utils.urls(link))
             );
 
-            if (see.length > 0) {
-                doclet.see = see;
+            if (name && see.length > 0) {
+                if (doclet.products) {
+                    see.length = 0;
+                    doclet.products.forEach(product =>
+                        see.push(config.seeLink(name, 'option', product))
+                    );
+                } else {
+                    doclet.see = [ config.seeLink(name, 'option') ];
+                }
             }
         }
 
@@ -72,8 +78,8 @@ class Generator extends Object {
 
     private static getName (node: parser.INode): string {
 
-        return ((node.meta.fullname || node.meta.name || '')
-            .split('.')
+        return (utils
+            .namespaces(node.meta.fullname || node.meta.name || '')
             .map(utils.capitalize)
             .join('')
             .replace('Options', '') +
@@ -177,30 +183,9 @@ class Generator extends Object {
         declaration.isOptional = true;
 
         if (doclet.values) {
-            try {
-                let values = utils.json(doclet.values, true);
-                if (values instanceof Array) {
-                    declaration.types.push(...values
-                        .map(value => {
-                            switch(typeof value) {
-                                default:
-                                    return value.toString();
-                                case 'string':
-                                    return '"' + value + '"';
-                                case 'undefined':
-                                case 'object':
-                                    if (value) {
-                                        return 'object';
-                                    } else {
-                                        return 'undefined';
-                                    }
-                            }
-                        })
-                    );
-                }
-            } catch (error) {
-                console.log('Error: ', sourceNode.meta.fullname, doclet.values);
-                console.error(error);
+            let values = utils.json(doclet.values, true);
+            if (values instanceof Array) {
+                declaration.types.push(...values.map(config.mapValue));
             }
         }
 

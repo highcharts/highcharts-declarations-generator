@@ -28,9 +28,6 @@ const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|\s]+)(?:\|\s*([^\}]+))?\s*\}/gm;
 const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(\s?([^\)\s]+)\)/gm;
 const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}\s]+)\s*\}/gm;
 
-const SEE_LINK_BASE_URL = 'https://api.highcharts.com/';
-const SEE_LINK_NAME_LAST = /\.(\w+)$/gm;
-
 const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d\.)\s+/gm;
 
 const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
@@ -432,33 +429,6 @@ export function save (filePath: string, str: string): Promise<string> {
             });
         });
     });
-}
-
-
-
-export function seeLink (name: string, kind: string, product?: string) {
-
-    product = (product || 'highcharts');
-
-    switch (kind) {
-        default:
-            return '';
-        case 'global':
-            return SEE_LINK_BASE_URL + 'class-reference/';
-        case 'class':
-        case 'namespace':
-            return SEE_LINK_BASE_URL + 'class-reference/' + name;
-        case 'function':
-        case 'member':
-            return (
-                SEE_LINK_BASE_URL + 'class-reference/' +
-                name.replace(SEE_LINK_NAME_LAST, '#.$1')
-            )
-        case 'interface':
-        case 'option':
-        case 'typedef':
-            return SEE_LINK_BASE_URL + product + '/' + name;
-    }
 }
 
 

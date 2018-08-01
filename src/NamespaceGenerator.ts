@@ -78,6 +78,7 @@ class Generator extends Object {
         });
 
         let description = (doclet.description || '').trim(),
+            namespaces = utils.namespaces(doclet.name || ''),
             removedLinks = [] as Array<string>;
 
         description = utils.removeExamples(description);
@@ -85,9 +86,6 @@ class Generator extends Object {
         description = utils.transformLists(description);
 
         doclet.description = description;
-
-        let namespaces = utils.namespaces(doclet.name || '');
-
         doclet.name = namespaces[namespaces.length - 1];
         
         if (doclet.parameters) {
@@ -109,9 +107,7 @@ class Generator extends Object {
                 });
         }
 
-        if (doclet.return &&
-            doclet.return.description
-        ) {
+        if (doclet.return && doclet.return.description) {
             doclet.return.description = utils.removeLinks(
                 doclet.return.description, removedLinks
             );
@@ -144,7 +140,9 @@ class Generator extends Object {
             );
 
             if (see.length > 0) {
-                doclet.see = [ utils.seeLink(doclet.name, doclet.kind) ];
+                doclet.see = [
+                    config.seeLink(namespaces.join('.'), doclet.kind)
+                ];
             }
         }
 

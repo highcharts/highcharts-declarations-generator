@@ -36,9 +36,7 @@ function transferNodes (
     sourceNode: INode, targetModules: utils.Dictionary<INode>
 ) {
 
-    if (sourceNode.doclet &&
-        sourceNode.meta
-    ) {
+    if (sourceNode.doclet && sourceNode.meta) {
 
         let sourceDoclet = sourceNode.doclet,
             sourceMeta = sourceNode.meta;
