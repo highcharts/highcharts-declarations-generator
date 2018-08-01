@@ -143,13 +143,13 @@ export abstract class IDeclaration extends Object {
      * Returns a indented string, that fits into a specific width and spans over
      * several lines.
      * 
-     * @param {string} text
+     * @param text
      *        The string to pad.
      * 
-     * @param {string} linePrefix 
+     * @param linePrefix 
      *        The prefix for each line.
      * 
-     * @param {number} wrap 
+     * @param wrap 
      *        The maximum width of the padded string.
      */
     protected static indent (
@@ -189,10 +189,10 @@ export abstract class IDeclaration extends Object {
      * Reduce space and line breaks to one space character and returns the
      * normalized text.
      *
-     * @param {string} text
+     * @param text
      *        The text string to normalize.
      *
-     * @param {string} preserveParagraphs 
+     * @param preserveParagraphs 
      *        Preserve double line breaks.
      */
     protected static normalize (
@@ -213,7 +213,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns a simplified name of a provided full qualified name.
      *
-     * @param {string} name
+     * @param name
      *        The name to simplify.
      */
     protected static simplifyName(name: string): string {
@@ -227,7 +227,7 @@ export abstract class IDeclaration extends Object {
      * Returns a dictionary of path elements (directories, extension, file,
      * name, path, and scope).
      *
-     * @param  {string} path
+     * @param  path
      *         The path to parse.
      */
     protected static pathElements (path: string): PathElements {
@@ -253,7 +253,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Initiates a new TypeScript declaration.
      *
-     * @param {string} name
+     * @param name
      *        The name of the declaration.
      */
     public constructor (name: string) {
@@ -410,7 +410,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Add child declarations to this declaration.
      *
-     * @param {Array<IDeclaration>} declarations
+     * @param declarations
      *        The declarations to add.
      */
     public addChildren(...declarations: Array<IDeclaration>) {
@@ -444,7 +444,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns the named child declaration of this declaration, if founded.
      *
-     * @param {string} name
+     * @param name
      *        The name of the child declaration.
      */
     public getChild(name: string): (IDeclaration|undefined) {
@@ -494,7 +494,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Test parent relation and returns true if parent kind matchs.
      *
-     * @param {Array<Kinds>} kinds
+     * @param kinds
      *        The possible kinds to test again.
      */
     public isIn (...kinds: Array<Kinds>): boolean {
@@ -508,7 +508,7 @@ export abstract class IDeclaration extends Object {
      * Removes a child declaration from this declaration and returns the child
      * declaration, if founded.
      *
-     * @param {string} name
+     * @param name
      *        Name of the child declaration.
      */
     public removeChild (name: string): (IDeclaration|undefined) {
@@ -546,10 +546,10 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns the TypeScript declarations of all children as a joined string.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      *
-     * @param {string} infix
+     * @param infix
      *        The separation string between children.
      */
     protected renderChildren (indent: string = '', infix: string = ''): string {
@@ -566,7 +566,7 @@ export abstract class IDeclaration extends Object {
      * Return the comment lines with the default value for this TypeScript
      * declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     protected renderDefaultValue (indent: string = ''): string {
@@ -583,10 +583,10 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns the comment string for this TypeScript declaration.
      *
-     * @param {string} indent 
+     * @param indent 
      *        The indentation string for formatting.
      *
-     * @param {boolean} includeMeta
+     * @param includeMeta
      *        True for extra lines with additional information;
      */
     protected renderDescription (
@@ -644,7 +644,7 @@ export abstract class IDeclaration extends Object {
      * Return the comment lines with the see links for this TypeScript
      * declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     protected renderSee (indent: string = ''): string {
@@ -664,7 +664,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns the possible types of this TypeScript declaration.
      *
-     * @param {boolean} useParentheses
+     * @param useParentheses
      *        Wraps several types in parentheses.
      */
     protected renderTypes (useParentheses: boolean = false): string {
@@ -681,7 +681,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns a rendered string of this TypeScript declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public abstract toString (indent?: string): string;
@@ -705,7 +705,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     /**
      * Initiates a new TypeScript declaration with additional properties.
      *
-     * @param {string} name
+     * @param name
      *        The name of the declaration.
      */
     public constructor (name: string) {
@@ -792,7 +792,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     /**
      * Returns the comment lines with parameters for this TypeScript declaration.
      *
-     * @param {string} indent 
+     * @param indent 
      *        The indentation string for formatting.
      */
     protected renderParametersDescription(indent: string = ''): string {
@@ -846,7 +846,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     /**
      * Adds parameter declarations to this TypeScriot declaration.
      *
-     * @param {Array<ParameterDeclaration>} declarations
+     * @param declarations
      *        The parameter declarations to add.
      */
     public setParameters(...declarations: Array<ParameterDeclaration>) {
@@ -873,7 +873,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this extended TypeScript declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public abstract toString(indent?: string): string;
@@ -884,7 +884,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 /**
  * Class for class declarations in TypeScript.
  *
- * @extends {IExtendedDeclaration}
+ * @extends IExtendedDeclaration
  */
 export class ClassDeclaration extends IExtendedDeclaration {
 
@@ -965,7 +965,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
     /**
      * Returns a rendered string of this class declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString (indent: string = ''): string {
@@ -1011,7 +1011,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
  * Class for constructor declarations in TypeScript. This is used by the class
  * declaration.
  *
- * @extends {IExtendedDeclaration}
+ * @extends IExtendedDeclaration
  */
 export class ConstructorDeclaration extends IExtendedDeclaration {
 
@@ -1072,7 +1072,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
     /**
      * Returns a rendered string of this constructor declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString (indent: string = ''): string {
@@ -1093,7 +1093,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
 /**
  * Class for extended declarations in TypeScript.
  *
- * @extends {IExtendedDeclaration}
+ * @extends IExtendedDeclaration
  */
 export class FunctionDeclaration extends IExtendedDeclaration {
 
@@ -1142,7 +1142,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
     /**
      * Returns a rendered string of this function declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString(indent: string = ''): string {
@@ -1172,7 +1172,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 /**
  * Class for global declarations in TypeScript.
  *
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class GlobalDeclaration extends IDeclaration {
 
@@ -1299,7 +1299,7 @@ export class GlobalDeclaration extends IDeclaration {
 /**
  * Class for interface declarations in TypeScript.
  *
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class InterfaceDeclaration extends IDeclaration {
 
@@ -1342,7 +1342,7 @@ export class InterfaceDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this interface declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString(indent: string = ''): string {
@@ -1377,7 +1377,7 @@ export class InterfaceDeclaration extends IDeclaration {
 /**
  * Class for module declarations in TypeScript.
  * 
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class ModuleDeclaration extends IDeclaration {
 
@@ -1443,7 +1443,7 @@ export class ModuleDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this namespace declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString (indent: string = ''): string {
@@ -1467,7 +1467,7 @@ export class ModuleDeclaration extends IDeclaration {
 /**
  * Class for namespace declarations in TypeScript.
  *
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class NamespaceDeclaration extends IDeclaration {
 
@@ -1510,7 +1510,7 @@ export class NamespaceDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this namespace declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString (indent: string = ''): string {
@@ -1537,7 +1537,7 @@ export class NamespaceDeclaration extends IDeclaration {
  * Class for parameter declarations in TypeScript, that are used in the
  * constructor and functions.
  *
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class ParameterDeclaration extends IDeclaration {
 
@@ -1550,7 +1550,7 @@ export class ParameterDeclaration extends IDeclaration {
     /**
      * Initiates a new parameter declaration.
      *
-     * @param {string} name
+     * @param name
      *        The name of the parameter.
      */
     public constructor (name: string) {
@@ -1611,35 +1611,24 @@ export class ParameterDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of the comment part for the parameter.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public renderParameterDescription (indent: string = ''): string {
 
         let defaultValue = (this.defaultValue || '').toString(),
-            renderedTypes = this.renderTypes();
-
-        if (!renderedTypes) {
-            renderedTypes = 'any';
-        }
-
-        if (this.isVariable) {
-            renderedTypes = '...Array<' + renderedTypes + '>';
-        }
-
-        renderedTypes = '@param  {' + renderedTypes + '} ' + this.name;
+            renderedTypes = '@param  ' + this.name;
 
         if (defaultValue) {
-            defaultValue = '(Default value: ' + defaultValue + ')';
+            defaultValue = ' (Default value: ' + defaultValue + ')';
         }
 
         return (
             indent + ' * ' + renderedTypes + '\n' +
             IDeclaration.indent(
-                IDeclaration.normalize(this.description),
+                IDeclaration.normalize(this.description + defaultValue),
                 indent + ' *         '
-            ) +
-            indent + ' *         (Default value: ' + this.defaultValue + ')\n'
+            )
         );
     }
 
@@ -1672,7 +1661,7 @@ export class ParameterDeclaration extends IDeclaration {
  * Class for property declarations in TypeScript, that can be found in a class,
  * global scope, interface, and namespace.
  *
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class PropertyDeclaration extends IDeclaration {
 
@@ -1718,7 +1707,7 @@ export class PropertyDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this property declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString (indent: string = ''): string {
@@ -1756,7 +1745,7 @@ export class PropertyDeclaration extends IDeclaration {
 /**
  * Class for type alias declarations in TypeScript.
  *
- * @extends {IDeclaration}
+ * @extends IDeclaration
  */
 export class TypeDeclaration extends IDeclaration {
 
@@ -1799,7 +1788,7 @@ export class TypeDeclaration extends IDeclaration {
     /**
      * Returns a rendered string of this type declaration.
      *
-     * @param {string} indent
+     * @param indent
      *        The indentation string for formatting.
      */
     public toString(indent: string = ''): string {
