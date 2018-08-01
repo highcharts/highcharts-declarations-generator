@@ -440,7 +440,7 @@ export function seeLink (name: string, kind: string, product?: string) {
         case 'function':
         case 'property':
             return (
-                SEE_LINK_BASE_URL + 'highcharts/class-reference/' +
+                SEE_LINK_BASE_URL + 'class-reference/' +
                 name.replace(SEE_LINK_NAME_LAST, '#.$1')
             )
         case 'interface':
