@@ -24,8 +24,9 @@ const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
 const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
 const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
 
-const REMOVE_LINK_JSDOC = /\{@link\W+([^\}\|\s]+)(?:\|([^\}]+))?\s*\}/gm;
-const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)\s]+)\)/gm;
+const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|\s]+)(?:\|\s*([^\}]+))?\s*\}/gm;
+const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(\s?([^\)\s]+)\)/gm;
+const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}\s]+)\s*\}/gm;
 
 const SEE_LINK_BASE_URL = 'https://api.highcharts.com/';
 const SEE_LINK_NAME_LAST = /\.(\w+)$/gm;
@@ -344,7 +345,7 @@ export function relative (
     );
 
     if (moduleMode &&
-        relativePath[0] !== '.'
+       relativePath[0] !== '.'
     ) {
         if (relativePath[0] !== path.sep) {
             relativePath = path.sep + relativePath;
@@ -384,19 +385,30 @@ export function removeLinks(
     text: string, removedLinks?: Array<string>
 ): string {
 
+    let linkUrl;
+
+    function replaceLink (match: string, title: string, link: string) {
+        if (removedLinks) {
+            linkUrl = url(link);
+            if (linkUrl) {
+                removedLinks.push(linkUrl);
+            }
+        }
+        if (title) {
+            return title.replace('#', '.');
+        } else {
+            return link;
+        }
+    }
+
     return text
-        .replace(REMOVE_LINK_JSDOC, (match, link, title) => {
-            if (removedLinks) {
-                removedLinks.push(link);
-            }
-            return (title || link);
-        })
-        .replace(REMOVE_LINK_MARKDOWN, (match, title, link) => {
-            if (removedLinks) {
-                removedLinks.push(link);
-            }
-            return (title || link);
-        });
+        .replace(REMOVE_LINK_MIX, replaceLink)
+        .replace(REMOVE_LINK_MARKDOWN, replaceLink)
+        .replace(
+            REMOVE_LINK_JSDOC,
+            (match: string, link: string, title: string) =>
+            replaceLink(match, title, link)
+        );
 }
 
 
@@ -432,19 +444,19 @@ export function seeLink (name: string, kind: string, product?: string) {
         default:
             return '';
         case 'global':
-            return SEE_LINK_BASE_URL + 'highcharts/class-reference/';
+            return SEE_LINK_BASE_URL + 'class-reference/';
         case 'class':
-        case 'member':
         case 'namespace':
-            return SEE_LINK_BASE_URL + 'highcharts/class-reference/' + name;
+            return SEE_LINK_BASE_URL + 'class-reference/' + name;
         case 'function':
-        case 'property':
+        case 'member':
             return (
                 SEE_LINK_BASE_URL + 'class-reference/' +
                 name.replace(SEE_LINK_NAME_LAST, '#.$1')
             )
         case 'interface':
         case 'option':
+        case 'typedef':
             return SEE_LINK_BASE_URL + product + '/' + name;
     }
 }
