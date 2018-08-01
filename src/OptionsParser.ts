@@ -80,8 +80,7 @@ class Parser extends Object {
      * */
 
     /**
-     * Completes nodes with inherited children and returns number of failed
-     * attempts.
+     * Completes nodes with inherited children.
      *
      * @param {INode} node
      *        The node to complete.
@@ -259,10 +258,10 @@ class Parser extends Object {
             meta: {}
         } as INode;
 
-        nodeName
-            .split('.')
-            .every(childName => {
-                currentNode = currentNode.children[childName];
+        utils
+            .namespaces(nodeName)
+            .every(spaceName => {
+                currentNode = currentNode.children[spaceName];
                 if (!currentNode) {
                     return false;
                 }
