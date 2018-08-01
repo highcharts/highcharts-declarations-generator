@@ -16,6 +16,7 @@ const config = (function () {
 }()) as IConfig;
 
 config.cwd = process.cwd();
+
 config.mapType = function (type: string): string {
 
     type = type.replace(MAP_TYPE_LIST, '$1');
@@ -32,26 +33,24 @@ config.mapType = function (type: string): string {
     if (type.indexOf('|') > 0) {
 
         let genericLevel = 0,
-            typeSplit = [] as Array<string>;
+            typeList = [] as Array<string>;
 
         type.split('|')
             .forEach(type => {
                 if (type.indexOf('<') > 0) {
-                    if (type.indexOf('>') === -1) {
-                        genericLevel++;
-                    }
-                    typeSplit.push(type);
+                    genericLevel += (
+                        type.split('<').length - type.split('>').length
+                    );
+                    typeList.push(type);
                 } else if (genericLevel > 0) {
-                    if (type.indexOf('>') > 0) {
-                        genericLevel--;
-                    }
-                    typeSplit[typeSplit.length-1] += '|' + type;
+                    genericLevel -= type.split('>').length - 1;
+                    typeList[typeList.length-1] += '|' + type;
                 } else {
-                    typeSplit.push(type)
+                    typeList.push(type);
                 }
             });
 
-        return '(' + typeSplit.map(config.mapType).join('|') + ')';
+        return '(' + typeList.map(config.mapType).join('|') + ')';
     }
 
     if (config.typeMapping[type]) {
@@ -59,6 +58,24 @@ config.mapType = function (type: string): string {
     }
 
     return type;
+};
+
+config.mapValue = function (value: any): string {
+
+    switch(typeof value) {
+        default:
+            return value.toString();
+        case 'string':
+            return '"' + value + '"';
+        case 'undefined':
+        case 'object':
+            if (value) {
+                return 'object';
+            } else {
+                return 'undefined';
+            }
+    }
+
 };
 
 export = config;
@@ -70,5 +87,6 @@ interface IConfig {
     treeOptionsJsonPath: string;
     typeMapping: { [key: string]: string };
     typeModule: string;
-    mapType (type: string): string; 
+    mapType (type: string): string;
+    mapValue (value: any): string;
 }
