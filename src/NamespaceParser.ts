@@ -100,16 +100,16 @@ function createNode (rootNode: INode, nodeName: string): INode {
     let node = rootNode;
 
     if (nodeName) {
-        nodeName
-            .split('.')
-            .forEach(childName => {
+        utils
+            .namespaces(nodeName)
+            .forEach(spaceName => {
                 if (!node.children) {
                     node.children = {};
                 }
-                if (!node.children[childName]) {
-                    node.children[childName] = {};
+                if (!node.children[spaceName]) {
+                    node.children[spaceName] = {};
                 }
-                node = node.children[childName];
+                node = node.children[spaceName];
             });
     }
 
@@ -138,11 +138,11 @@ function findNode (
     let node = rootNode as (INode | undefined);
 
     if (nodeName) {
-        nodeName
-            .split('.')
-            .every(childName => {
+        utils
+            .namespaces(nodeName)
+            .every(spaceName => {
                 if (node) {
-                    node = (node.children && node.children[childName]);
+                    node = (node.children && node.children[spaceName]);
                     return true;
                 } else {
                     return false;
@@ -225,6 +225,7 @@ export interface IDoclet {
     return?: IReturn;
     see?: Array<string>;
     types?: ITypes;
+    values?: string;
 }
 
 
