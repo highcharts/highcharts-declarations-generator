@@ -655,10 +655,9 @@ export abstract class IDeclaration extends Object {
 
         return (
             indent + ' * \n' +
-            this.see.map(link => IDeclaration.indent(
-                '@see ' + IDeclaration.normalize(link),
-                indent + ' * '
-            )).join('')
+            this.see.map(
+                link => indent + ' * @see ' + IDeclaration.normalize(link)
+            ).join('') + '\n'
         );
     }
 
