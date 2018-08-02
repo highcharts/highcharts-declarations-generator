@@ -293,8 +293,13 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): tsd.ClassDeclaration {
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.ClassDeclaration(doclet.name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._root;
+        }
+
+        let declaration = new tsd.ClassDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -330,8 +335,13 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): tsd.FunctionDeclaration {
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.FunctionDeclaration(doclet.name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._root;
+        }
+
+        let declaration = new tsd.FunctionDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -404,8 +414,13 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): tsd.InterfaceDeclaration {
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.InterfaceDeclaration(doclet.name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._root;
+        }
+
+        let declaration = new tsd.InterfaceDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -442,8 +457,8 @@ class Generator extends Object {
     ): tsd.ModuleDeclaration {
 
         let declaration = new tsd.ModuleDeclaration(
-                utils.relative(modulePath, config.mainModule, true)
-            );
+            utils.relative(modulePath, config.mainModule, true)
+        );
         
         targetDeclaration.addChildren(declaration);
 
@@ -532,8 +547,13 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): tsd.PropertyDeclaration {
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.PropertyDeclaration(doclet.name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._root;
+        }
+
+        let declaration = new tsd.PropertyDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -569,8 +589,13 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): tsd.TypeDeclaration {
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.TypeDeclaration(doclet.name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._root;
+        }
+
+        let declaration = new tsd.TypeDeclaration(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
