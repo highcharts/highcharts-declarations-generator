@@ -69,8 +69,6 @@ interface PathElements {
  */
 const KIND_ORDER = [
     'global',
-    'module',
-    'namespace',
     'type',
     'interface',
     'class',
@@ -80,7 +78,9 @@ const KIND_ORDER = [
     'constructor',
     'property',
     'function',
-    'parameter'
+    'parameter',
+    'module',
+    'namespace'
 ] as Array<Kinds>;
 
 /**
@@ -91,7 +91,7 @@ const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
 /**
  * Escape lists like in Markdown.
  */
-const NORMALIZE_LIST: RegExp = /\n- /gm;
+const NORMALIZE_LIST: RegExp = /\n(?:[\-\+\*]|\d+\.) /gm;
 
 /**
  * Reduce spaces and line breaks to one space character.
@@ -815,7 +815,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
                 indent + ' * @return ' +
                 IDeclaration
                     .indent(
-                        IDeclaration.normalize(this.typesDescription),
+                        IDeclaration.normalize(this.typesDescription, true),
                         indent + ' *         '
                     )
                     .substr(indent.length + 11)
@@ -1628,7 +1628,7 @@ export class ParameterDeclaration extends IDeclaration {
         return (
             indent + ' * ' + renderedTypes + '\n' +
             IDeclaration.indent(
-                IDeclaration.normalize(this.description + defaultValue),
+                IDeclaration.normalize(this.description + defaultValue, true),
                 indent + ' *         '
             )
         );

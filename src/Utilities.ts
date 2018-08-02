@@ -28,7 +28,7 @@ const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|\s]+)(?:\|\s*([^\}]+))?\s*\}/gm;
 const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(\s?([^\)\s]+)\)/gm;
 const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}\s]+)\s*\}/gm;
 
-const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d\.)\s+/gm;
+const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d+\.)\s+/gm;
 
 const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
 

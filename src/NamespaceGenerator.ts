@@ -100,9 +100,13 @@ class Generator extends Object {
                     parameterDescription = parameters[name].description;
 
                     if (parameterDescription) {
-                        parameters[name].description = utils.removeLinks(
+                        parameterDescription = utils.removeLinks(
                             parameterDescription, removedLinks
                         );
+                        parameterDescription = utils.transformLists(
+                            parameterDescription
+                        );
+                        parameters[name].description = parameterDescription;
                     }
 
                     parameters[name].types = (
@@ -111,10 +115,20 @@ class Generator extends Object {
                 });
         }
 
-        if (doclet.return && doclet.return.description) {
-            doclet.return.description = utils.removeLinks(
-                doclet.return.description, removedLinks
-            );
+        if (doclet.return) {
+
+            let returnDescription = doclet.return.description;
+
+            if (returnDescription) {
+                returnDescription = utils.removeLinks(
+                    returnDescription, removedLinks
+                );
+                returnDescription = utils.transformLists(
+                    returnDescription
+                );
+                doclet.return.description = returnDescription;
+            }
+
             doclet.return.types = (
                 doclet.return.types || ['any']
             ).map(config.mapType);
