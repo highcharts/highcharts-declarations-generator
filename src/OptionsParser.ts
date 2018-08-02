@@ -18,11 +18,13 @@ import * as utils from './Utilities';
 export function parse(optionsJSON: utils.Dictionary<INode>): Promise<utils.Dictionary<INode>> {
     return new Promise((resolve, reject) => {
         let parsedOptions = new Parser(optionsJSON);
-        utils
+        resolve(parsedOptions.options);
+/*
             .save('tree-complete.json', JSON.stringify(optionsJSON, (key, value) => (
                 key === 'doclet' ? undefined : value
             ), '\t'))
             .then(() => resolve(parsedOptions.options));
+ */
     });
 }
 
