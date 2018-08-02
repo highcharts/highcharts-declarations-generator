@@ -104,6 +104,10 @@ class Generator extends Object {
                             parameterDescription, removedLinks
                         );
                     }
+
+                    parameters[name].types = (
+                        parameters[name].types || ['any']
+                    ).map(config.mapType);
                 });
         }
 
@@ -111,6 +115,9 @@ class Generator extends Object {
             doclet.return.description = utils.removeLinks(
                 doclet.return.description, removedLinks
             );
+            doclet.return.types = (
+                doclet.return.types || ['any']
+            ).map(config.mapType);
         }
 
         if (doclet.see) {
