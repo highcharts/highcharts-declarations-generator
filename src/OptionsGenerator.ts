@@ -169,7 +169,7 @@ class Generator extends Object {
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
                 .map(config.mapType)
                 .filter(name => (name !== 'any' && name !== 'object'));
-            sourceNode.doclet.type.names.push(interfaceDeclaration.name);
+            sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
         }
 
         let doclet = Generator.getDoclet(sourceNode),
