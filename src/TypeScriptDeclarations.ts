@@ -357,6 +357,17 @@ export abstract class IDeclaration extends Object {
     private _description: string;
 
     /**
+     * Returns the full qualified name of the declaration including namespaces.
+     */
+    public get fullName(): string {
+        if (this.parent) {
+            return this.parent.fullName + '.' + this.name;
+        } else {
+            return this.name;
+        }
+    }
+
+    /**
      * Returns true, if the declaration contains child declarations.
      */
     public get hasChildren(): boolean {
