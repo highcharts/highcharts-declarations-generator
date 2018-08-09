@@ -211,19 +211,6 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
-     * Returns a simplified name of a provided full qualified name.
-     *
-     * @param name
-     *        The name to simplify.
-     */
-    protected static simplifyName(name: string): string {
-
-        let nameParts = name.split('.');
-
-        return nameParts[nameParts.length-1];
-    }
-
-    /**
      * Returns a dictionary of path elements (directories, extension, file,
      * name, path, and scope).
      *
@@ -242,6 +229,74 @@ export abstract class IDeclaration extends Object {
             path: match[1] + match[2],
             scope: match[1]
         };
+    }
+
+    /**
+     * Returns a simplified name of a provided full qualified name.
+     *
+     * @param name
+     *        The name to simplify.
+     */
+    protected static simplifyName(name: string): string {
+
+        let nameParts = name.split('.');
+
+        return nameParts[nameParts.length-1];
+    }
+
+    /**
+     * Sorts: primitives < classes < generics < null < undefined < any
+     */
+    protected static sortType = function (typeA: string, typeB: string): number {
+
+        switch (typeA) {
+            case 'any':
+                return 1;
+            case 'null':
+                return (
+                    typeB === 'any' ? -1 :
+                    typeB === 'undefined' ? -1 :
+                    1
+                );
+            case 'undefined':
+                return (typeB === 'any' ? -1 : 1);
+        }
+
+        switch (typeB) {
+            case 'any':
+            case 'null':
+            case 'undefined':
+                return -1;
+        }
+
+        if (typeA.indexOf('<') > -1 &&
+            typeB.indexOf('<') === -1
+        ) {
+            return 1;
+        }
+
+        if (typeB.indexOf('<') > -1 &&
+            typeA.indexOf('<') === -1
+        ) {
+            return -1;
+        }
+
+        let typeALC = typeA.toLowerCase(),
+            typeBLC = typeB.toLowerCase();
+
+        if (typeA !== typeALC &&
+            typeB === typeBLC
+        ) {
+            return 1;
+        }
+
+        if (typeB !== typeBLC &&
+            typeA === typeALC
+        ) {
+            return -1;
+        }
+
+        return (typeALC < typeBLC ? -1 : typeALC > typeBLC ? 1 : 0);
     }
 
     /* *
@@ -672,9 +727,9 @@ export abstract class IDeclaration extends Object {
         if (useParentheses &&
             this.types.length > 1
         ) {
-            return '(' + this.types.sort().join('|') + ')';
+            return '(' + this.types.sort(IDeclaration.sortType).join('|') + ')';
         } else {
-            return this.types.sort().join('|');
+            return this.types.sort(IDeclaration.sortType).join('|');
         }
     }
 
