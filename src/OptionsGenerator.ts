@@ -48,7 +48,8 @@ class Generator extends Object {
         }
 
         if (doclet.type && doclet.type.names) {
-            doclet.type.names = doclet.type.names.map(config.mapType);
+            doclet.type.names = doclet.type.names
+                .map(config.mapType);
         } else {
             doclet.type = { names: [ 'any' ] };
         }
@@ -164,7 +165,11 @@ class Generator extends Object {
             let interfaceDeclaration = this.generateInterface(sourceNode);
 
             sourceNode.children = {};
-            sourceNode.doclet.type = { names: [ interfaceDeclaration.name ] };
+            sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
+            sourceNode.doclet.type.names = sourceNode.doclet.type.names
+                .map(config.mapType)
+                .filter(name => (name !== 'any' && name !== 'object'));
+            sourceNode.doclet.type.names.push(interfaceDeclaration.name);
         }
 
         let doclet = Generator.getDoclet(sourceNode),

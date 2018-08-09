@@ -79,7 +79,8 @@ class Generator extends Object {
 
         let description = (doclet.description || '').trim(),
             namespaces = utils.namespaces(doclet.name || ''),
-            removedLinks = [] as Array<string>;
+            removedLinks = [] as Array<string>,
+            values;
 
         description = utils.removeExamples(description);
         description = utils.removeLinks(description, removedLinks);
@@ -109,9 +110,8 @@ class Generator extends Object {
                         parameters[name].description = parameterDescription;
                     }
 
-                    parameters[name].types = (
-                        parameters[name].types || ['any']
-                    ).map(config.mapType);
+                    parameters[name].types = (parameters[name].types || ['any'])
+                        .map(config.mapType);
                 });
         }
 
@@ -129,9 +129,8 @@ class Generator extends Object {
                 doclet.return.description = returnDescription;
             }
 
-            doclet.return.types = (
-                doclet.return.types || ['any']
-            ).map(config.mapType);
+            doclet.return.types = (doclet.return.types || ['any'])
+                .map(config.mapType);
         }
 
         if (doclet.see) {
@@ -140,14 +139,18 @@ class Generator extends Object {
         }
 
         if (doclet.values) {
-            let values = utils.json(doclet.values, true);
-            if (values instanceof Array) {
-                doclet.types = values.map(config.mapValue);
-            } else {
-                doclet.types = (doclet.types || []).map(config.mapType);
+            try {
+                values = utils.json((doclet.values || ''), true);
+            } catch (error) {
+                console.error(error);
             }
+        }
+
+        if (values instanceof Array) {
+            doclet.types = values.map(config.mapValue);
         } else if (doclet.types) {
-            doclet.types = doclet.types.map(config.mapType);
+            doclet.types = doclet.types
+                .map(config.mapType);
         } else {
             doclet.types = [ 'any' ];
         }
