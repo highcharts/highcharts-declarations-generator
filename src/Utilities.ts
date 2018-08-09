@@ -24,9 +24,10 @@ const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
 const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
 const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
 
-const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|\s]+)(?:\|\s*([^\}]+))?\s*\}/gm;
-const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(\s?([^\)\s]+)\)/gm;
-const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}\s]+)\s*\}/gm;
+const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|]+)(?:\|([^\}]+))?\}/gm;
+const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)]+)\)/gm;
+const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}]+)\}/gm;
+const REMOVE_LINK_SPACE = /\s/gm;
 
 const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d+\.)\s+/gm;
 
@@ -386,7 +387,7 @@ export function removeLinks(
 
     function replaceLink (match: string, title: string, link: string) {
         if (removedLinks) {
-            linkUrl = url(link);
+            linkUrl = url(link.replace(REMOVE_LINK_SPACE, ''));
             if (linkUrl) {
                 removedLinks.push(linkUrl);
             }
