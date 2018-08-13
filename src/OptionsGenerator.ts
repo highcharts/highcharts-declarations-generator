@@ -21,6 +21,10 @@ export function generate (
 
 
 
+const GENERIC_ANY_TYPE = /([\<\(\|])any([\|\)\>])/gm;
+
+
+
 class Generator extends Object {
 
     /* *
@@ -50,7 +54,8 @@ class Generator extends Object {
         if (doclet.type && doclet.type.names) {
             doclet.type.names = doclet.type.names
                 .map(config.mapType);
-        } else {
+        }
+        else {
             doclet.type = { names: [ 'any' ] };
         }
 
@@ -68,7 +73,8 @@ class Generator extends Object {
                     doclet.products.forEach(product =>
                         see.push(config.seeLink(name, 'option', product))
                     );
-                } else {
+                }
+                else {
                     doclet.see = [ config.seeLink(name, 'option') ];
                 }
             }
@@ -140,7 +146,8 @@ class Generator extends Object {
 
         try {
             this.namespace.addChildren(declaration);
-        } catch (error) {
+        }
+        catch (error) {
             console.log(sourceNode);
             throw error;
         }
@@ -162,14 +169,34 @@ class Generator extends Object {
 
         if (Object.keys(sourceNode.children).length > 0) {
 
-            let interfaceDeclaration = this.generateInterface(sourceNode);
+            let interfaceDeclaration = this.generateInterface(sourceNode),
+                replacedAnyType = false;
 
             sourceNode.children = {};
             sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
                 .map(config.mapType)
-                .filter(name => (name !== 'any' && name !== 'object'));
-            sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
+                .filter(name => (name !== 'any' && name !== 'object'))
+                .map(name => {
+                    if (name.indexOf('any') === -1) {
+                        return name;
+                    }
+                    else if (!GENERIC_ANY_TYPE.test(name)) {
+                        console.log(name, GENERIC_ANY_TYPE.test(name));
+                        return name;
+                    }
+                    else {
+                        replacedAnyType = true;
+                        return name.replace(
+                            GENERIC_ANY_TYPE,
+                            '$1' + interfaceDeclaration.fullName + '$2'
+                        );
+                    }
+                });
+
+            if (!replacedAnyType) {
+                sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
+            }
         }
 
         let doclet = Generator.getDoclet(sourceNode),
@@ -200,7 +227,8 @@ class Generator extends Object {
 
         try {
             targetDeclaration.addChildren(declaration);
-        } catch (error) {
+        }
+        catch (error) {
             console.log(sourceNode);
             throw error;
         }
