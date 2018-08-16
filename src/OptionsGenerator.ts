@@ -178,24 +178,22 @@ class Generator extends Object {
                 .map(config.mapType)
                 .filter(name => (name !== 'any' && name !== 'object'))
                 .map(name => {
-                    if (name.indexOf('any') === -1) {
-                        return name;
-                    }
-                    else if (!GENERIC_ANY_TYPE.test(name)) {
-                        console.log(name, GENERIC_ANY_TYPE.test(name));
+                    if (name.indexOf('any') === -1 ||
+                        !GENERIC_ANY_TYPE.test(name)
+                    ) {
                         return name;
                     }
                     else {
                         replacedAnyType = true;
                         return name.replace(
                             GENERIC_ANY_TYPE,
-                            '$1' + interfaceDeclaration.fullName + '$2'
+                            '$1' + interfaceDeclaration.name + '$2'
                         );
                     }
                 });
 
             if (!replacedAnyType) {
-                sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
+                sourceNode.doclet.type.names.push(interfaceDeclaration.fullname);
             }
         }
 
