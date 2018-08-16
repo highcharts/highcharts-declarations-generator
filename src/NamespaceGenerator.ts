@@ -284,6 +284,9 @@ class Generator extends Object {
             case 'global':
                 this.generateGlobal(sourceNode);
                 break;
+            case 'interface':
+                this.generateInterface(sourceNode, this.namespace);
+                break;
             case 'namespace':
                 this.generateNamespace(sourceNode, targetDeclaration);
                 break;
