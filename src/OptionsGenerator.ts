@@ -15,7 +15,11 @@ export function generate (
     optionsJSON: utils.Dictionary<parser.INode>
 ): Promise<tsd.NamespaceDeclaration> {
     return new Promise((resolve, reject) => {
-        resolve((new Generator(optionsJSON)).namespace);
+
+        let generator = new Generator(optionsJSON);
+
+        resolve(generator.namespace);
+
     });
 }
 
@@ -106,9 +110,18 @@ class Generator extends Object {
 
         this._namespace = new tsd.NamespaceDeclaration('Highcharts');
 
-        utils.Dictionary
-            .values(optionsJSON)
-            .forEach(option => this.generateInterface(option));
+        this.generateInterface({
+            children: optionsJSON,
+            doclet: {
+                description: 'The option tree for every chart.'
+            },
+            meta: {
+                filename: '',
+                fullname: 'Highcharts.Options',
+                line: 0,
+                lineEnd: 0
+            }
+        });
     }
 
     /* *
@@ -193,7 +206,7 @@ class Generator extends Object {
                 });
 
             if (!replacedAnyType) {
-                sourceNode.doclet.type.names.push(interfaceDeclaration.fullname);
+                sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
             }
         }
 
