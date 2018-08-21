@@ -211,6 +211,63 @@ export function isCoreType (typeName: string): boolean {
 
 
 
+export function isDeepEqual (objectA: any, objectB: any): boolean {
+
+    switch (typeof objectA) {
+        case 'boolean':
+        case 'function':
+        case 'number':
+        case 'undefined':
+        case 'string':
+        case 'symbol':
+            return (objectA === objectB);
+    }
+
+    switch (typeof objectB) {
+        case 'boolean':
+        case 'function':
+        case 'number':
+        case 'undefined':
+        case 'string':
+        case 'symbol':
+            return (objectA === objectB);
+    }
+
+    if (objectA === null ||
+        objectB === null ||
+        typeof objectA !== 'object' ||
+        typeof objectB !== 'object'
+    ) {
+        return (objectA === objectB);
+    }
+
+    if (objectA instanceof Array &&
+        objectB instanceof Array
+    ) {
+        if (objectA.length >= objectB.length) {
+            return objectA.every(
+                (item, index) => isDeepEqual(item, objectB[index])
+            );
+        }
+        else {
+            return objectB.every(
+                (item, index) => isDeepEqual(item, objectA[index])
+            );
+        }
+    }
+    else {
+        let keysA = Object.keys(objectA),
+            keysB = Object.keys(objectB);
+
+        return (
+            keysA.length !== keysB.length &&
+            keysA.every(key => isDeepEqual(objectA[key], objectB[key]))
+        );
+    }
+}
+
+
+
 export function json (
     json: (object | string | Array<any>),
     allowQuirks: boolean = false
@@ -290,7 +347,7 @@ export function mergeArrays<T>(
 
 
 
-export function namespaces (name: string): Array<string> {
+export function namespaces (name: string, fullName: boolean = false): Array<string> {
 
     let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
 
@@ -302,6 +359,23 @@ export function namespaces (name: string): Array<string> {
 
     if (subspace) {
         namespaces[namespaces.length-1] += subspace;
+    }
+
+    if (fullName) {
+
+        let fullSpace = '';
+
+        namespaces = namespaces.map(space => {
+
+            if (fullSpace) {
+                fullSpace += '.' + space;
+            }
+            else {
+                fullSpace = space;
+            }
+
+            return fullSpace;
+        });
     }
 
     return namespaces;
