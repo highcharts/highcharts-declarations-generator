@@ -887,7 +887,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         return (
             indent + ' *\n' +
             events
-                .map(eventName => indent + ' * @emits ' + eventName)
+                .map(eventName => indent + ' * @fires ' + eventName)
                 .join('\n') + '\n'
         );
     }
