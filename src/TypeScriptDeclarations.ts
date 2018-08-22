@@ -17,8 +17,6 @@
  */
 type Kinds = (
     'global' |
-    'module' |
-    'namespace' |
     'type' |
     'interface' |
     'class' |
@@ -27,8 +25,11 @@ type Kinds = (
     'static function' |
     'constructor' |
     'property' |
+    'event' |
     'function' |
-    'parameter'
+    'parameter' |
+    'module' |
+    'namespace'
 );
 
 
@@ -77,6 +78,7 @@ const KIND_ORDER = [
     'static function',
     'constructor',
     'property',
+    'event',
     'function',
     'parameter',
     'module',
@@ -237,17 +239,30 @@ export abstract class IDeclaration extends Object {
      * @param name
      *        The name to simplify.
      */
-    protected static simplifyName(name: string): string {
+    protected static simplifyName (name: string): string {
 
         let nameParts = name.split('.');
 
         return nameParts[nameParts.length-1];
     }
 
+    protected static sortChild (
+        child1: IDeclaration, child2: IDeclaration
+    ): number {
+
+        let index1 = KIND_ORDER.indexOf(child1.kind),
+            index2 = KIND_ORDER.indexOf(child2.kind);
+
+        if (index1 === index2) {
+            return (child1.name.toLowerCase() < child2.name.toLowerCase() ? -1 : 1);
+        } else {
+            return (index1 - index2);
+        }
+    }
     /**
      * Sorts: primitives < classes < generics < null < undefined < any
      */
-    protected static sortType = function (typeA: string, typeB: string): number {
+    protected static sortType (typeA: string, typeB: string): number {
 
         switch (typeA) {
             case 'any':
@@ -317,7 +332,7 @@ export abstract class IDeclaration extends Object {
         this._name = IDeclaration.simplifyName(name);
         this._fullname = name;
 
-        this._children = {};
+        this._children = [];
         this._defaultValue = undefined;
         this._description = '';
         this._isOptional = false;
@@ -371,9 +386,9 @@ export abstract class IDeclaration extends Object {
      * Returns true, if the declaration contains child declarations.
      */
     public get hasChildren(): boolean {
-        return (Object.keys(this._children).length > 0);
+        return (this._children.length > 0);
     }
-    private _children: Dictionary<IDeclaration>;
+    private _children: Array<IDeclaration>;
 
     /**
      * Returns true, if the declaration includes types.
@@ -495,14 +510,7 @@ export abstract class IDeclaration extends Object {
                 );
             }
 
-            if (children[name]) {
-                throw new Error(
-                    'Declaration with this name already added.' +
-                    ' (' + this.name + '.' + name + ')'
-                );
-            }
-
-            children[name] = declaration;
+            children.push(declaration);
             declaration._parent = this;
         });
     }
@@ -513,9 +521,17 @@ export abstract class IDeclaration extends Object {
      * @param name
      *        The name of the child declaration.
      */
-    public getChild(name: string): (IDeclaration|undefined) {
+    public getChild(name: string): Array<IDeclaration> {
 
-        return this._children[name];
+        let foundChildren = [] as Array<IDeclaration>;
+
+        this._children.forEach(child => {
+            if (child.name === name) {
+                foundChildren.push(child);
+            }
+        });
+
+        return foundChildren;
     }
 
     /**
@@ -528,33 +544,15 @@ export abstract class IDeclaration extends Object {
      */
     public getChildren(): Array<IDeclaration> {
 
-        let children = this._children;
-
-        return this
-            .getChildrenNames()
-            .map(name => children[name]);
+        return this._children.sort(IDeclaration.sortChild);
     }
 
     /**
-     * Returns an array with the names of all child declarations.
+     * Returns a sorted array with the names of all child declarations.
      */
     public getChildrenNames(): Array<string> {
 
-        let children = this._children;
-
-        return Object
-            .keys(children)
-            .sort((name1, name2) => {
-
-                let index1 = KIND_ORDER.indexOf(children[name1].kind),
-                    index2 = KIND_ORDER.indexOf(children[name2].kind);
-
-                if (index1 === index2) {
-                    return (name1.toLowerCase() < name2.toLowerCase() ? -1 : 1);
-                } else {
-                    return (index1 - index2);
-                }
-            });
+        return this.getChildren().map(child => child.name);
     }
 
     /**
@@ -577,17 +575,25 @@ export abstract class IDeclaration extends Object {
      * @param name
      *        Name of the child declaration.
      */
-    public removeChild (name: string): (IDeclaration|undefined) {
+    public removeChild (name: string): Array<IDeclaration> {
 
-        let children = this._children,
-            declaration = children[name];
+        let recoverChildren = [] as Array<IDeclaration>,
+            removedChildren = [] as Array<IDeclaration>;
 
-        if (declaration) {
-            delete children[name];
-            declaration._parent = undefined;
-        }
+        this._children.forEach(child => {
+            if (child.name !== name) {
+                recoverChildren.push(child);
+            }
+            else {
+                removedChildren.push(child);
+                child._parent = undefined;
+            }
+        });
 
-        return declaration;
+        this._children.length = 0;
+        this._children.push(...recoverChildren);
+
+        return removedChildren;
     }
 
     /**
@@ -596,17 +602,19 @@ export abstract class IDeclaration extends Object {
      */
     public removeChildren (): Array<IDeclaration> {
 
-        let children = [] as Array<IDeclaration>;
+        let removedChildren = [] as Array<IDeclaration>;
 
         this.getChildrenNames()
             .forEach(childName => {
-                let child = this.removeChild(childName);
-                if (child) {
-                    children.push(child);
+
+                let children = this.removeChild(childName);
+
+                if (children.length > 0) {
+                    removedChildren.push(...children);
                 }
             });
 
-        return children;
+        return removedChildren;
     }
 
     /**
@@ -778,6 +786,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
         super(name);
 
+        this._events = [];
         this._parameters = {};
         this._typesDescription = '';
     }
@@ -787,6 +796,14 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      *  Properties
      *
      * */
+
+    /**
+     * The events, this declaration emits.
+     */
+    public get events(): Array<string> {
+        return this._events;
+    }
+    private _events: Array<string>;
 
     /**
      * Returns true, if declaration has parameters.
@@ -839,6 +856,26 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     }
 
     /**
+     * Returns the comment lines of emitted events for this TypeScript
+     * declaration.
+     */
+    protected renderEvents(indent: string = ''): string {
+
+        let events = this.events;
+
+        if (events.length === 0) {
+            return '';
+        }
+
+        return (
+            Object
+                .keys(events)
+                .map(eventName => indent + ' * @emits ' + eventName)
+                .join('\n') + '\n'
+        );
+    }
+
+    /**
      * Returns the parameter brackets of this TypeScript declaration.
      */
     protected renderParameterBrackets(): string {
@@ -856,12 +893,13 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     }
 
     /**
-     * Returns the comment lines with parameters for this TypeScript declaration.
+     * Returns the comment lines of parameters, return, events, and see for this
+     * TypeScript declaration.
      *
      * @param indent 
      *        The indentation string for formatting.
      */
-    protected renderParametersDescription(indent: string = ''): string {
+    protected renderExtendedDescription(indent: string = ''): string {
 
         let parameters = this._parameters,
             list = '';
@@ -877,15 +915,11 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             if (list) {
                 list += indent + ' *\n';
             }
-            list += (
-                indent + ' * @return ' +
-                IDeclaration
-                    .indent(
-                        IDeclaration.normalize(this.typesDescription, true),
-                        indent + ' *         '
-                    )
-                    .substr(indent.length + 11)
-            );
+            list += this.renderReturn(indent);
+        }
+
+        if (this.events.length > 0) {
+            list += this.renderEvents(indent);
         }
 
         if (this.see.length > 0) {
@@ -908,6 +942,26 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             ) +
             list +
             indent + ' *' + '/\n'
+        );
+    }
+
+    /**
+     * Returns a comment line with the return information for this TypeScript
+     * declaration. Uses types and typesDescription for this purpose.
+     *
+     * @param indent 
+     *        The indentation string for formatting.
+     */
+    protected renderReturn(indent: string = ''): string {
+
+        return (
+            indent + ' * @return ' +
+            IDeclaration
+                .indent(
+                    IDeclaration.normalize(this.typesDescription, true),
+                    indent + ' *         '
+                )
+                .substr(indent.length + 11)
         );
     }
 
@@ -1020,6 +1074,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
+        clone.events.push(...this.events);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -1127,6 +1182,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
+        clone.events.push(...this.events);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -1152,14 +1208,68 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
         renderedConstructor = this.renderScopePrefix() + renderedConstructor;
 
         return (
-            this.renderParametersDescription(indent) +
+            this.renderExtendedDescription(indent) +
             indent + renderedConstructor + ';\n'
         );
     }
 }
 
 /**
- * Class for extended declarations in TypeScript.
+ * Class for event declarations in TypeScript's doclets.
+ *
+ * @extends IDeclaration
+ */
+export class EventDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'event';
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this function declaration.
+     */
+    public clone(): EventDeclaration {
+
+        let clone = new EventDeclaration(this.name);
+
+        clone.description = this.description;
+        clone.types.push(...this.types);
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of this event declaration.
+     *
+     * @param indent
+     *        The indentation string for formatting.
+     */
+    public toString(indent: string = ''): string {
+
+        return (
+            this.renderDescription(indent) +
+            indent + ' * \n' +
+            indent + ' * @event ' + this.fullName + '\n' +
+            indent + ' * @type {' + this.renderTypes(false) + '}\n'
+        );
+    }
+}
+
+/**
+ * Class for function declarations in TypeScript.
  *
  * @extends IExtendedDeclaration
  */
@@ -1197,6 +1307,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
+        clone.events.push(...this.events);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -1229,7 +1340,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         renderedFunction = this.renderScopePrefix() + renderedFunction;
 
         return (
-            this.renderParametersDescription(indent) +
+            this.renderExtendedDescription(indent) +
             indent + renderedFunction + ';\n'
         );
     }
