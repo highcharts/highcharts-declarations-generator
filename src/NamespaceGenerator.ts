@@ -397,6 +397,10 @@ class Generator extends Object {
             declaration.description = doclet.description;
         }
 
+        if (doclet.emits) {
+            declaration.events.push(...doclet.fires);
+        }
+
         if (doclet.isPrivate) {
             declaration.isPrivate = true;
         }

@@ -234,6 +234,7 @@ export interface IDoclet {
     name: string;
     defaultValue?: (boolean | number | string);
     events?: utils.Dictionary<IEvent>;
+    fires?: Array<string>;
     isDeprecated?: boolean;
     isGlobal?: boolean;
     isOptional?: boolean;
