@@ -192,7 +192,7 @@ class Generator extends Object {
 
         sourceChildren.forEach(sourceChild => {
 
-            targetChild = targetDeclaration.getChild(sourceChild.name);
+            targetChild = targetDeclaration.getChild(sourceChild.name)[0];
 
             if (targetChild) {
                 Generator.mergeDeclarations(targetChild, sourceChild);
@@ -304,15 +304,13 @@ class Generator extends Object {
     }
 
     private generateChildren (
-        nodeChildren: utils.Dictionary<parser.INode>,
+        nodeChildren: Array<parser.INode>,
         targetDeclaration: tsd.IDeclaration
     ) {
 
-        Object
-            .keys(nodeChildren)
-            .forEach(childName => this
-                .generate(nodeChildren[childName], targetDeclaration)
-            );
+        nodeChildren.forEach(nodeChild =>
+             this.generate(nodeChild, targetDeclaration)
+        );
     }
 
     private generateClass (
@@ -331,7 +329,11 @@ class Generator extends Object {
         if (doclet.description) {
             declaration.description = doclet.description;
         }
-
+/*
+        if (doclet.events) {
+            declaration.addChildren(...this.generateEvents(doclet.events));
+        }
+ */
         if (doclet.parameters) {
             declaration.setParameters(
                 ...this.generateParameters(doclet.parameters)
@@ -355,6 +357,27 @@ class Generator extends Object {
         }
 
         return declaration;
+    }
+
+    private generateEvents (
+        events: utils.Dictionary<parser.IEvent>
+    ): Array<tsd.EventDeclaration> {
+
+        let declaration;
+
+        return Object
+            .keys(events)
+            .map(eventName => {
+
+                declaration = new tsd.EventDeclaration(eventName);
+
+                declaration.description = events[eventName].description;
+                declaration.types.push(
+                    ...events[eventName].types.map(config.mapType)
+                );
+
+                return declaration;
+            });
     }
 
     private generateFunction (
@@ -463,7 +486,7 @@ class Generator extends Object {
             );
         }
 
-        let existingChild = targetDeclaration.getChild(declaration.name);
+        let existingChild = targetDeclaration.getChild(declaration.name)[0];
 
         if (existingChild) {
             Generator.mergeDeclarations(existingChild, declaration);
@@ -499,13 +522,18 @@ class Generator extends Object {
 
         if (this.modulePath !== config.mainModule) {
             targetDeclaration = this.generateModule(
-                this.modulePath, targetDeclaration
+                this.modulePath, this._root
             );
         }
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.NamespaceDeclaration(doclet.name),
-            child = targetDeclaration.getChild(doclet.name);
+            declaration = new tsd.NamespaceDeclaration(doclet.name);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._root;
+        }
+
+        let child = targetDeclaration.getChild(doclet.name)[0];
 
         if (child) {
             declaration = child as tsd.NamespaceDeclaration;
@@ -636,7 +664,7 @@ class Generator extends Object {
             declaration.types.push(...doclet.types);
         }
 
-        let existingChild = targetDeclaration.getChild(declaration.name);
+        let existingChild = targetDeclaration.getChild(declaration.name)[0];
 
         if (existingChild) {
             Generator.mergeDeclarations(existingChild, declaration);
