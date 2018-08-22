@@ -375,9 +375,13 @@ export abstract class IDeclaration extends Object {
      * Returns the full qualified name of the declaration including namespaces.
      */
     public get fullName(): string {
-        if (this.parent) {
-            return this.parent.fullName + '.' + this.name;
-        } else {
+
+        let parentName = this.parent && this.parent.fullName;
+
+        if (parentName) {
+            return parentName + '.' + this.name;
+        }
+        else {
             return this.name;
         }
     }
@@ -861,13 +865,27 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      */
     protected renderEvents(indent: string = ''): string {
 
-        let events = this.events;
+        let events = this.events.map(eventName => {
+
+            let colonIndex = eventName.indexOf(':');
+
+            if (this.parent &&
+                colonIndex > -1 &&
+                eventName.indexOf(this.parent.fullName + '#event:') === 0
+            ) {
+                return eventName.substr(colonIndex + 1);
+            }
+            else {
+                return eventName;
+            }
+        });
 
         if (events.length === 0) {
             return '';
         }
 
         return (
+            indent + ' *\n' +
             events
                 .map(eventName => indent + ' * @emits ' + eventName)
                 .join('\n') + '\n'
@@ -1392,6 +1410,13 @@ export class GlobalDeclaration extends IDeclaration {
         return this._imports;
     }
     private _imports: Array<string>;
+
+    /**
+     * Full qualifierd name of a global declaration is always an empty string.
+     */
+    public get fullName (): string {
+        return '';
+    }
 
     /**
      * Kind of declaration.
