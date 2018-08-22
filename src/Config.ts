@@ -98,6 +98,7 @@ config.seeLink = function (name: string, kind: string, product?: string) {
         case 'class':
         case 'namespace':
             return config.seeBaseUrl + 'class-reference/' + name;
+        case 'constructor':
         case 'function':
             return (
                 config.seeBaseUrl + 'class-reference/' +
