@@ -275,6 +275,7 @@ export interface IFile {
 
 export type IKind = (
     'class' |
+    'constructor' |
     'function' |
     'global' |
     'interface' |

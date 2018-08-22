@@ -278,6 +278,9 @@ class Generator extends Object {
             case 'class':
                 this.generateClass(sourceNode, targetDeclaration);
                 break;
+            case 'constructor':
+                this.generateConstructor(sourceNode, targetDeclaration);
+                break;
             case 'function':
                 this.generateFunction(sourceNode, targetDeclaration);
                 break;
@@ -329,16 +332,6 @@ class Generator extends Object {
         if (doclet.description) {
             declaration.description = doclet.description;
         }
-/*
-        if (doclet.events) {
-            declaration.addChildren(...this.generateEvents(doclet.events));
-        }
- */
-        if (doclet.parameters) {
-            declaration.setParameters(
-                ...this.generateParameters(doclet.parameters)
-            );
-        }
 
         if (doclet.see) {
             declaration.see.push(...doclet.see);
@@ -355,6 +348,45 @@ class Generator extends Object {
         if (sourceNode.children) {
             this.generateChildren(sourceNode.children, declaration);
         }
+
+        return declaration;
+    }
+
+    private generateConstructor (
+        sourceNode: parser.INode,
+        targetDeclaration: tsd.IDeclaration
+    ): tsd.ConstructorDeclaration {
+
+        let declaration = new tsd.ConstructorDeclaration(),
+            doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.description) {
+            declaration.description = doclet.description;
+        }
+/*
+        if (doclet.events) {
+            declaration.addChildren(...this.generateEvents(doclet.events));
+        }
+ */
+        if (doclet.fires) {
+            declaration.events.push(...doclet.fires);
+        }
+
+        if (doclet.isPrivate) {
+            declaration.isPrivate = true;
+        }
+
+        if (doclet.parameters) {
+            declaration.setParameters(
+                ...this.generateParameters(doclet.parameters)
+            );
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        targetDeclaration.addChildren(declaration);
 
         return declaration;
     }
