@@ -732,7 +732,7 @@ export abstract class IDeclaration extends Object {
         }
 
         return (
-            indent + ' * \n' +
+            indent + ' *\n' +
             this.see.map(
                 link => indent + ' * @see ' + IDeclaration.normalize(link)
             ).join('') + '\n'
@@ -1278,7 +1278,7 @@ export class EventDeclaration extends IDeclaration {
 
         return (
             this.renderDescription(indent) +
-            indent + ' * \n' +
+            indent + ' *\n' +
             indent + ' * @event ' + this.fullName + '\n' +
             indent + ' * @type {' + this.renderTypes(false) + '}\n'
         );
