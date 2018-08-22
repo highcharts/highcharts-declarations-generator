@@ -260,7 +260,7 @@ export function isDeepEqual (objectA: any, objectB: any): boolean {
             keysB = Object.keys(objectB);
 
         return (
-            keysA.length !== keysB.length &&
+            keysA.length === keysB.length &&
             keysA.every(key => isDeepEqual(objectA[key], objectB[key]))
         );
     }
