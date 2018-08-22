@@ -26,17 +26,19 @@ export function parseIntoFiles(json: any): Promise<utils.Dictionary<INode>> {
 /**
  * Copies all nodes into there modules.
  *
- * @param {INode} sourceNode
+ * @param sourceNode
  *        The node to copy into the modules.
  *
- * @param {Dictionary<INode>} targetModules
+ * @param targetModules
  *        The module dictionary to copy the node in.
  */
 function transferNodes (
     sourceNode: INode, targetModules: utils.Dictionary<INode>
 ) {
 
-    if (sourceNode.doclet && sourceNode.meta) {
+    if (sourceNode.doclet &&
+        sourceNode.meta
+    ) {
 
         let sourceDoclet = sourceNode.doclet,
             sourceMeta = sourceNode.meta;
@@ -47,71 +49,59 @@ function transferNodes (
 
             let moduleNode = prepareModule(targetModules, modulePath),
                 targetName = (sourceDoclet.name || ''),
-                targetNode = (
-                    findNode(moduleNode, targetName) ||
-                    createNode(moduleNode, targetName)
-                ),
+                targetNode = findNode(moduleNode, targetName),
                 targetDoclet = targetNode.doclet;
 
+            if (targetDoclet &&
+                !isEqual(targetDoclet, sourceDoclet)
+            ) {
+                targetNode = findNode(moduleNode, targetName, true);
+                targetDoclet = targetNode.doclet;
+            }
+
             if (!targetDoclet) {
-                targetDoclet = targetNode.doclet = {
-                    description: ''
-                } as IDoclet;
+                targetDoclet = targetNode.doclet = {} as any;
             }
 
             Object
                 .keys(sourceDoclet)
                 .forEach(key =>
-                    (targetDoclet as any)[key] =
-                    (sourceDoclet as any)[key]
+                    (targetDoclet as any)[key] = (sourceDoclet as any)[key]
                 );
         });
     }
 
     if (sourceNode.children) {
-
-        let sourceChildren = sourceNode.children;
-
-        Object
-            .keys(sourceChildren || {})
-            .forEach(key => transferNodes(sourceChildren[key], targetModules));
+        sourceNode.children.forEach(
+            sourceChild => transferNodes(sourceChild, targetModules)
+        );
     }
 }
 
 
 
 /**
- * Creates an returns a node in the given root node.
+ * Compares two light doclets for basic equality. Returns true, if the doclet is
+ * basically equal.
  *
- * @param {INode} rootNode
- *        The root node to create the node in.
+ * @param docletA
+ *        First node to analyze.
  *
- * @param {string} nodeName
- *        The full name of the node to create.
+ * @param docletB
+ *        Second node to analyze.
  */
-function createNode (rootNode: INode, nodeName: string): INode {
+function isEqual (docletA: IDoclet, docletB: IDoclet) {
 
-    if (!rootNode) {
-        throw new Error('No root node has been provided.');
-    }
-
-    let node = rootNode;
-
-    if (nodeName) {
-        utils
-            .namespaces(nodeName)
-            .forEach(spaceName => {
-                if (!node.children) {
-                    node.children = {};
-                }
-                if (!node.children[spaceName]) {
-                    node.children[spaceName] = {};
-                }
-                node = node.children[spaceName];
-            });
-    }
-
-    return node
+    return (
+        typeof docletA === typeof docletB &&
+        typeof docletA.name === typeof docletB.name &&
+        docletA.name === docletB.name &&
+        (
+            Object.keys(docletA).length == 1 ||
+            Object.keys(docletB).length == 1 ||
+            utils.isDeepEqual(docletA, docletB)
+        )
+    );
 }
 
 
@@ -119,34 +109,62 @@ function createNode (rootNode: INode, nodeName: string): INode {
 /**
  * Search a node and returns it, if founded.
  *
- * @param {INode} rootNode
+ * @param rootNode
  *        The root node to search in.
  *
- * @param {string} nodeName
+ * @param nodeName
  *        The full name of the node to find.
+ *
+ * @param overload
+ *        Create additional node.
  */
 function findNode (
-    rootNode: INode, nodeName: string
-): (INode | undefined) {
+    rootNode: INode, nodeName: string, overload: boolean = false
+): INode {
 
-    if (!rootNode) {
-        throw new Error('No root node has been provided.');
-    }
+    let found = false,
+        node = rootNode,
+        spaceNames = utils.namespaces(nodeName, true),
+        indexEnd = (spaceNames.length - 1);
 
-    let node = rootNode as (INode | undefined);
+    spaceNames.forEach((spaceName, index) => {
 
-    if (nodeName) {
-        utils
-            .namespaces(nodeName)
-            .every(spaceName => {
-                if (node) {
-                    node = (node.children && node.children[spaceName]);
+        if (!node.children) {
+            node.children = [];
+        }
+
+        if (overload &&
+            index === indexEnd
+        ) {
+            found = false;
+        }
+        else {
+            found = node.children.some(child => {
+                if (child.doclet &&
+                    child.doclet.name === spaceName
+                ) {
+                    node = child;
                     return true;
-                } else {
+                }
+                else {
                     return false;
                 }
             });
-    }
+        }
+
+        if (!found) {
+
+            let newNode = {
+                doclet: {
+                    name: spaceName
+                }
+            } as INode;
+
+            node.children.push(newNode);
+
+            node = newNode;
+        }
+    });
 
     return node;
 }
@@ -156,10 +174,10 @@ function findNode (
 /**
  * Prepares and returns the specified module.
  *
- * @param {Dictionary<INode>} modules
+ * @param modules
  *        The dictionary with all modules.
  *
- * @param {string} modulePath
+ * @param modulePath
  *        The file path to the module.
  */
 function prepareModule (
@@ -167,10 +185,11 @@ function prepareModule (
 ): INode {
 
     modules[modulePath] = (modules[modulePath] || {
-        children: {},
+        children: [],
         doclet: {
-            kind: 'namespace',
-            name: 'Highcharts',
+            description: '',
+            kind: 'global',
+            name: '',
         },
         meta: {
             files: [{
@@ -198,8 +217,8 @@ function prepareModule (
 
 
 export interface INode {
-    children?: utils.Dictionary<INode>;
-    doclet?: IDoclet;
+    doclet: IDoclet;
+    children?: Array<INode>;
     meta?: IMeta;
 }
 
@@ -214,6 +233,7 @@ export interface IDoclet {
     kind: IKind;
     name: string;
     defaultValue?: (boolean | number | string);
+    events?: utils.Dictionary<IEvent>;
     isDeprecated?: boolean;
     isGlobal?: boolean;
     isOptional?: boolean;
@@ -235,6 +255,20 @@ export interface IMeta {
 
 
 // Level 3
+
+
+
+export interface IEvent {
+    description: string;
+    types: ITypes;
+}
+
+
+
+export interface IFile {
+    path: string;
+    line: number;
+}
 
 
 
@@ -268,10 +302,3 @@ export interface IReturn {
 
 
 export type ITypes = Array<string>;
-
-
-
-export interface IFile {
-    path: string;
-    line: number;
-}
