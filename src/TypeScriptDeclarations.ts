@@ -868,8 +868,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         }
 
         return (
-            Object
-                .keys(events)
+            events
                 .map(eventName => indent + ' * @emits ' + eventName)
                 .join('\n') + '\n'
         );
