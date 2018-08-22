@@ -397,7 +397,7 @@ class Generator extends Object {
             declaration.description = doclet.description;
         }
 
-        if (doclet.emits) {
+        if (doclet.fires) {
             declaration.events.push(...doclet.fires);
         }
 
