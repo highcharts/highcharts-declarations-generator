@@ -5,8 +5,8 @@
  * */
 
 import * as config from './Config';
+import * as tsd from './TypeScriptDeclarations';
 import * as utils from './Utilities';
-
 
 
 /**
@@ -263,7 +263,7 @@ class Parser extends Object {
             meta: {}
         } as INode;
 
-        utils
+        tsd.IDeclaration
             .namespaces(nodeName)
             .every(spaceName => {
                 currentNode = currentNode.children[spaceName];

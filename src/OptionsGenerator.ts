@@ -89,7 +89,7 @@ class Generator extends Object {
 
     private static getName (node: parser.INode): string {
 
-        return (utils
+        return (tsd.IDeclaration
             .namespaces(node.meta.fullname || node.meta.name || '')
             .map(utils.capitalize)
             .join('')

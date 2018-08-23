@@ -78,7 +78,7 @@ class Generator extends Object {
         });
 
         let description = (doclet.description || '').trim(),
-            namespaces = utils.namespaces(doclet.name || ''),
+            namespaces = tsd.IDeclaration.namespaces(doclet.name || ''),
             removedLinks = [] as Array<string>,
             values;
 

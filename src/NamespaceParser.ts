@@ -6,6 +6,7 @@
 
 import * as config from './Config';
 import * as utils from './Utilities';
+import * as tsd from './TypeScriptDeclarations';
 
 
 
@@ -124,7 +125,7 @@ function findNode (
 
     let found = false,
         node = rootNode,
-        spaceNames = utils.namespaces(nodeName, true),
+        spaceNames = tsd.IDeclaration.namespaces(nodeName, true),
         indexEnd = (spaceNames.length - 1);
 
     spaceNames.forEach((spaceName, index) => {
