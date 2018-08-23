@@ -17,8 +17,6 @@ const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
 const JSON_QUOTE: RegExp = /['`]/gm;
 
-const NAMESPACES_SUBSPACE = /(?:\<.+\>|\[\w+\:.+\])$/gm;
-
 const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/gm;
 const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
 const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
@@ -343,42 +341,6 @@ export function mergeArrays<T>(
     }));
 
     return target;
-}
-
-
-
-export function namespaces (name: string, fullName: boolean = false): Array<string> {
-
-    let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
-
-    if (subspace) {
-        name = name.substr(0, name.length - subspace.length);
-    }
-
-    let namespaces = name.split('.');
-
-    if (subspace) {
-        namespaces[namespaces.length-1] += subspace;
-    }
-
-    if (fullName) {
-
-        let fullSpace = '';
-
-        namespaces = namespaces.map(space => {
-
-            if (fullSpace) {
-                fullSpace += '.' + space;
-            }
-            else {
-                fullSpace = space;
-            }
-
-            return fullSpace;
-        });
-    }
-
-    return namespaces;
 }
 
 

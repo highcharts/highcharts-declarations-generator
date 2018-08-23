@@ -86,6 +86,11 @@ const KIND_ORDER = [
 ] as Array<Kinds>;
 
 /**
+ * Pattern to split a fullname into namespaces and subspaces.
+ */
+const NAMESPACES_SUBSPACES = /(?:\<.+\>|\[\w+\:.+\])$/gm;
+
+/**
  * Escape double lines like in Markdown.
  */
 const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
@@ -188,6 +193,49 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Splits a name into the namespace components.
+     * 
+     * @param name
+     *        The name to split into spaces.
+     *
+     * @param withFullNames
+     *        Array contains the full names of the spaces.
+     */
+    public static namespaces (name: string, withFullNames: boolean = false): Array<string> {
+
+        let subspace = (name.match(NAMESPACES_SUBSPACES) || [])[0];
+
+        if (subspace) {
+            name = name.substr(0, name.length - subspace.length);
+        }
+
+        let namespaces = name.split('.');
+
+        if (subspace) {
+            namespaces[namespaces.length-1] += subspace;
+        }
+
+        if (withFullNames) {
+
+            let fullSpace = '';
+
+            namespaces = namespaces.map(space => {
+
+                if (fullSpace) {
+                    fullSpace += '.' + space;
+                }
+                else {
+                    fullSpace = space;
+                }
+
+                return fullSpace;
+            });
+        }
+
+        return namespaces;
+    }
+
+    /**
      * Reduce space and line breaks to one space character and returns the
      * normalized text.
      *
@@ -241,26 +289,41 @@ export abstract class IDeclaration extends Object {
      */
     protected static simplifyName (name: string): string {
 
-        let nameParts = name.split('.');
+        let nameParts = IDeclaration.namespaces(name);
 
         return nameParts[nameParts.length-1];
     }
 
-    protected static sortChild (
-        child1: IDeclaration, child2: IDeclaration
+    /**
+     * Sorts: KIND_ORDER:0 < KIND_ORDER:1
+     *
+     * @param declarationA
+     *        The first declaration to compare.
+     *
+     * @param declarationB 
+     *        The second declaration to compare.
+     */
+    protected static sortDeclaration (
+        declarationA: IDeclaration, declarationB: IDeclaration
     ): number {
 
-        let index1 = KIND_ORDER.indexOf(child1.kind),
-            index2 = KIND_ORDER.indexOf(child2.kind);
+        let index1 = KIND_ORDER.indexOf(declarationA.kind),
+            index2 = KIND_ORDER.indexOf(declarationB.kind);
 
         if (index1 === index2) {
-            return (child1.name.toLowerCase() < child2.name.toLowerCase() ? -1 : 1);
+            return (declarationA.name.toLowerCase() < declarationB.name.toLowerCase() ? -1 : 1);
         } else {
             return (index1 - index2);
         }
     }
     /**
      * Sorts: primitives < classes < generics < null < undefined < any
+     *
+     * @param typeA
+     *        The first type to compare.
+     *
+     * @param typeB
+     *        The second type to compare.
      */
     protected static sortType (typeA: string, typeB: string): number {
 
@@ -548,7 +611,7 @@ export abstract class IDeclaration extends Object {
      */
     public getChildren(): Array<IDeclaration> {
 
-        return this._children.sort(IDeclaration.sortChild);
+        return this._children.sort(IDeclaration.sortDeclaration);
     }
 
     /**
@@ -1917,7 +1980,7 @@ export class PropertyDeclaration extends IDeclaration {
 
         let childIndent = indent + '    ',
             renderedMember = this.name;
-            
+        if (this.name.indexOf(']') > -1) console.log(this);
         if (this.isOptional) {
             renderedMember += '?';
         }
