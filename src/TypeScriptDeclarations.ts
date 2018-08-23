@@ -1980,7 +1980,7 @@ export class PropertyDeclaration extends IDeclaration {
 
         let childIndent = indent + '    ',
             renderedMember = this.name;
-        if (this.name.indexOf(']') > -1) console.log(this);
+
         if (this.isOptional) {
             renderedMember += '?';
         }
