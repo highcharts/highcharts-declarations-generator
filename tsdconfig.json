@@ -12,6 +12,7 @@
         "String": "string",
         "array": "Array",
         "function": "Function",
+        "function()": "Function",
         "object": "any"
     }
 }
