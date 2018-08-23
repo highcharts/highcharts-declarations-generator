@@ -1895,6 +1895,10 @@ export class ParameterDeclaration extends IDeclaration {
         let defaultValue = (this.defaultValue || '').toString(),
             renderedTypes = '@param  ' + this.name;
 
+        if (this.isOptional) {
+            renderedTypes = '[' + renderedTypes + ']';
+        }
+
         if (defaultValue) {
             defaultValue = ' (Default value: ' + defaultValue + ')';
         }
