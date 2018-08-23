@@ -86,17 +86,18 @@ function transferNodes (
  * basically equal.
  *
  * @param docletA
- *        First node to analyze.
+ *        First doclet to analyze.
  *
  * @param docletB
- *        Second node to analyze.
+ *        Second doclet to analyze.
  */
 function isEqual (docletA: IDoclet, docletB: IDoclet) {
 
+    let nameA = tsd.IDeclaration.namespaces(docletA.name).join('.'),
+        nameB = tsd.IDeclaration.namespaces(docletB.name).join('.');
+
     return (
-        typeof docletA === typeof docletB &&
-        typeof docletA.name === typeof docletB.name &&
-        docletA.name === docletB.name &&
+        nameA === nameB &&
         (
             Object.keys(docletA).length == 1 ||
             Object.keys(docletB).length == 1 ||
@@ -141,9 +142,7 @@ function findNode (
         }
         else {
             found = node.children.some(child => {
-                if (child.doclet &&
-                    child.doclet.name === spaceName
-                ) {
+                if (child.doclet.name === spaceName) {
                     node = child;
                     return true;
                 }

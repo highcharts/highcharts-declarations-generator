@@ -149,8 +149,7 @@ class Generator extends Object {
         if (values instanceof Array) {
             doclet.types = values.map(config.mapValue);
         } else if (doclet.types) {
-            doclet.types = doclet.types
-                .map(config.mapType);
+            doclet.types = doclet.types.map(config.mapType);
         } else {
             doclet.types = [ 'any' ];
         }

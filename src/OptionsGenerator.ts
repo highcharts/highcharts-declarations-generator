@@ -89,8 +89,14 @@ class Generator extends Object {
 
     private static getName (node: parser.INode): string {
 
+        let name = (node.meta.fullname || node.meta.name || '');
+
+        if (name.indexOf('Highcharts.') > -1) {
+            name = name.substr(11);
+        }
+
         return (tsd.IDeclaration
-            .namespaces(node.meta.fullname || node.meta.name || '')
+            .namespaces(name)
             .map(utils.capitalize)
             .join('')
             .replace('Options', '') +
@@ -157,13 +163,7 @@ class Generator extends Object {
             declaration.see.push(...doclet.see);
         }
 
-        try {
-            this.namespace.addChildren(declaration);
-        }
-        catch (error) {
-            console.log(sourceNode);
-            throw error;
-        }
+        this.namespace.addChildren(declaration);
 
         let children = sourceNode.children,
             childNames = Object.keys(children);
