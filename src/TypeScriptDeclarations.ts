@@ -86,9 +86,9 @@ const KIND_ORDER = [
 ] as Array<Kinds>;
 
 /**
- * Pattern to split a fullname into namespaces and subspaces.
+ * Finds subspaces in fullnames.
  */
-const NAMESPACES_SUBSPACES = /(?:\<.+\>|\[\w+\:.+\])$/gm;
+const NAMESPACES_SUBSPACE = /(?:<.+>|\[.+\])$/gm;
 
 /**
  * Escape double lines like in Markdown.
@@ -203,7 +203,11 @@ export abstract class IDeclaration extends Object {
      */
     public static namespaces (name: string, withFullNames: boolean = false): Array<string> {
 
-        let subspace = (name.match(NAMESPACES_SUBSPACES) || [])[0];
+        if (!name) {
+            return [];
+        }
+
+        let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
 
         if (subspace) {
             name = name.substr(0, name.length - subspace.length);
@@ -212,6 +216,12 @@ export abstract class IDeclaration extends Object {
         let namespaces = name.split('.');
 
         if (subspace) {
+            if (subspace.indexOf(':') > -1 &&
+                subspace.indexOf(':number') === -1 &&
+                subspace.indexOf(':string') === -1
+            ) {
+                subspace = subspace.replace(':', ' in ');
+            }
             namespaces[namespaces.length-1] += subspace;
         }
 
@@ -287,7 +297,7 @@ export abstract class IDeclaration extends Object {
      * @param name
      *        The name to simplify.
      */
-    protected static simplifyName (name: string): string {
+    public static simplifyName (name: string): string {
 
         let nameParts = IDeclaration.namespaces(name);
 
@@ -303,7 +313,7 @@ export abstract class IDeclaration extends Object {
      * @param declarationB 
      *        The second declaration to compare.
      */
-    protected static sortDeclaration (
+    public static sortDeclaration (
         declarationA: IDeclaration, declarationB: IDeclaration
     ): number {
 
@@ -325,7 +335,7 @@ export abstract class IDeclaration extends Object {
      * @param typeB
      *        The second type to compare.
      */
-    protected static sortType (typeA: string, typeB: string): number {
+    public static sortType (typeA: string, typeB: string): number {
 
         switch (typeA) {
             case 'any':
