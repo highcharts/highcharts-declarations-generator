@@ -1893,10 +1893,13 @@ export class ParameterDeclaration extends IDeclaration {
     public renderParameterDescription (indent: string = ''): string {
 
         let defaultValue = (this.defaultValue || '').toString(),
-            renderedTypes = '@param  ' + this.name;
+            renderedTypes = this.name;
 
         if (this.isOptional) {
-            renderedTypes = '[' + renderedTypes + ']';
+            renderedTypes = '@param [' + renderedTypes + ']';
+        }
+        else {
+            renderedTypes = '@param ' + renderedTypes;
         }
 
         if (defaultValue) {
