@@ -583,13 +583,21 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
-     * Returns the named child declaration of this declaration, if founded.
+     * Returns a clone of this declaration.
+     */
+    public abstract clone(): IDeclaration;
+
+    /**
+     * Returns the child declarations of this declaration, if founded.
      *
      * @param name
      *        The name of the child declaration.
      */
-    public getChild(name: string): Array<IDeclaration> {
+    public getChildren(name?: string): Array<IDeclaration> {
 
+        if (!name) {
+            return this._children.sort(IDeclaration.sortDeclaration);
+        }
         let foundChildren = [] as Array<IDeclaration>;
 
         this._children.forEach(child => {
@@ -599,19 +607,6 @@ export abstract class IDeclaration extends Object {
         });
 
         return foundChildren;
-    }
-
-    /**
-     * Returns a clone of this declaration.
-     */
-    public abstract clone(): IDeclaration;
-
-    /**
-     * Returns an array with all child declarations.
-     */
-    public getChildren(): Array<IDeclaration> {
-
-        return this._children.sort(IDeclaration.sortDeclaration);
     }
 
     /**
@@ -1174,7 +1169,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
     public toString (indent: string = ''): string {
 
         if (this.hasParameters &&
-            !this.getChild('constructor')
+            this.getChildren('constructor').length === 0
         ) {
             let constructor = new ConstructorDeclaration();
             constructor.description = this.description;
