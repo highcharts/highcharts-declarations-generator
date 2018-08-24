@@ -403,8 +403,6 @@ export abstract class IDeclaration extends Object {
         super();
 
         this._name = IDeclaration.simplifyName(name);
-        this._fullname = name;
-
         this._children = [];
         this._defaultValue = undefined;
         this._description = '';
@@ -481,14 +479,6 @@ export abstract class IDeclaration extends Object {
         return this._name;
     }
     private _name: string;
-
-    /**
-     * Full qualifierd name of this declaration.
-     */
-    public get fullname(): string {
-        return this._fullname;
-    }
-    private _fullname: string;
 
     /**
      * Parent relation.
