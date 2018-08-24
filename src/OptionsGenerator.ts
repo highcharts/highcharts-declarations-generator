@@ -27,6 +27,8 @@ export function generate (
 
 const GENERIC_ANY_TYPE = /([\<\(\|])any([\|\)\>])/gm;
 
+const SERIES_TYPE = /^series\.(\w+)$/gm;
+
 
 
 class Generator extends Object {
@@ -37,7 +39,24 @@ class Generator extends Object {
      *
      * */
 
-    private static getDoclet (node: parser.INode): parser.IDoclet {
+    private static getCamelCaseName (node: parser.INode): string {
+
+        let name = (node.meta.fullname || node.meta.name || '');
+
+        if (name.indexOf('Highcharts.') > -1) {
+            name = name.substr(11);
+        }
+
+        return (tsd.IDeclaration
+            .namespaces(name)
+            .map(utils.capitalize)
+            .join('')
+            .replace('Options', '') +
+            'Options'
+        );
+    }
+
+    private static getModifiedDoclet (node: parser.INode): parser.IDoclet {
 
         let doclet = node.doclet,
             description = (node.doclet.description || '').trim(),
@@ -87,23 +106,6 @@ class Generator extends Object {
         return doclet;
     }
 
-    private static getName (node: parser.INode): string {
-
-        let name = (node.meta.fullname || node.meta.name || '');
-
-        if (name.indexOf('Highcharts.') > -1) {
-            name = name.substr(11);
-        }
-
-        return (tsd.IDeclaration
-            .namespaces(name)
-            .map(utils.capitalize)
-            .join('')
-            .replace('Options', '') +
-            'Options'
-        );
-    }
-
     /* *
      *
      *  Constructor
@@ -116,7 +118,7 @@ class Generator extends Object {
 
         this._namespace = new tsd.NamespaceDeclaration('Highcharts');
 
-        this.generateInterface({
+        this.generateInterfaceDeclaration({
             children: optionsJSON,
             doclet: {
                 description: 'The option tree for every chart.'
@@ -147,12 +149,17 @@ class Generator extends Object {
      *
      * */
 
-    private generateInterface (
+    private generateInterfaceDeclaration (
         sourceNode: parser.INode
-    ): tsd.InterfaceDeclaration {
+    ): (tsd.InterfaceDeclaration|undefined) {
 
-        let doclet = Generator.getDoclet(sourceNode),
-            name = Generator.getName(sourceNode),
+        let doclet = Generator.getModifiedDoclet(sourceNode);
+
+        if (doclet.undocumented) {
+            return;
+        }
+
+        let name = Generator.getCamelCaseName(sourceNode),
             declaration = new tsd.InterfaceDeclaration(name);
 
         if (doclet.description) {
@@ -165,53 +172,68 @@ class Generator extends Object {
 
         this.namespace.addChildren(declaration);
 
-        let children = sourceNode.children,
-            childNames = Object.keys(children);
-
-        childNames.forEach(childName => {
-            this.generateProperty(children[childName], declaration);
-        });
+        utils.Dictionary
+            .values(sourceNode.children)
+            .forEach(child => {
+                if (name !== 'SeriesOptions' ||
+                    Object.keys(child.children).length === 0
+                ) {
+                    this.generatePropertyDeclaration(child, declaration)
+                }
+                else {
+                    this.generateSeriesDeclaration(child);
+                }
+            });
 
         return declaration;
     }
 
-    private generateProperty (
+    private generatePropertyDeclaration (
         sourceNode: parser.INode,
         targetDeclaration: tsd.IDeclaration
-    ): tsd.PropertyDeclaration {
+    ): (tsd.PropertyDeclaration|undefined) {
+
+        let doclet = Generator.getModifiedDoclet(sourceNode);
+
+        if (doclet.undocumented) {
+            return;
+        }
 
         if (Object.keys(sourceNode.children).length > 0) {
 
-            let interfaceDeclaration = this.generateInterface(sourceNode),
+            let interfaceDeclaration = this.generateInterfaceDeclaration(sourceNode),
                 replacedAnyType = false;
 
-            sourceNode.children = {};
-            sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
-            sourceNode.doclet.type.names = sourceNode.doclet.type.names
-                .map(config.mapType)
-                .filter(name => (name !== 'any' && name !== 'object'))
-                .map(name => {
-                    if (name.indexOf('any') === -1 ||
-                        !GENERIC_ANY_TYPE.test(name)
-                    ) {
-                        return name;
-                    }
-                    else {
-                        replacedAnyType = true;
-                        return name.replace(
-                            GENERIC_ANY_TYPE,
-                            '$1' + interfaceDeclaration.name + '$2'
-                        );
-                    }
-                });
+            if (interfaceDeclaration) {
 
-            if (!replacedAnyType) {
-                sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
+                sourceNode.children = {};
+                sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
+                sourceNode.doclet.type.names = sourceNode.doclet.type.names
+                    .map(config.mapType)
+                    .filter(name => (name !== 'any' && name !== 'object'))
+                    .map(name => {
+                        if (name.indexOf('any') === -1 ||
+                            !GENERIC_ANY_TYPE.test(name) ||
+                            !interfaceDeclaration
+                        ) {
+                            return name;
+                        }
+                        else {
+                            replacedAnyType = true;
+                            return name.replace(
+                                GENERIC_ANY_TYPE,
+                                '$1' + interfaceDeclaration.name + '$2'
+                            );
+                        }
+                    });
+
+                if (!replacedAnyType) {
+                    sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
+                }
             }
         }
 
-        let doclet = Generator.getDoclet(sourceNode),
-            declaration = new tsd.PropertyDeclaration(
+        let declaration = new tsd.PropertyDeclaration(
                 sourceNode.meta.name || ''
             );
 
@@ -236,13 +258,51 @@ class Generator extends Object {
             declaration.types.push(...doclet.type.names);
         }
 
-        try {
-            targetDeclaration.addChildren(declaration);
+        targetDeclaration.addChildren(declaration);
+
+        return declaration;
+    }
+
+    private generateSeriesDeclaration(
+        sourceNode: parser.INode
+    ): (tsd.InterfaceDeclaration|undefined) {
+
+        let doclet = Generator.getModifiedDoclet(sourceNode);
+
+        if (doclet.undocumented) {
+            return;
         }
-        catch (error) {
-            console.log(sourceNode);
-            throw error;
+
+        let name = Generator.getCamelCaseName(sourceNode),
+            declaration = new tsd.InterfaceDeclaration(name);
+
+        if (doclet.description) {
+            declaration.description = doclet.description;
         }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        declaration.types.push('SeriesOptions');
+
+        let dataNode = sourceNode.children['data'];
+
+        if (!dataNode) {
+            console.error('No data description found!');
+            return;
+        }
+
+        this.namespace.addChildren(declaration);
+
+        this.generatePropertyDeclaration(dataNode, declaration);
+
+        let typeDeclaration = new tsd.PropertyDeclaration('type');
+
+        typeDeclaration.isOptional = true;
+        typeDeclaration.types.push('"' + sourceNode.meta.name + '"');
+
+        declaration.addChildren(typeDeclaration);
 
         return declaration;
     }
