@@ -191,7 +191,7 @@ class Generator extends Object {
 
         sourceChildren.forEach(sourceChild => {
 
-            targetChild = targetDeclaration.getChild(sourceChild.name)[0];
+            targetChild = targetDeclaration.getChildren(sourceChild.name)[0];
 
             if (targetChild) {
                 Generator.mergeDeclarations(targetChild, sourceChild);
@@ -521,7 +521,7 @@ class Generator extends Object {
             );
         }
 
-        let existingChild = targetDeclaration.getChild(declaration.name)[0];
+        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
         if (existingChild) {
             Generator.mergeDeclarations(existingChild, declaration);
@@ -568,7 +568,7 @@ class Generator extends Object {
             targetDeclaration = this._root;
         }
 
-        let child = targetDeclaration.getChild(doclet.name)[0];
+        let child = targetDeclaration.getChildren(doclet.name)[0];
 
         if (child) {
             declaration = child as tsd.NamespaceDeclaration;
@@ -699,7 +699,7 @@ class Generator extends Object {
             declaration.types.push(...doclet.types);
         }
 
-        let existingChild = targetDeclaration.getChild(declaration.name)[0];
+        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
         if (existingChild) {
             Generator.mergeDeclarations(existingChild, declaration);
