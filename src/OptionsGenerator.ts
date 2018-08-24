@@ -242,32 +242,33 @@ class Generator extends Object {
             let interfaceDeclaration = this.generateInterfaceDeclaration(sourceNode),
                 replacedAnyType = false;
 
-            if (interfaceDeclaration) {
+            if (!interfaceDeclaration) {
+                return;
+            }
 
-                sourceNode.children = {};
-                sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
-                sourceNode.doclet.type.names = sourceNode.doclet.type.names
-                    .map(config.mapType)
-                    .filter(name => (name !== 'any' && name !== 'object'))
-                    .map(name => {
-                        if (name.indexOf('any') === -1 ||
-                            !GENERIC_ANY_TYPE.test(name) ||
-                            !interfaceDeclaration
-                        ) {
-                            return name;
-                        }
-                        else {
-                            replacedAnyType = true;
-                            return name.replace(
-                                GENERIC_ANY_TYPE,
-                                '$1' + interfaceDeclaration.name + '$2'
-                            );
-                        }
-                    });
+            sourceNode.children = {};
+            sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
+            sourceNode.doclet.type.names = sourceNode.doclet.type.names
+                .map(config.mapType)
+                .filter(name => (name !== 'any' && name !== 'object'))
+                .map(name => {
+                    if (name.indexOf('any') === -1 ||
+                        !GENERIC_ANY_TYPE.test(name) ||
+                        !interfaceDeclaration
+                    ) {
+                        return name;
+                    }
+                    else {
+                        replacedAnyType = true;
+                        return name.replace(
+                            GENERIC_ANY_TYPE,
+                            '$1' + interfaceDeclaration.name + '$2'
+                        );
+                    }
+                });
 
-                if (!replacedAnyType) {
-                    sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
-                }
+            if (!replacedAnyType) {
+                sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
             }
         }
 
