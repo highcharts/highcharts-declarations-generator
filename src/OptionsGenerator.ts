@@ -13,13 +13,23 @@ import * as utils from './Utilities';
 
 export function generate (
     optionsJSON: utils.Dictionary<parser.INode>
-): Promise<tsd.NamespaceDeclaration> {
+): Promise<utils.Dictionary<tsd.NamespaceDeclaration>> {
     return new Promise((resolve, reject) => {
 
-        let generator = new Generator(optionsJSON);
+        let productNamespaces = (
+            new utils.Dictionary<tsd.NamespaceDeclaration>()
+        );
 
-        resolve(generator.namespace);
+        Object
+            .keys(config.mainModules)
+            .forEach(product => {
 
+                let generator = new Generator(product, optionsJSON);
+                
+                productNamespaces[product] = generator.namespace
+            }); 
+
+        resolve(productNamespaces);
     });
 }
 
@@ -112,7 +122,10 @@ class Generator extends Object {
      *
      * */
 
-    public constructor (optionsJSON: utils.Dictionary<parser.INode>) {
+    public constructor (
+        product: string,
+        optionsJSON: utils.Dictionary<parser.INode>
+    ) {
 
         super();
 
@@ -132,33 +145,7 @@ class Generator extends Object {
             }
         });
 
-        let optionsDeclaration = this._namespace.getChildren('Options')[0];
-
-        if (!optionsDeclaration) {
-            console.error('Highcharts.Options not declared!');
-            return;
-        }
-
-        let seriesPropertyDeclaration = optionsDeclaration.getChildren(
-            'series'
-        )[0];
-
-        if (!seriesPropertyDeclaration) {
-            console.error('Highcharts.Options#series not declared');
-            return;
-        }
-
-        let seriesTypeDeclaration = new tsd.TypeDeclaration('SeriesType');
-
-        seriesTypeDeclaration.description = 'The possible series types.';
-        seriesTypeDeclaration.types.push(...this._seriesTypes);
-
-        this._namespace.addChildren(seriesTypeDeclaration);
-
-        seriesPropertyDeclaration.types.length = 0;
-        seriesPropertyDeclaration.types.push(
-            'Array<' + seriesTypeDeclaration.fullName + '>'
-        );
+        this.generateSeriesDeclaration();
     }
 
     /* *
@@ -187,7 +174,7 @@ class Generator extends Object {
         let doclet = Generator.getModifiedDoclet(sourceNode);
 
         if (doclet.undocumented) {
-            return;
+            // return; // flag makes no sense
         }
 
         let name = Generator.getCamelCaseName(sourceNode),
@@ -209,7 +196,7 @@ class Generator extends Object {
                 if (name === 'SeriesOptions' &&
                     Object.keys(child.children).length > 0
                 ) {
-                    let seriesDeclaration = this.generateSeriesDeclaration(
+                    let seriesDeclaration = this.generateSeriesTypeDeclaration(
                         child
                     );
                     if (seriesDeclaration) {
@@ -233,13 +220,11 @@ class Generator extends Object {
 
         let doclet = Generator.getModifiedDoclet(sourceNode);
 
-        if (doclet.undocumented) {
-            return;
-        }
-
         if (Object.keys(sourceNode.children).length > 0) {
 
-            let interfaceDeclaration = this.generateInterfaceDeclaration(sourceNode),
+            let interfaceDeclaration = this.generateInterfaceDeclaration(
+                    sourceNode
+                ),
                 replacedAnyType = false;
 
             if (!interfaceDeclaration) {
@@ -268,7 +253,9 @@ class Generator extends Object {
                 });
 
             if (!replacedAnyType) {
-                sourceNode.doclet.type.names.push(interfaceDeclaration.fullName);
+                sourceNode.doclet.type.names.push(
+                    interfaceDeclaration.fullName
+                );
             }
         }
 
@@ -302,7 +289,7 @@ class Generator extends Object {
         return declaration;
     }
 
-    private generateSeriesDeclaration(
+    private generateSeriesTypeDeclaration (
         sourceNode: parser.INode
     ): (tsd.InterfaceDeclaration|undefined) {
 
@@ -326,11 +313,13 @@ class Generator extends Object {
         }
 
         declaration.types.push(
-            'Highcharts.Plot' +
-            utils.capitalize(sourceNode.meta.name) +
-            'Options'
+            (
+                'Highcharts.Plot' +
+                utils.capitalize(sourceNode.meta.name) +
+                'Options'
+            ),
+            'Highcharts.SeriesOptions'
         );
-        declaration.types.push('Highcharts.SeriesOptions');
 
         let dataNode = sourceNode.children['data'];
 
@@ -351,6 +340,37 @@ class Generator extends Object {
         declaration.addChildren(typeDeclaration);
 
         return declaration;
+    }
+
+    private generateSeriesDeclaration () {
+
+        let optionsDeclaration = this.namespace.getChildren('Options')[0];
+
+        if (!optionsDeclaration) {
+            console.error('Highcharts.Options not declared!');
+            return;
+        }
+
+        let seriesPropertyDeclaration = optionsDeclaration.getChildren(
+            'series'
+        )[0];
+
+        if (!seriesPropertyDeclaration) {
+            console.error('Highcharts.Options#series not declared');
+            return;
+        }
+
+        let seriesTypeDeclaration = new tsd.TypeDeclaration('SeriesType');
+
+        seriesTypeDeclaration.description = 'The possible series types.';
+        seriesTypeDeclaration.types.push(...this._seriesTypes);
+
+        this.namespace.addChildren(seriesTypeDeclaration);
+
+        seriesPropertyDeclaration.types.length = 0;
+        seriesPropertyDeclaration.types.push(
+            'Array<' + seriesTypeDeclaration.fullName + '>'
+        );
     }
 
     public toString(): string {

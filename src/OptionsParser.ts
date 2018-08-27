@@ -171,7 +171,8 @@ class Parser extends Object {
 
         if (lastPointIndex === -1) {
             node.meta.name = nodeName;
-        } else {
+        }
+        else {
             node.meta.name = nodeName.substr(lastPointIndex + 1);
         }
 

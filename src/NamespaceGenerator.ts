@@ -13,7 +13,7 @@ import * as utils from './Utilities';
 
 export function saveIntoFiles(
     modulesDictionary: utils.Dictionary<parser.INode>,
-    optionsDeclaration: tsd.NamespaceDeclaration
+    optionsDeclarations: utils.Dictionary<tsd.NamespaceDeclaration>
 ): Promise<void> {
 
     let promises = [] as Array<Promise<void>>;
@@ -22,11 +22,15 @@ export function saveIntoFiles(
         .keys(modulesDictionary)
         .forEach(modulePath => {
 
-            let generator = new Generator(
-                modulePath,
-                modulesDictionary[modulePath],
-                optionsDeclaration
-            );
+            let mainModules = config.mainModules,
+                product = Object
+                    .keys(mainModules)
+                    .find(product => modulePath === mainModules[product]),
+                generator = new Generator(
+                    modulePath,
+                    modulesDictionary[modulePath],
+                    optionsDeclarations[product || 'highcharts']
+                );
 
             let dts = generator.toString(),
                 dtsFilePath = modulePath + '.d.ts';
@@ -57,6 +61,7 @@ export function saveIntoFiles(
 
 
 const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/gm;
+
 const IMPORT_HIGHCHARTS_MODULE = /(import \* as Highcharts from ")(.*highcharts)(";)/gm;
 
 
@@ -219,13 +224,18 @@ class Generator extends Object {
         this._namespace = namespaceDeclaration;
         this._root = new tsd.GlobalDeclaration();
 
-        if (modulePath === config.mainModule) {
+        let mainModules = config.mainModules,
+            isMainModule = Object
+                .keys(mainModules)
+                .some(product => mainModules[product] === modulePath);
+
+        if (isMainModule) {
             this.root.exports.push('export = Highcharts;');
             this.root.addChildren(this.namespace);
         } else {
             this.root.imports.push(
                 'import * as Highcharts from "' +
-                utils.relative(modulePath, config.mainModule, true) +
+                utils.relative(modulePath, mainModules["highcharts"], true) +
                 '";'
             );
         }
@@ -362,11 +372,11 @@ class Generator extends Object {
         if (doclet.description) {
             declaration.description = doclet.description;
         }
-/*
+
         if (doclet.events) {
             declaration.addChildren(...this.generateEvents(doclet.events));
         }
- */
+
         if (doclet.fires) {
             declaration.events.push(...doclet.fires);
         }
@@ -426,6 +436,10 @@ class Generator extends Object {
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (doclet.events) {
+            declaration.addChildren(...this.generateEvents(doclet.events));
         }
 
         if (doclet.fires) {
@@ -542,9 +556,9 @@ class Generator extends Object {
     ): tsd.ModuleDeclaration {
 
         let declaration = new tsd.ModuleDeclaration(
-            utils.relative(modulePath, config.mainModule, true)
+            utils.relative(modulePath, config.mainModules["highcharts"], true)
         );
-        
+
         targetDeclaration.addChildren(declaration);
 
         return declaration;
@@ -555,7 +569,7 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): tsd.NamespaceDeclaration {
 
-        if (this.modulePath !== config.mainModule) {
+        if (this.modulePath !== config.mainModules["highcharts"]) {
             targetDeclaration = this.generateModule(
                 this.modulePath, this._root
             );
