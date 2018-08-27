@@ -1,8 +1,19 @@
 {
-    "mainModule": "code/highcharts",
     "seeBaseUrl": "https://api.highcharts.com/",
     "treeNamespaceJsonPath": "tree-namespace.json",
     "treeOptionsJsonPath": "tree.json",
+    "mainModules": {
+        "highcharts": "code/highcharts",
+        "highstock": "code/highstock",
+        "highmaps": "code/highmaps",
+        "gantt": "code/gantt"
+    },
+    "products": [
+        "highcharts",
+        "highstock",
+        "highmaps",
+        "gantt"
+    ],
     "typeMapping": {
         "*": "any",
         "Array": "Array<any>",
