@@ -121,7 +121,6 @@ export = config;
 interface IConfig {
     cwd: string;
     mainModules: { [product: string]: string };
-    products: Array<string>;
     seeBaseUrl: string;
     treeNamespaceJsonPath: string;
     treeOptionsJsonPath: string;

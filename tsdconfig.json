@@ -8,12 +8,6 @@
         "highmaps": "code/highmaps",
         "gantt": "code/gantt"
     },
-    "products": [
-        "highcharts",
-        "highstock",
-        "highmaps",
-        "gantt"
-    ],
     "typeMapping": {
         "*": "any",
         "Array": "Array<any>",
@@ -24,6 +18,11 @@
         "array": "Array",
         "function": "Function",
         "function()": "Function",
-        "object": "any"
+        "object": "any",
+        "AnimationObject": "Highcharts.AnimationObject",
+        "AnimationOptions": "Highcharts.AnimationOptionsObject",
+        "Color": "Highcharts.ColorString",
+        "Mixed": "any",
+        "Highcharts.AnimationObject": "Highcharts.AnimationOptionsObject"
     }
 }
