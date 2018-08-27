@@ -62,6 +62,10 @@ class Parser extends Object {
                     this.completeNodeNames(optionsJSON[key], key);
                     this.completeNodeExtensions(optionsJSON[key]);
                     this.completeNodeNames(optionsJSON[key], key);
+                    this.completeNodeProducts(
+                        optionsJSON[key],
+                        Object.keys(config.mainModules)
+                    );
                     this.completeNodeTypes(optionsJSON[key]);
                 }
             });
@@ -179,70 +183,100 @@ class Parser extends Object {
     }
 
     /**
-     * Update the type of the node, and determines a type, if no is set.
+     * Update the products information of the node, or determines the products,
+     * if not set.
      *
-     * @param {INode} node
-     *        Node to update.
+     * @param  node
+     *         Node to update.
+     * 
+     * @param  parentProducts
+     *         Products array of the parent node.
      */
-    private completeNodeTypes (node: INode) {
+    private completeNodeProducts (node: INode, parentProducts: Array<string>) {
 
-        if (node.doclet.type && node.doclet.type.names) {
-            return;
+        if (node.doclet.products) {
+            parentProducts = node.doclet.products;
         }
-
-        if (node.meta.default) {
-            node.doclet.type = { names: [ typeof node.meta.default ] };
-            return;
-        }
-
-        let defaultValue = (
-            node.doclet.default && node.doclet.default.value ||
-            node.doclet.defaultvalue
-        );
-
-        if (!defaultValue && node.doclet.defaultByProduct) {
-
-            let productDefaults = node.doclet.defaultByProduct;
-
-            Object.keys(productDefaults).some(key => {
-                defaultValue = productDefaults[key];
-                return true;
-            })
-        }
-
-        if (!defaultValue) {
-            node.doclet.type = { names: [ 'object' ] };
-            return;
-        }
-
-        switch (defaultValue) {
-            case 'false':
-            case 'true':
-                node.doclet.type = { names: [ 'boolean' ] };
-                return;
-            case '0':
-            case '1':
-                node.doclet.type = { names: [ 'number ' ] };
-                return;
-            case 'null':
-            case 'undefined':
-                node.doclet.type = { names: [ '*' ] };
-                return;
-        }
-
-        if (parseInt(defaultValue) !== NaN ||
-            parseFloat(defaultValue) !== NaN
-        ) {
-            node.doclet.type = { names: [ 'number' ] };
-        } else {
-            node.doclet.type = { names: [ 'string' ] };
+        else {
+            node.doclet.products = parentProducts;
         }
 
         let children = node.children;
 
         Object
             .keys(children)
-            .forEach(childName => this.completeNodeTypes(children[childName]));
+            .map(childName => children[childName])
+            .forEach(childNode => this.completeNodeProducts(
+                childNode, parentProducts
+            ));
+    }
+
+    /**
+     * Update the type of the node, or determines a type, if no is set.
+     *
+     * @param node
+     *        Node to update.
+     */
+    private completeNodeTypes (node: INode) {
+
+        if (node.doclet.type && node.doclet.type.names) {
+            // nothing to do
+        }
+        else if (node.meta.default) {
+            node.doclet.type = { names: [ typeof node.meta.default ] };
+        }
+        else {
+
+            let defaultValue = (
+                node.doclet.default && node.doclet.default.value ||
+                node.doclet.defaultvalue
+            );
+
+            if (!defaultValue && node.doclet.defaultByProduct) {
+
+                let productDefaults = node.doclet.defaultByProduct;
+
+                Object.keys(productDefaults).some(key => {
+                    defaultValue = productDefaults[key];
+                    return true;
+                })
+            }
+
+            if (!defaultValue) {
+                node.doclet.type = { names: [ 'object' ] };
+                return;
+            }
+
+            switch (defaultValue) {
+                case 'false':
+                case 'true':
+                    node.doclet.type = { names: [ 'boolean' ] };
+                    return;
+                case '0':
+                case '1':
+                    node.doclet.type = { names: [ 'number ' ] };
+                    return;
+                case 'null':
+                case 'undefined':
+                    node.doclet.type = { names: [ '*' ] };
+                    return;
+            }
+
+            if (parseInt(defaultValue) !== NaN ||
+                parseFloat(defaultValue) !== NaN
+            ) {
+                node.doclet.type = { names: [ 'number' ] };
+            } else {
+                node.doclet.type = { names: [ 'string' ] };
+            }
+        }
+
+        let children = node.children;
+
+        Object
+            .keys(children)
+            .map(childName => children[childName])
+            .forEach(this.completeNodeTypes);
     }
 
     /**
