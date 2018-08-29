@@ -208,7 +208,7 @@ class Parser extends Object {
             .keys(children)
             .map(childName => children[childName])
             .forEach(childNode => this.completeNodeProducts(
-                childNode, parentProducts
+                childNode, parentProducts.slice()
             ));
     }
 
