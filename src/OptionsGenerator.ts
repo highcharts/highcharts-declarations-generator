@@ -77,8 +77,6 @@ class Generator extends Object {
         description = utils.removeLinks(description, removedLinks);
         description = utils.transformLists(description);
 
-        doclet.description = description;
-
         if (doclet.see) {
             removedLinks.push(...doclet.see);
             delete doclet.see;
@@ -92,26 +90,31 @@ class Generator extends Object {
             doclet.type = { names: [ 'any' ] };
         }
 
-        if (removedLinks.length > 0) {
+        if (doclet.products) {
 
-            let see = [] as Array<string>;
+            removedLinks.length = 0;
 
-            removedLinks.forEach(link =>
-                see.push(...utils.urls(link))
+            doclet.products.forEach(product =>
+                removedLinks.push(config.seeLink(name, 'option', product))
             );
 
-            if (name && see.length > 0) {
-                if (doclet.products) {
-                    see.length = 0;
-                    doclet.products.forEach(product =>
-                        see.push(config.seeLink(name, 'option', product))
-                    );
-                }
-                else {
-                    doclet.see = [ config.seeLink(name, 'option') ];
-                }
+            if (description[0] !== '(') {
+                description = (
+                    '(' + doclet.products
+                        .map(utils.capitalize)
+                        .join(', ') +
+                    ') ' + description
+                );
             }
         }
+
+        if (removedLinks.length > 0) {
+            doclet.see = removedLinks
+                .map(link => utils.urls(link)[0])
+                .filter(link => !!link);
+        }
+
+        doclet.description = description;
 
         return doclet;
     }
@@ -171,13 +174,8 @@ class Generator extends Object {
         sourceNode: parser.INode
     ): (tsd.InterfaceDeclaration|undefined) {
 
-        let doclet = Generator.getModifiedDoclet(sourceNode);
-
-        if (doclet.undocumented) {
-            // return; // flag makes no sense
-        }
-
-        let name = Generator.getCamelCaseName(sourceNode),
+        let doclet = Generator.getModifiedDoclet(sourceNode),
+            name = Generator.getCamelCaseName(sourceNode),
             declaration = new tsd.InterfaceDeclaration(name);
 
         if (doclet.description) {
@@ -334,10 +332,30 @@ class Generator extends Object {
 
         let typeDeclaration = new tsd.PropertyDeclaration('type');
 
+        typeDeclaration.description = (
+            utils.capitalize(sourceNode.meta.name) +
+            ' series type.'
+        );
         typeDeclaration.isOptional = true;
+        typeDeclaration.isReadOnly = true;
         typeDeclaration.types.push('"' + sourceNode.meta.name + '"');
 
         declaration.addChildren(typeDeclaration);
+
+        let childrenNames = declaration.getChildrenNames(),
+            excludeDeclaration;
+
+        (sourceNode.doclet.exclude || [])
+            .filter(name => childrenNames.indexOf(name) === -1)
+            .forEach(name => {
+
+                excludeDeclaration = new tsd.PropertyDeclaration(name);
+
+                excludeDeclaration.isOptional = true;
+                excludeDeclaration.types.push('undefined');
+
+                declaration.addChildren(excludeDeclaration);
+            });
 
         return declaration;
     }
