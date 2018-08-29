@@ -1623,7 +1623,7 @@ export class InterfaceDeclaration extends IDeclaration {
         renderedInterface = this.renderScopePrefix() + renderedInterface;
 
         return (
-            this.renderDescription(indent) +
+            this.renderDescription(indent, true) +
             indent + renderedInterface + ' {\n' +
             '\n' +
             this.renderChildren(childIndent, '\n') +
