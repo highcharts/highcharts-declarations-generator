@@ -133,6 +133,7 @@ class Generator extends Object {
         super();
 
         this._namespace = new tsd.NamespaceDeclaration('Highcharts');
+        this._product = product;
         this._seriesTypes = [];
 
         this.generateInterfaceDeclaration({
@@ -162,6 +163,8 @@ class Generator extends Object {
     }
     private _namespace: tsd.NamespaceDeclaration;
 
+    private _product: string;
+
     private _seriesTypes: Array<string>;
 
     /* *
@@ -174,8 +177,15 @@ class Generator extends Object {
         sourceNode: parser.INode
     ): (tsd.InterfaceDeclaration|undefined) {
 
-        let doclet = Generator.getModifiedDoclet(sourceNode),
-            name = Generator.getCamelCaseName(sourceNode),
+        let doclet = Generator.getModifiedDoclet(sourceNode);
+/*
+        if (doclet.products &&
+            doclet.products.indexOf(this._product) === -1
+        ) {
+            return;
+        }
+ */
+        let name = Generator.getCamelCaseName(sourceNode),
             declaration = new tsd.InterfaceDeclaration(name);
 
         if (doclet.description) {
@@ -217,7 +227,13 @@ class Generator extends Object {
     ): (tsd.PropertyDeclaration|undefined) {
 
         let doclet = Generator.getModifiedDoclet(sourceNode);
-
+/*
+        if (doclet.products &&
+            doclet.products.indexOf(this._product) === -1
+        ) {
+            return;
+        }
+ */
         if (Object.keys(sourceNode.children).length > 0) {
 
             let interfaceDeclaration = this.generateInterfaceDeclaration(
@@ -292,10 +308,14 @@ class Generator extends Object {
     ): (tsd.InterfaceDeclaration|undefined) {
 
         let doclet = Generator.getModifiedDoclet(sourceNode);
-
-        if (doclet.undocumented ||
-            !sourceNode.meta.name
+/*
+        if (doclet.products &&
+            doclet.products.indexOf(this._product) === -1
         ) {
+            return;
+        }
+ */
+        if (!sourceNode.meta.name) {
             return;
         }
 
