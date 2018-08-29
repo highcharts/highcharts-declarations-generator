@@ -473,14 +473,6 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
-     * Name of this declaration.
-     */
-    public get name(): string {
-        return this._name;
-    }
-    private _name: string;
-
-    /**
      * Parent relation.
      */
     public get isInSpace(): boolean {
@@ -524,6 +516,14 @@ export abstract class IDeclaration extends Object {
      * Kind of declaration.
      */
     abstract kind: Kinds;
+
+    /**
+     * Name of this declaration.
+     */
+    public get name(): string {
+        return this._name;
+    }
+    private _name: string;
 
     /**
      * Parent declaration of this declaration.
@@ -793,7 +793,7 @@ export abstract class IDeclaration extends Object {
             indent + ' *\n' +
             this.see.map(
                 link => indent + ' * @see ' + IDeclaration.normalize(link)
-            ).join('') + '\n'
+            ).join('\n') + '\n'
         );
     }
 
@@ -1928,6 +1928,18 @@ export class PropertyDeclaration extends IDeclaration {
 
     /* *
      *
+     *  Constructor
+     *
+     * */
+
+    public constructor (name: string) {
+
+        super(name);
+
+        this._isReadOnly = false;
+    }
+    /* *
+     *
      *  Properties
      *
      * */
@@ -1938,6 +1950,17 @@ export class PropertyDeclaration extends IDeclaration {
     public get kind (): ('static property' | 'property') {
         return (this.isStatic ? 'static property' : 'property');
     }
+
+    /**
+     * Returns true, if property can not changed directly.
+     */
+    public get isReadOnly(): boolean {
+        return this._isReadOnly;
+    }
+    public set isReadOnly(value: boolean) {
+        this._isReadOnly = value;
+    }
+    private _isReadOnly: boolean;
 
     /* *
      *
@@ -1956,6 +1979,7 @@ export class PropertyDeclaration extends IDeclaration {
         clone.description = this.description;
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
+        clone.isReadOnly = this.isReadOnly;
         clone.isStatic = this.isStatic;
         clone.see.push(...this.see.slice());
         clone.types.push(...this.types.slice());
@@ -1976,16 +2000,24 @@ export class PropertyDeclaration extends IDeclaration {
         let childIndent = indent + '    ',
             renderedMember = this.name;
 
-        if (this.isOptional) {
-            renderedMember += '?';
+        if (this.isReadOnly) {
+            renderedMember = 'readonly ' + renderedMember;
         }
 
         if (this.isInSpace) {
             renderedMember = 'let ' + renderedMember;
         }
 
+        if (this.isOptional) {
+            renderedMember += '?';
+        }
+
         if (this.hasChildren) {
-            renderedMember += ': {\n' + this.renderChildren(childIndent, '\n') + '}';
+            renderedMember += (
+                ': {\n\n' +
+                this.renderChildren(childIndent, '\n') +
+                indent + '}'
+            );
         } else if (this.hasTypes) {
             renderedMember += ': ' + this.renderTypes(true) + ';';
         } else {
@@ -2054,19 +2086,28 @@ export class TypeDeclaration extends IDeclaration {
      */
     public toString(indent: string = ''): string {
 
-        let renderedType = this.renderTypes(true);
+        let childIndent = indent + '    ',
+            renderedType = this.renderTypes(true);
         
         if (!renderedType) {
             renderedType = 'any';
         }
 
-        renderedType = 'type ' + this.name + ' = ' + renderedType;
+        if (!this.hasChildren) {
+            renderedType = 'type ' + this.name + ' = ' + renderedType;
+        } else {
+            renderedType = (
+                'type ' + this.name + ' = {\n\n' +
+                this.renderChildren(childIndent, '\n') +
+                indent + '};'
+            );
+        }
 
         renderedType = this.renderScopePrefix() + renderedType;
 
         return (
             this.renderDescription(indent) +
-            indent + renderedType + ';\n'
+            indent + renderedType + '\n'
         );
     }
 }
