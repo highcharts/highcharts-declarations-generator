@@ -98,7 +98,9 @@ class Generator extends Object {
                 removedLinks.push(config.seeLink(name, 'option', product))
             );
 
-            if (description[0] !== '(') {
+            if (description &&
+                description[0] !== '('
+            ) {
                 description = (
                     '(' + doclet.products
                         .map(utils.capitalize)
