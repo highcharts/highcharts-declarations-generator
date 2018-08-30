@@ -629,22 +629,13 @@ class Generator extends Object {
                     declaration.types.push(...parameter.types);
                 }
 
-                if (parameter.isOptional ||
+                if (parameter.isVariable) {
+                    declaration.isVariable = true;
+                }
+                else if (parameter.isOptional ||
                     declaration.types.some(type => type === 'undefined')
                 ) {
                     declaration.isOptional = true;
-                    if (declaration.types.length > 0) {
-                        parameter.types = declaration.types
-                            .slice()
-                            .filter(type => type !== 'undefined');
-                        declaration.types.length = 0;
-                        declaration.types.push(...parameter.types);
-                    }
-                }
-
-                if (parameter.isVariable) {
-                    declaration.isOptional = false;
-                    declaration.isVariable = true;
                 }
 
                 return declaration;
@@ -668,7 +659,17 @@ class Generator extends Object {
             declaration.description = doclet.description;
         }
 
-        if (doclet.isOptional) {
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        if (doclet.types) {
+            declaration.types.push(...doclet.types);
+        }
+
+        if (doclet.isOptional ||
+            declaration.types.some(type => type === 'undefined')
+        ) {
             declaration.isOptional = true;
         }
 
@@ -678,14 +679,6 @@ class Generator extends Object {
 
         if (doclet.isStatic) {
             declaration.isStatic = true;
-        }
-
-        if (doclet.see) {
-            declaration.see.push(...doclet.see);
-        }
-
-        if (doclet.types) {
-            declaration.types.push(...doclet.types);
         }
 
         targetDeclaration.addChildren(declaration);

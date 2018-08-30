@@ -805,12 +805,22 @@ export abstract class IDeclaration extends Object {
      */
     protected renderTypes (useParentheses: boolean = false): string {
 
-        if (useParentheses &&
-            this.types.length > 1
+        let renderedTypes = '',
+            types = this.types;
+
+        if (types.length > 1 &&
+            this.isOptional &&
+            this.name[0] === '['
         ) {
-            return '(' + this.types.sort(IDeclaration.sortType).join('|') + ')';
+            types = types.filter(type => type !== 'undefined');
+        }
+
+        renderedTypes = types.sort(IDeclaration.sortType).join('|');
+
+        if (useParentheses && renderedTypes) {
+            return '(' + renderedTypes + ')';
         } else {
-            return this.types.sort(IDeclaration.sortType).join('|');
+            return renderedTypes;
         }
     }
 
