@@ -19,6 +19,14 @@ const config = (function () {
 
 config.cwd = process.cwd();
 
+config.filterUndefined = function (type: string): boolean {
+    return (type !== 'undefined');
+}
+
+config.findUndefined = function (type: string): boolean {
+    return (type === 'undefined');
+}
+
 config.mapType = function (type: string): string {
 
     type = type.replace(MAP_TYPE_LIST, '$1');
@@ -125,6 +133,8 @@ interface IConfig {
     treeNamespaceJsonPath: string;
     treeOptionsJsonPath: string;
     typeMapping: { [key: string]: string };
+    filterUndefined (type: string): boolean;
+    findUndefined (type: string): boolean;
     mapType (type: string): string;
     mapValue (value: any): string;
     seeLink (name: string, kind: string, product?: string): string;

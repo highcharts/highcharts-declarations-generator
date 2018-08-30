@@ -802,25 +802,26 @@ export abstract class IDeclaration extends Object {
      *
      * @param useParentheses
      *        Wraps several types in parentheses.
+     *
+     * @param filterUndefined
+     *        Whether to filter undefined, if declaration has an optional flag.
      */
-    protected renderTypes (useParentheses: boolean = false): string {
+    protected renderTypes (useParentheses: boolean = false, filterUndefined: boolean = false): string {
 
-        let renderedTypes = '',
-            types = this.types;
+        let types = this.types;
 
-        if (types.length > 1 &&
-            this.isOptional &&
-            this.name[0] === '['
+        if (filterUndefined &&
+            this.isOptional
         ) {
             types = types.filter(type => type !== 'undefined');
         }
 
-        renderedTypes = types.sort(IDeclaration.sortType).join('|');
-
-        if (useParentheses && renderedTypes) {
-            return '(' + renderedTypes + ')';
+        if (useParentheses &&
+            types.length > 1
+        ) {
+            return '(' + types.sort(IDeclaration.sortType).join('|') + ')';
         } else {
-            return renderedTypes;
+            return types.sort(IDeclaration.sortType).join('|');
         }
     }
 
@@ -1909,7 +1910,7 @@ export class ParameterDeclaration extends IDeclaration {
     public toString (): string {
 
         let renderedParameter = this.name,
-            renderedTypes = this.renderTypes(true);
+            renderedTypes = this.renderTypes(true, true);
 
         if (this.isOptional) {
             renderedParameter += '?';
@@ -1946,8 +1947,10 @@ export class PropertyDeclaration extends IDeclaration {
 
         super(name);
 
+        this._isIndexer = (name[0] === '[');
         this._isReadOnly = false;
     }
+
     /* *
      *
      *  Properties
@@ -1960,6 +1963,11 @@ export class PropertyDeclaration extends IDeclaration {
     public get kind (): ('static property' | 'property') {
         return (this.isStatic ? 'static property' : 'property');
     }
+
+    public get isIndexer(): boolean {
+        return this._isIndexer;
+    }
+    private _isIndexer: boolean;
 
     /**
      * Returns true, if property can not changed directly.
@@ -2026,10 +2034,12 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember += (
                 ': {\n\n' +
                 this.renderChildren(childIndent, '\n') +
-                indent + '}'
+                indent + '};'
             );
         } else if (this.hasTypes) {
-            renderedMember += ': ' + this.renderTypes(true) + ';';
+            renderedMember += (
+                ': ' + this.renderTypes(true, this.isIndexer) + ';'
+            );
         } else {
             renderedMember += ': any;';
         }

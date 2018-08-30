@@ -155,6 +155,13 @@ class Generator extends Object {
             doclet.types = values.map(config.mapValue);
         } else if (doclet.types) {
             doclet.types = doclet.types.map(config.mapType);
+            if (doclet.name[0] !== '[' &&
+                doclet.types.length > 1 &&
+                doclet.types.some(config.findUndefined)
+            ) {
+                doclet.isOptional = true;
+                doclet.types = doclet.types.filter(config.filterUndefined);
+            }
         } else {
             doclet.types = [ 'any' ];
         }
@@ -625,17 +632,15 @@ class Generator extends Object {
                     declaration.description = parameter.description;
                 }
 
-                if (parameter.types) {
-                    declaration.types.push(...parameter.types);
-                }
-
                 if (parameter.isVariable) {
                     declaration.isVariable = true;
                 }
-                else if (parameter.isOptional ||
-                    declaration.types.some(type => type === 'undefined')
-                ) {
+                else if (parameter.isOptional) {
                     declaration.isOptional = true;
+                }
+
+                if (parameter.types) {
+                    declaration.types.push(...parameter.types);
                 }
 
                 return declaration;
@@ -659,17 +664,7 @@ class Generator extends Object {
             declaration.description = doclet.description;
         }
 
-        if (doclet.see) {
-            declaration.see.push(...doclet.see);
-        }
-
-        if (doclet.types) {
-            declaration.types.push(...doclet.types);
-        }
-
-        if (doclet.isOptional ||
-            declaration.types.some(type => type === 'undefined')
-        ) {
+        if (doclet.isOptional) {
             declaration.isOptional = true;
         }
 
@@ -679,6 +674,14 @@ class Generator extends Object {
 
         if (doclet.isStatic) {
             declaration.isStatic = true;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        if (doclet.types) {
+            declaration.types.push(...doclet.types);
         }
 
         targetDeclaration.addChildren(declaration);
