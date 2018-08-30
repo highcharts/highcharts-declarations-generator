@@ -236,7 +236,10 @@ class Generator extends Object {
             return;
         }
  */
-        if (Object.keys(sourceNode.children).length > 0) {
+        if (Object.keys(sourceNode.children).length > 0 && 
+            (!sourceNode.doclet.type ||
+            !sourceNode.doclet.type.names.every(type => type !== 'any'))
+        ) {
 
             let interfaceDeclaration = this.generateInterfaceDeclaration(
                     sourceNode
