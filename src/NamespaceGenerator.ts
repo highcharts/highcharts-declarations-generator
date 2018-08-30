@@ -306,11 +306,7 @@ class Generator extends Object {
                 this.generateProperty(sourceNode, targetDeclaration);
                 break;
             case 'typedef':
-                if (sourceNode.children) {
-                    this.generateInterface(sourceNode, this.namespace);
-                } else {
-                    this.generateType(sourceNode, this.namespace);
-                }
+                this.generateType(sourceNode, this.namespace);
                 break;
         }
     }
@@ -629,17 +625,26 @@ class Generator extends Object {
                     declaration.description = parameter.description;
                 }
 
-                if (parameter.isOptional) {
+                if (parameter.types) {
+                    declaration.types.push(...parameter.types);
+                }
+
+                if (parameter.isOptional ||
+                    declaration.types.some(type => type === 'undefined')
+                ) {
                     declaration.isOptional = true;
+                    if (declaration.types.length > 0) {
+                        parameter.types = declaration.types
+                            .slice()
+                            .filter(type => type !== 'undefined');
+                        declaration.types.length = 0;
+                        declaration.types.push(...parameter.types);
+                    }
                 }
 
                 if (parameter.isVariable) {
                     declaration.isOptional = false;
                     declaration.isVariable = true;
-                }
-
-                if (parameter.types) {
-                    declaration.types.push(...parameter.types);
                 }
 
                 return declaration;
@@ -719,6 +724,10 @@ class Generator extends Object {
             Generator.mergeDeclarations(existingChild, declaration);
         } else {
             targetDeclaration.addChildren(declaration);
+        }
+
+        if (sourceNode.children) {
+            this.generateChildren(sourceNode.children, declaration);
         }
 
         return declaration;
