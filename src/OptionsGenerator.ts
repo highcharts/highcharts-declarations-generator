@@ -236,10 +236,7 @@ class Generator extends Object {
             return;
         }
  */
-        if (Object.keys(sourceNode.children).length > 0 && 
-            (!sourceNode.doclet.type ||
-            !sourceNode.doclet.type.names.every(type => type !== 'any'))
-        ) {
+        if (Object.keys(sourceNode.children).length > 0) {
 
             let interfaceDeclaration = this.generateInterfaceDeclaration(
                     sourceNode
@@ -254,7 +251,7 @@ class Generator extends Object {
             sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
                 .map(config.mapType)
-                .filter(name => (name !== 'any' && name !== 'object'))
+                .filter(name => name !== 'any')
                 .map(name => {
                     if (name.indexOf('any') === -1 ||
                         !GENERIC_ANY_TYPE.test(name) ||

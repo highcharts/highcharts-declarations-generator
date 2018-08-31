@@ -5,8 +5,7 @@
     "mainModules": {
         "highcharts": "code/highcharts",
         "highstock": "code/highstock",
-        "highmaps": "code/highmaps",
-        "gantt": "code/gantt"
+        "highmaps": "code/highmaps"
     },
     "typeMapping": {
         "*": "any",
