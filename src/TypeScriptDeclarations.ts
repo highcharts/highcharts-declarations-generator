@@ -1622,13 +1622,15 @@ export class InterfaceDeclaration extends IDeclaration {
         let childIndent = indent + '    ',
             renderedInterface = this.name;
 
-        if (this.isInSpace) {
+        if (!this.isInSpace) {
+            renderedInterface += ': ';
+        } else {
+
             renderedInterface = 'interface ' + renderedInterface;
+
             if (this.hasTypes) {
                 renderedInterface += ' extends ' + this.types.join(', ');
             }
-        } else {
-            renderedInterface += ': ';
         }
 
         renderedInterface = this.renderScopePrefix() + renderedInterface;
