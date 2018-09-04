@@ -35,7 +35,15 @@ config.mapType = function (type: string): string {
         return type.replace(
             MAP_TYPE_GENERIC,
             (match, generic, genericType) => {
-                return generic + '<' + config.mapType(genericType) + '>';
+                if (generic === 'Array' &&
+                    genericType.indexOf(',') > -1 &&
+                    genericType.indexOf('<') === -1
+                ) {
+                    return '[' + config.mapType(genericType) + ']';
+                }
+                else {
+                    return generic + '<' + config.mapType(genericType) + '>';
+                }
             }
         );
     }
