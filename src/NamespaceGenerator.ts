@@ -370,10 +370,24 @@ class Generator extends Object {
     ): tsd.ConstructorDeclaration {
 
         let declaration = new tsd.ConstructorDeclaration(),
-            doclet = Generator.getNormalizedDoclet(sourceNode);
+            doclet = Generator.getNormalizedDoclet(sourceNode),
+            existingDeclarations = targetDeclaration.getChildren(
+                declaration.name
+            );
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+        else {
+            (existingDeclarations || []).some(existingDeclaration => {
+                if (!existingDeclaration.description) {
+                    return false;
+                }
+                else {
+                    declaration.description = existingDeclaration.description;
+                    return true;
+                }
+            });
         }
 
         if (doclet.events) {
@@ -435,10 +449,22 @@ class Generator extends Object {
             targetDeclaration = this._root;
         }
 
-        let declaration = new tsd.FunctionDeclaration(doclet.name);
+        let declaration = new tsd.FunctionDeclaration(doclet.name),
+            existingDeclarations = targetDeclaration.getChildren(doclet.name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+        else {
+            (existingDeclarations || []).some(existingDeclaration => {
+                if (!existingDeclaration.description) {
+                    return false;
+                }
+                else {
+                    declaration.description = existingDeclaration.description;
+                    return true;
+                }
+            });
         }
 
         if (doclet.events) {
