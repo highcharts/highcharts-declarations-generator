@@ -288,7 +288,8 @@ class Generator extends Object {
             default:
                 console.error(
                     'Unknown kind: ' + kind,
-                    sourceNode
+                    this.modulePath,
+                    sourceNode,
                 );
                 break;
             case 'class':
