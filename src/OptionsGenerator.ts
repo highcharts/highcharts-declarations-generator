@@ -151,7 +151,7 @@ class Generator extends Object {
             }
         });
 
-        this.generateSeriesDeclaration();
+        // this.generateSeriesDeclaration();
     }
 
     /* *
@@ -359,7 +359,6 @@ class Generator extends Object {
             ' series type.'
         );
         typeDeclaration.isOptional = true;
-        typeDeclaration.isReadOnly = true;
         typeDeclaration.types.push('"' + sourceNode.meta.name + '"');
 
         declaration.addChildren(typeDeclaration);
@@ -409,7 +408,7 @@ class Generator extends Object {
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
-            'Array<' + seriesTypeDeclaration.fullName + '>'
+            'Array<SeriesOptions>' // + seriesTypeDeclaration.fullName + '>'
         );
     }
 
