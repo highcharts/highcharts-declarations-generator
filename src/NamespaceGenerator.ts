@@ -580,36 +580,25 @@ class Generator extends Object {
         return declaration;
     }
 
-    private generateModule (
-        modulePath: string,
-        targetDeclaration: tsd.IDeclaration
-    ): tsd.ModuleDeclaration {
-
-        let declaration = new tsd.ModuleDeclaration(
-            utils.relative(modulePath, config.mainModules["highcharts"], true)
-        );
-
-        targetDeclaration.addChildren(declaration);
-
-        return declaration;
-    }
-
     private generateNamespace (
         sourceNode: parser.INode,
         targetDeclaration: tsd.IDeclaration
-    ): tsd.NamespaceDeclaration {
-
-        if (this.modulePath !== config.mainModules["highcharts"]) {
-            targetDeclaration = this.generateModule(
-                this.modulePath, this._root
-            );
-        }
+    ): tsd.IDeclaration {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
+            declaration;
+
+        if (this.modulePath !== config.mainModules["highcharts"]) {
+            declaration = new tsd.ModuleDeclaration(utils.relative(
+                    this.modulePath, config.mainModules["highcharts"], true
+            ));
+        }
+        else {
             declaration = new tsd.NamespaceDeclaration(doclet.name);
 
-        if (doclet.isGlobal) {
-            targetDeclaration = this._root;
+            if (doclet.isGlobal) {
+                targetDeclaration = this._root;
+            }
         }
 
         let child = targetDeclaration.getChildren(doclet.name)[0];
