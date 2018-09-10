@@ -320,12 +320,9 @@ export abstract class IDeclaration extends Object {
         let index1 = KIND_ORDER.indexOf(declarationA.kind),
             index2 = KIND_ORDER.indexOf(declarationB.kind);
 
-        if (index1 === index2) {
-            return (declarationA.name.toLowerCase() < declarationB.name.toLowerCase() ? -1 : 1);
-        } else {
-            return (index1 - index2);
-        }
+        return (index1 === index2 ? 0 : index1 - index2);
     }
+
     /**
      * Sorts: primitives < classes < generics < null < undefined < any
      *
@@ -1528,9 +1525,7 @@ export class GlobalDeclaration extends IDeclaration {
             return '';
         } else {
             return (
-                '\n' +
-                this.exports.join('\n') +
-                '\n'
+                this.exports.join('\n') + '\n'
             );
         }
     }
@@ -1544,8 +1539,7 @@ export class GlobalDeclaration extends IDeclaration {
             return '';
         } else {
             return (
-                '\n' +
-                this.imports.join('\n') +
+                this.imports.join('\n') + '\n' +
                 '\n'
             );
         }
@@ -1733,7 +1727,8 @@ export class ModuleDeclaration extends IDeclaration {
             '\n' +
             this.renderChildren(childIndent, '\n') +
             '\n' +
-            indent + '}\n'
+            indent + '}\n' +
+            '\n'
         );
     }
 }
@@ -1800,7 +1795,8 @@ export class NamespaceDeclaration extends IDeclaration {
             '\n' +
             this.renderChildren(childIndent, '\n') +
             '\n' +
-            indent + '}\n'
+            indent + '}\n' +
+            '\n'
         );
     }
 }

@@ -234,17 +234,36 @@ class Generator extends Object {
         let mainModules = config.mainModules,
             isMainModule = Object
                 .keys(mainModules)
-                .some(product => mainModules[product] === modulePath);
+                .some(key => mainModules[key] === modulePath);
 
         if (isMainModule) {
             this.root.exports.push('export = Highcharts;');
             this.root.addChildren(this.namespace);
         } else {
+
+            let moduleLoaderDeclaration = new tsd.FunctionDeclaration(
+                    'moduleLoader'
+                );
+            moduleLoaderDeclaration.description = (
+                'Adds the module to the imported Highcharts namespace.'
+            );
+            this.root.addChildren(moduleLoaderDeclaration);
+ 
+            let parameterDeclaration = new tsd.ParameterDeclaration(
+                    'highchartsImport'
+                );
+            parameterDeclaration.description = (
+                'The imported Highcharts namespace.'
+            );
+            parameterDeclaration.types.push('typeof Highcharts');
+            moduleLoaderDeclaration.setParameters(parameterDeclaration);
+
             this.root.imports.push(
                 'import * as Highcharts from "' +
                 utils.relative(modulePath, mainModules["highcharts"], true) +
                 '";'
             );
+            this.root.exports.push('export = moduleLoader;');
         }
 
         this.generate(node);
