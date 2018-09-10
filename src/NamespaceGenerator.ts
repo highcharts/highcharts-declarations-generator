@@ -231,14 +231,10 @@ class Generator extends Object {
         this._namespace = namespaceDeclaration;
         this._root = new tsd.GlobalDeclaration();
 
-        let mainModules = config.mainModules,
-            isMainModule = Object
-                .keys(mainModules)
-                .some(key => mainModules[key] === modulePath);
-
-        if (isMainModule) {
-            this.root.exports.push('export = Highcharts;');
+        if (this.isMainModule) {
+            // add options namespace
             this.root.addChildren(this.namespace);
+            this.root.exports.push('export = Highcharts;');
         } else {
 
             let factoryDeclaration = new tsd.FunctionDeclaration(
@@ -259,9 +255,9 @@ class Generator extends Object {
             factoryDeclaration.setParameters(factoryParameterDeclaration);
 
             this.root.imports.push(
-                'import * as Highcharts from "' +
-                utils.relative(modulePath, mainModules["highcharts"], true) +
-                '";'
+                'import * as Highcharts from "' + utils.relative(
+                    modulePath, config.mainModules['highcharts'], true
+                ) + '";'
             );
             this.root.exports.push('export = factory;');
         }
@@ -275,6 +271,9 @@ class Generator extends Object {
      *
      * */
 
+    public get isMainModule(): boolean {
+        return (this.modulePath === config.mainModules['highcharts']);
+    }
     public get namespace(): tsd.NamespaceDeclaration {
         return this._namespace;
     }
@@ -607,17 +606,19 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration;
 
-        if (this.modulePath !== config.mainModules["highcharts"]) {
-            declaration = new tsd.ModuleDeclaration(utils.relative(
-                    this.modulePath, config.mainModules["highcharts"], true
-            ));
-        }
-        else {
+        if (this.isMainModule) {
+            // create namespaces only in highcharts.js
             declaration = new tsd.NamespaceDeclaration(doclet.name);
-
             if (doclet.isGlobal) {
                 targetDeclaration = this._root;
             }
+        }
+        else {
+            // reference namespace of highcharts.js as a extension with file
+            // path.
+            declaration = new tsd.ModuleDeclaration(utils.relative(
+                    this.modulePath, config.mainModules['highcharts'], true
+            ));
         }
 
         let child = targetDeclaration.getChildren(doclet.name)[0];
