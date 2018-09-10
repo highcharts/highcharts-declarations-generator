@@ -2112,7 +2112,7 @@ export class TypeDeclaration extends IDeclaration {
         }
 
         if (!this.hasChildren) {
-            renderedType = 'type ' + this.name + ' = ' + renderedType;
+            renderedType = 'type ' + this.name + ' = ' + renderedType + ';';
         } else {
             renderedType = (
                 'type ' + this.name + ' = {\n\n' +
