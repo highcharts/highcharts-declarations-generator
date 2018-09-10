@@ -204,7 +204,7 @@ export abstract class IDeclaration extends Object {
     public static namespaces (name: string, withFullNames: boolean = false): Array<string> {
 
         if (!name) {
-            return [];
+            return [''];
         }
 
         let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
@@ -1550,13 +1550,23 @@ export class GlobalDeclaration extends IDeclaration {
      */
     public toString(): string {
 
-        return (
-            this.renderDescription('') +
-            '\n' +
-            this.renderImports() +
-            this.renderChildren('', '\n') +
-            this.renderExports()
-        );
+        if (this.isInSpace) {
+            return (
+                this.renderDescription('') +
+                'declare global {\n\n' +
+                this.renderChildren('', '\n') +
+                '}\n\n'
+            );
+        }
+        else {
+            return (
+                this.renderDescription('') +
+                '\n' +
+                this.renderImports() +
+                this.renderChildren('', '\n') +
+                this.renderExports()
+            );
+        }
     }
 }
 
@@ -1785,11 +1795,7 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedNamespace = (
-                this.name === 'global' ?
-                'global' :
-                'namespace ' + this.name
-            );
+            renderedNamespace = 'namespace ' + this.name;
 
         renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
