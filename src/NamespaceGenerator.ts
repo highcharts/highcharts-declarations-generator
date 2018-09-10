@@ -241,29 +241,29 @@ class Generator extends Object {
             this.root.addChildren(this.namespace);
         } else {
 
-            let moduleLoaderDeclaration = new tsd.FunctionDeclaration(
-                    'moduleLoader'
-                );
-            moduleLoaderDeclaration.description = (
+            let factoryDeclaration = new tsd.FunctionDeclaration(
+                'factory'
+            );
+            factoryDeclaration.description = (
                 'Adds the module to the imported Highcharts namespace.'
             );
-            this.root.addChildren(moduleLoaderDeclaration);
+            this.root.addChildren(factoryDeclaration);
  
-            let parameterDeclaration = new tsd.ParameterDeclaration(
-                    'highchartsImport'
-                );
-            parameterDeclaration.description = (
-                'The imported Highcharts namespace.'
+            let factoryParameterDeclaration = new tsd.ParameterDeclaration(
+                'highcharts'
             );
-            parameterDeclaration.types.push('typeof Highcharts');
-            moduleLoaderDeclaration.setParameters(parameterDeclaration);
+            factoryParameterDeclaration.description = (
+                'The imported Highcharts namespace to extend.'
+            );
+            factoryParameterDeclaration.types.push('typeof Highcharts');
+            factoryDeclaration.setParameters(factoryParameterDeclaration);
 
             this.root.imports.push(
                 'import * as Highcharts from "' +
                 utils.relative(modulePath, mainModules["highcharts"], true) +
                 '";'
             );
-            this.root.exports.push('export = moduleLoader;');
+            this.root.exports.push('export = factory;');
         }
 
         this.generate(node);
