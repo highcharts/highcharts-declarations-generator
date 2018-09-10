@@ -1785,7 +1785,11 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedNamespace = 'namespace ' + this.name;
+            renderedNamespace = (
+                this.name === 'global' ?
+                'global' :
+                'namespace ' + this.name
+            );
 
         renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
