@@ -38,7 +38,7 @@ export function saveIntoFiles(
             promises.push(
                 utils
                     .save(dtsFilePath, dts)
-                    .then(() => console.log('Saved ' + dtsFilePath))
+                    .then(() => console.info('Saved ' + dtsFilePath))
             );
 
             let dtsSource = dts
@@ -49,7 +49,7 @@ export function saveIntoFiles(
             promises.push(
                 utils
                     .save(dtsSourceFilePath, dtsSource)
-                    .then(() => console.log('Saved ' + dtsSourceFilePath))
+                    .then(() => console.info('Saved ' + dtsSourceFilePath))
             );
         })
 
@@ -228,13 +228,12 @@ class Generator extends Object {
         super();
 
         this._modulePath = modulePath;
+        this._moduleGlobal = new tsd.ModuleGlobalDeclaration();
         this._namespace = namespaceDeclaration;
-        this._root = new tsd.GlobalDeclaration();
 
         if (this.isMainModule) {
-            // add options namespace
-            this.root.addChildren(this.namespace);
-            this.root.exports.push('export = Highcharts;');
+            this.moduleGlobal.addChildren(this.namespace);
+            this.moduleGlobal.exports.push('export = Highcharts;');
         } else {
 
             let factoryDeclaration = new tsd.FunctionDeclaration(
@@ -243,7 +242,7 @@ class Generator extends Object {
             factoryDeclaration.description = (
                 'Adds the module to the imported Highcharts namespace.'
             );
-            this.root.addChildren(factoryDeclaration);
+            this.moduleGlobal.addChildren(factoryDeclaration);
  
             let factoryParameterDeclaration = new tsd.ParameterDeclaration(
                 'highcharts'
@@ -254,12 +253,12 @@ class Generator extends Object {
             factoryParameterDeclaration.types.push('typeof Highcharts');
             factoryDeclaration.setParameters(factoryParameterDeclaration);
 
-            this.root.imports.push(
+            this.moduleGlobal.imports.push(
                 'import * as Highcharts from "' + utils.relative(
                     modulePath, config.mainModules['highcharts'], true
                 ) + '";'
             );
-            this.root.exports.push('export = factory;');
+            this.moduleGlobal.exports.push('export = factory;');
         }
 
         this.generate(node);
@@ -274,20 +273,21 @@ class Generator extends Object {
     public get isMainModule(): boolean {
         return (this.modulePath === config.mainModules['highcharts']);
     }
-    public get namespace(): tsd.NamespaceDeclaration {
-        return this._namespace;
+
+    public get moduleGlobal(): tsd.ModuleGlobalDeclaration {
+        return this._moduleGlobal;
     }
-    private _namespace: tsd.NamespaceDeclaration;
+    private _moduleGlobal: tsd.ModuleGlobalDeclaration;
 
     public get modulePath(): string {
         return this._modulePath;
     }
     private _modulePath: string;
 
-    public get root(): tsd.GlobalDeclaration {
-        return this._root;
+    public get namespace(): tsd.NamespaceDeclaration {
+        return this._namespace;
     }
-    private _root: tsd.GlobalDeclaration;
+    private _namespace: tsd.NamespaceDeclaration;
 
     /* *
      *
@@ -297,7 +297,7 @@ class Generator extends Object {
 
     private generate (
         sourceNode: parser.INode,
-        targetDeclaration: tsd.IDeclaration = this._root
+        targetDeclaration: tsd.IDeclaration = this._moduleGlobal
     ) {
 
         let kind = (sourceNode.doclet && sourceNode.doclet.kind || '');
@@ -323,7 +323,7 @@ class Generator extends Object {
                 this.generateGlobal(sourceNode);
                 break;
             case 'interface':
-                this.generateInterface(sourceNode, this.namespace);
+                this.generateInterface(sourceNode, targetDeclaration);
                 break;
             case 'namespace':
                 this.generateNamespace(sourceNode, targetDeclaration);
@@ -332,7 +332,14 @@ class Generator extends Object {
                 this.generateProperty(sourceNode, targetDeclaration);
                 break;
             case 'typedef':
-                this.generateType(sourceNode, this.namespace);
+                if (sourceNode.doclet.parameters ||
+                    sourceNode.doclet.return
+                ) {
+                    this.generateFunctionInterface(sourceNode, targetDeclaration);
+                }
+                else {
+                    this.generateType(sourceNode, targetDeclaration);
+                }
                 break;
         }
     }
@@ -355,7 +362,7 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._root;
+            targetDeclaration = this._moduleGlobal;
         }
 
         let declaration = new tsd.ClassDeclaration(doclet.name);
@@ -465,7 +472,7 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._root;
+            targetDeclaration = this._moduleGlobal;
         }
 
         let declaration = new tsd.FunctionDeclaration(doclet.name),
@@ -526,10 +533,79 @@ class Generator extends Object {
         return declaration;
     }
 
-    private generateGlobal (sourceNode: parser.INode): tsd.GlobalDeclaration {
+    private generateFunctionInterface (
+        sourceNode: parser.INode,
+        targetDeclaration: tsd.IDeclaration
+    ): tsd.InterfaceDeclaration {
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this._moduleGlobal;
+        }
+
+        let declaration = new tsd.InterfaceDeclaration(doclet.name);
+
+        if (doclet.description) {
+            declaration.description = doclet.description;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        if (doclet.types) {
+            declaration.types.push(
+                ...doclet.types.filter(type => type !== 'Function')
+            );
+        }
+
+        let functionDeclaration = new tsd.FunctionDeclaration('');
+
+        if (doclet.description) {
+            functionDeclaration.description = doclet.description;
+        }
+
+        if (doclet.parameters) {
+            functionDeclaration.setParameters(
+                ...this.generateParameters(doclet.parameters)
+            );
+        }
+
+        if (doclet.return) {
+            if (doclet.return.description) {
+                functionDeclaration.typesDescription = (
+                    doclet.return.description
+                );
+            }
+            if (doclet.return.types) {
+                functionDeclaration.types.push(
+                    ...doclet.return.types
+                );
+            }
+        }
+
+        declaration.addChildren(functionDeclaration);
+
+        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
+
+        if (existingChild) {
+            Generator.mergeDeclarations(existingChild, declaration);
+        } else {
+            targetDeclaration.addChildren(declaration);
+        }
+
+        if (sourceNode.children) {
+            this.generateChildren(sourceNode.children, declaration);
+        }
+
+        return declaration;
+    }
+
+    private generateGlobal (sourceNode: parser.INode): tsd.ModuleGlobalDeclaration {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = this._root;
+            declaration = this._moduleGlobal;
         
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -543,11 +619,11 @@ class Generator extends Object {
             declaration.see.push(...doclet.see);
         }
 
-        if (this._root.hasChildren) {
-            declaration.addChildren(...this._root.removeChildren());
+        if (this._moduleGlobal.hasChildren) {
+            declaration.addChildren(...this._moduleGlobal.removeChildren());
         }
 
-        this._root = declaration;
+        this._moduleGlobal = declaration;
 
         if (sourceNode.children) {
             this.generateChildren(sourceNode.children, declaration);
@@ -564,7 +640,7 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._root;
+            targetDeclaration = this._moduleGlobal;
         }
 
         let declaration = new tsd.InterfaceDeclaration(doclet.name);
@@ -606,19 +682,29 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration;
 
-        if (this.isMainModule) {
-            // create namespaces only in highcharts.js
+        if (doclet.name === 'global') {
+            // creates a namespace if it is global
             declaration = new tsd.NamespaceDeclaration(doclet.name);
-            if (doclet.isGlobal) {
-                targetDeclaration = this._root;
-            }
+        }
+        else if (this.isMainModule) {
+            // create namespace in highcharts.js
+            declaration = this.namespace;
         }
         else {
-            // reference namespace of highcharts.js as a extension with file
-            // path.
-            declaration = new tsd.ModuleDeclaration(utils.relative(
-                    this.modulePath, config.mainModules['highcharts'], true
-            ));
+            // reference namespace of highcharts.js with module path
+            declaration = targetDeclaration.getChildren(
+                config.mainModules['highcharts']
+            )[0];
+            if (!declaration) {
+                declaration = new tsd.ModuleDeclaration(utils.relative(
+                        this.modulePath, config.mainModules['highcharts'], true
+                ));
+            }
+        }
+
+        if (doclet.isGlobal) {
+            // add global declaration in the current module file scope
+            targetDeclaration = this.moduleGlobal;
         }
 
         let child = targetDeclaration.getChildren(doclet.name)[0];
@@ -691,7 +777,7 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._root;
+            targetDeclaration = this._moduleGlobal;
         }
 
         let declaration = new tsd.PropertyDeclaration(doclet.name);
@@ -733,7 +819,8 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._root;
+            // global helper types are always limited to the module scope
+            targetDeclaration = this._moduleGlobal;
         }
 
         let declaration = new tsd.TypeDeclaration(doclet.name);
@@ -767,6 +854,6 @@ class Generator extends Object {
 
     public toString (): string {
 
-        return this._root.toString();
+        return this._moduleGlobal.toString();
     }
 }
