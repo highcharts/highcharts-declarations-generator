@@ -200,11 +200,10 @@ export function isBasicType (typeName: string): boolean {
 
 export function isCoreType (typeName: string): boolean {
 
-    if (typeName.indexOf('Array') === 0) {
-        return true;
-    } else {
-        return isBasicType(typeName);
-    }
+    return (
+        typeName.startsWith('Array') ||
+        isBasicType(typeName)
+    );
 }
 
 
