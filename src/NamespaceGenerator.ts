@@ -233,8 +233,10 @@ class Generator extends Object {
 
         if (this.isMainModule) {
             this.moduleGlobal.addChildren(this.namespace);
-            this.moduleGlobal.exports.push('export = Highcharts;');
-            this.moduleGlobal.exports.push('export as namespace Highcharts;');
+            this.moduleGlobal.exports.push(
+                'export = Highcharts;',
+                'export as namespace Highcharts;'
+            );
         } else {
 
             let factoryDeclaration = new tsd.FunctionDeclaration(
