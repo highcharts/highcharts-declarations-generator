@@ -204,7 +204,7 @@ export abstract class IDeclaration extends Object {
     public static namespaces (name: string, withFullNames: boolean = false): Array<string> {
 
         if (!name) {
-            return [''];
+            return [];
         }
 
         let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
@@ -216,9 +216,9 @@ export abstract class IDeclaration extends Object {
         let namespaces = name.split('.');
 
         if (subspace) {
-            if (subspace.indexOf(':') > -1 &&
-                subspace.indexOf(':number') === -1 &&
-                subspace.indexOf(':string') === -1
+            if (subspace.indexOf(':') > 0 &&
+                !subspace.endsWith(':number') &&
+                !subspace.endsWith(':string')
             ) {
                 subspace = subspace.replace(':', ' in ');
             }
@@ -364,6 +364,18 @@ export abstract class IDeclaration extends Object {
             typeA.indexOf('<') === -1
         ) {
             return -1;
+        }
+
+        if (typeA[0] === '"' &&
+            typeB[0] !== '"'
+        ) {
+            return -1;
+        }
+
+        if (typeB[0] === '"' &&
+            typeA[0] !== '"'
+        ) {
+            return 1;
         }
 
         let typeALC = typeA.toLowerCase(),
@@ -936,8 +948,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             let colonIndex = eventName.indexOf(':');
 
             if (this.parent &&
-                colonIndex > -1 &&
-                eventName.indexOf(this.parent.fullName + '#event:') === 0
+                colonIndex > 0 &&
+                eventName.startsWith(this.parent.fullName + '#event:')
             ) {
                 return eventName.substr(colonIndex + 1);
             }
@@ -1432,147 +1444,6 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
 
 /**
- * Class for global declarations in TypeScript.
- *
- * @extends IDeclaration
- */
-export class GlobalDeclaration extends IDeclaration {
-
-    /* *
-     *
-     *  Constructor
-     *
-     * */
-
-    /**
-     * Initiates a new global declaration.
-     */
-    public constructor () {
-
-        super('[global]');
-
-        this._exports = [];
-        this._imports = [];
-    }
-
-    /* *
-     *
-     *  Properties
-     *
-     * */
-
-    /**
-     * Import statemens.
-     */
-    public get exports (): Array<string> {
-        return this._exports;
-    }
-    private _exports: Array<string>;
-
-    /**
-     * Import statemens.
-     */
-    public get imports (): Array<string> {
-        return this._imports;
-    }
-    private _imports: Array<string>;
-
-    /**
-     * Full qualifierd name of a global declaration is always an empty string.
-     */
-    public get fullName (): string {
-        return '';
-    }
-
-    /**
-     * Kind of declaration.
-     */
-    public readonly kind = 'global';
-
-    /* *
-     *
-     *  Functions
-     *
-     * */
-
-    /**
-     * Returns a clone of this global declaration.
-     */
-    public clone(): GlobalDeclaration {
-
-        let clone = new GlobalDeclaration();
-
-        clone.defaultValue = this.defaultValue;
-        clone.description = this.description;
-        clone.isOptional = this.isOptional;
-        clone.isPrivate = this.isPrivate;
-        clone.isStatic = this.isStatic;
-        clone.exports.push(...this.exports);
-        clone.imports.push(...this.imports);
-        clone.see.push(...this.see);
-        clone.types.push(...this.types);
-        clone.addChildren(...this.getChildren().map(child => child.clone()));
-
-        return clone;
-    }
-
-    /**
-     * Returns a rendered string of assigned exports statements.
-     */
-    protected renderExports(): string {
-
-        if (this.exports.length === 0) {
-            return '';
-        } else {
-            return (
-                this.exports.join('\n') + '\n'
-            );
-        }
-    }
-
-    /**
-     * Returns a rendered string of assigned import statements.
-     */
-    protected renderImports(): string {
-
-        if (this.imports.length === 0) {
-            return '';
-        } else {
-            return (
-                this.imports.join('\n') + '\n' +
-                '\n'
-            );
-        }
-    }
-
-    /**
-     * Returns a rendered string of this global declaration.
-     */
-    public toString(): string {
-
-        if (this.isInSpace) {
-            return (
-                this.renderDescription('') +
-                'declare global {\n\n' +
-                this.renderChildren('', '\n') +
-                '}\n\n'
-            );
-        }
-        else {
-            return (
-                this.renderDescription('') +
-                '\n' +
-                this.renderImports() +
-                this.renderChildren('', '\n') +
-                this.renderExports()
-            );
-        }
-    }
-}
-
-
-
-/**
  * Class for interface declarations in TypeScript.
  *
  * @extends IDeclaration
@@ -1743,6 +1614,132 @@ export class ModuleDeclaration extends IDeclaration {
     }
 }
 
+
+
+/**
+ * Class for global declarations in a TypeScript module file.
+ *
+ * @extends IDeclaration
+ */
+export class ModuleGlobalDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Constructor
+     *
+     * */
+
+    /**
+     * Initiates a new global declaration.
+     */
+    public constructor () {
+
+        super('');
+
+        this._exports = [];
+        this._imports = [];
+    }
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Import statemens.
+     */
+    public get exports (): Array<string> {
+        return this._exports;
+    }
+    private _exports: Array<string>;
+
+    /**
+     * Import statemens.
+     */
+    public get imports (): Array<string> {
+        return this._imports;
+    }
+    private _imports: Array<string>;
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'global';
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this global declaration.
+     */
+    public clone(): ModuleGlobalDeclaration {
+
+        let clone = new ModuleGlobalDeclaration();
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.exports.push(...this.exports);
+        clone.imports.push(...this.imports);
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of assigned exports statements.
+     */
+    protected renderExports(): string {
+
+        if (this.exports.length === 0) {
+            return '';
+        } else {
+            return (
+                this.exports.join('\n') + '\n'
+            );
+        }
+    }
+
+    /**
+     * Returns a rendered string of assigned import statements.
+     */
+    protected renderImports(): string {
+
+        if (this.imports.length === 0) {
+            return '';
+        } else {
+            return (
+                this.imports.join('\n') + '\n' +
+                '\n'
+            );
+        }
+    }
+
+    /**
+     * Returns a rendered string of this global declaration.
+     */
+    public toString(): string {
+
+        return (
+            this.renderDescription('') +
+            '\n' +
+            this.renderImports() +
+            this.renderChildren('', '\n') +
+            this.renderExports()
+        );
+    }
+}
+
+
+
 /**
  * Class for namespace declarations in TypeScript.
  *
@@ -1795,7 +1792,12 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedNamespace = 'namespace ' + this.name;
+            renderedNamespace = (
+                this.name === 'global' &&
+                this.parent instanceof ModuleGlobalDeclaration ?
+                'global' :
+                'namespace ' + this.name
+            );
 
         renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
