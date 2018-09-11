@@ -36,7 +36,7 @@ config.mapType = function (type: string): string {
             MAP_TYPE_GENERIC,
             (match, generic, genericType) => {
                 if (generic === 'Array' &&
-                    genericType.indexOf(',') > -1 &&
+                    genericType.indexOf(',') > 0 &&
                     genericType.indexOf('<') === -1
                 ) {
                     return '[' + config.mapType(genericType) + ']';
@@ -75,8 +75,8 @@ config.mapType = function (type: string): string {
         return config.typeMapping[type];
     }
 
-    if (type.indexOf('global.') === 0 ||
-        type.indexOf('window.') === 0
+    if (type.startsWith('global.') ||
+        type.startsWith('window.')
     ) {
         return type.substr(7);
     }
