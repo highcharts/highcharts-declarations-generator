@@ -217,8 +217,8 @@ export abstract class IDeclaration extends Object {
 
         if (subspace) {
             if (subspace.indexOf(':') > 0 &&
-                !subspace.endsWith(':number') &&
-                !subspace.endsWith(':string')
+                subspace.indexOf(':number') === -1 &&
+                subspace.indexOf(':string') === -1
             ) {
                 subspace = subspace.replace(':', ' in ');
             }
