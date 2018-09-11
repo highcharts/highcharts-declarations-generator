@@ -301,7 +301,7 @@ export abstract class IDeclaration extends Object {
 
         let nameParts = IDeclaration.namespaces(name);
 
-        return nameParts[nameParts.length-1];
+        return (nameParts[nameParts.length-1] || '');
     }
 
     /**
