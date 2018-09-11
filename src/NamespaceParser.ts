@@ -177,12 +177,6 @@ class NamespaceParser {
                 description: '',
                 kind: 'global',
                 name: '',
-            },
-            meta: {
-                files: [{
-                    line: 0,
-                    path: modulePath + '.js'
-                }]
             }
         });
 
