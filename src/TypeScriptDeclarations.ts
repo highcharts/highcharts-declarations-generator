@@ -1426,32 +1426,15 @@ export class FunctionDeclaration extends IExtendedDeclaration {
             renderedScope = this.renderScopePrefix(),
             renderedTypes = this.renderTypes(true);
 
-        if (this.parent &&
-            this.parent.kind === 'interface'
-        ) {
-            let genericPosition = renderedFunction.indexOf('<');
-            if (genericPosition > -1) {
-                renderedFunction = (
-                    renderedFunction.substr(0, genericPosition) + ': ' +
-                    renderedFunction.substr(genericPosition) +
-                    renderedParameters + ' => '
-                );
-            }
-            else {
-                renderedFunction += ': ' + renderedParameters + ' => ';
-            }
-        }
-        else {
-            renderedFunction += ' ' + renderedParameters + ': ';
-        }
-
+        renderedFunction += ' ' + renderedParameters + ': ';
         renderedFunction += (renderedTypes || 'void');
 
         if (this.isInSpace) {
-            renderedFunction = 'function ' + renderedFunction;
+            renderedFunction = renderedScope + 'function ' + renderedFunction;
         }
-
-        renderedFunction = renderedScope + renderedFunction;
+        else {
+            renderedFunction = renderedScope + renderedFunction;
+        }
 
         return (
             this.renderExtendedDescription(indent) +
