@@ -1422,17 +1422,36 @@ export class FunctionDeclaration extends IExtendedDeclaration {
     public toString(indent: string = ''): string {
 
         let renderedFunction = this.name,
+            renderedParameters = this.renderParameterBrackets(),
+            renderedScope = this.renderScopePrefix(),
             renderedTypes = this.renderTypes(true);
 
-        renderedFunction += ' ' + this.renderParameterBrackets();
+        if (this.parent &&
+            this.parent.kind === 'interface'
+        ) {
+            let genericPosition = renderedFunction.indexOf('<');
+            if (genericPosition > -1) {
+                renderedFunction = (
+                    renderedFunction.substr(0, genericPosition) + ': ' +
+                    renderedFunction.substr(genericPosition) +
+                    renderedParameters + ' => '
+                );
+            }
+            else {
+                renderedFunction += ': ' + renderedParameters + ' => ';
+            }
+        }
+        else {
+            renderedFunction += ' ' + renderedParameters + ': ';
+        }
 
-        renderedFunction += ': ' + (renderedTypes || 'void');
+        renderedFunction += (renderedTypes || 'void');
 
         if (this.isInSpace) {
             renderedFunction = 'function ' + renderedFunction;
         }
 
-        renderedFunction = this.renderScopePrefix() + renderedFunction;
+        renderedFunction = renderedScope + renderedFunction;
 
         return (
             this.renderExtendedDescription(indent) +
