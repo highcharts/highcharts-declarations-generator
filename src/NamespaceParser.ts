@@ -41,7 +41,7 @@ class NamespaceParser {
      * @param docletB
      *        Second doclet to analyze.
      */
-    private static isEqualDoclet (docletA: IDoclet, docletB: IDoclet) {
+    private static isEqualDoclet (docletA: IDoclet, docletB: IDoclet): boolean {
 
         let nameA = tsd.IDeclaration.namespaces(docletA.name).join('.'),
             nameB = tsd.IDeclaration.namespaces(docletB.name).join('.');
@@ -213,7 +213,7 @@ class NamespaceParser {
                     targetName = (sourceDoclet.name || ''),
                     targetNode = this.findNode(moduleNode, targetName),
                     targetDoclet = targetNode.doclet;
-                
+
                 if (targetDoclet &&
                     !NamespaceParser.isEqualDoclet(targetDoclet, sourceDoclet)
                 ) {
@@ -315,6 +315,7 @@ export interface IFile {
 export type IKind = (
     'class' |
     'constructor' |
+    'external' |
     'function' |
     'global' |
     'interface' |
