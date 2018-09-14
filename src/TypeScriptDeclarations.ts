@@ -320,7 +320,14 @@ export abstract class IDeclaration extends Object {
         let index1 = KIND_ORDER.indexOf(declarationA.kind),
             index2 = KIND_ORDER.indexOf(declarationB.kind);
 
-        return (index1 === index2 ? 0 : index1 - index2);
+        if (index1 !== index2) {
+            return (index1 - index2);
+        }
+
+        let nameA = declarationA.name.toLowerCase(),
+            nameB = declarationB.name.toLowerCase();
+
+        return (nameA < nameB ? -1 : nameA > nameB ? 1 : 0);
     }
 
     /**
