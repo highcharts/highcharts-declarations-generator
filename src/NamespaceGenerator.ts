@@ -343,6 +343,13 @@ class Generator extends Object {
                 ) {
                     this.generateFunctionInterface(sourceNode, targetDeclaration);
                 }
+                else if (sourceNode.children &&
+                    sourceNode.children.length > 0 &&
+                    sourceNode.doclet.types &&
+                    sourceNode.doclet.types[0] !== '*'
+                ) {
+                    this.generateInterface(sourceNode, targetDeclaration);
+                }
                 else {
                     this.generateType(sourceNode, targetDeclaration);
                 }
