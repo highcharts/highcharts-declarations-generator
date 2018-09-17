@@ -474,7 +474,7 @@ class Generator extends Object {
                 );
                 targetDeclaration.addChildren(overloadedDeclaration);
 
-                parameterDeclarations[0].isOptional = true;
+                parameterDeclarations[0].isOptional = false;
                 declaration.setParameters(
                     ...parameterDeclarations
                 );
@@ -640,7 +640,7 @@ class Generator extends Object {
                 );
                 targetDeclaration.addChildren(overloadedDeclaration);
 
-                parameterDeclarations[0].isOptional = true;
+                parameterDeclarations[0].isOptional = false;
                 declaration.setParameters(
                     ...parameterDeclarations
                 );
