@@ -72,13 +72,17 @@ config.mapType = function (type: string): string {
     }
 
     if (config.typeMapping[type]) {
-        return config.typeMapping[type];
+        type = config.typeMapping[type];
     }
 
     if (type.startsWith('global.') ||
         type.startsWith('window.')
     ) {
-        return type.substr(7);
+        type = type.substr(7);
+    }
+
+    if (type.startsWith('typeof_')) {
+        type = 'typeof ' + type.substr(7);
     }
 
     return type;
