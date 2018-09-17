@@ -1445,7 +1445,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
         return (
             this.renderExtendedDescription(indent) +
-            indent + renderedFunction + ';\n'
+            indent + renderedFunction.trim() + ';\n'
         );
     }
 }
