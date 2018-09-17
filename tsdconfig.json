@@ -7,6 +7,9 @@
         "highstock": "code/highstock",
         "highmaps": "code/highmaps"
     },
+    "optionTypeMapping": {
+        "chart.type": "keyof Highcharts.seriesTypes"
+    },
     "typeMapping": {
         "*": "any",
         "Array": "Array<any>",

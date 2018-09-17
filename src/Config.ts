@@ -21,11 +21,15 @@ config.cwd = process.cwd();
 
 config.filterUndefined = function (type: string): boolean {
     return (type !== 'undefined');
-}
+};
 
 config.findUndefined = function (type: string): boolean {
     return (type === 'undefined');
-}
+};
+
+config.mapOptionType = function (option: string): string {
+    return config.optionTypeMapping[option];
+};
 
 config.mapType = function (type: string): string {
 
@@ -98,7 +102,7 @@ config.mapValue = function (value: any): string {
         case 'undefined':
         case 'object':
             if (value) {
-                return 'object';
+                return 'Object';
             } else {
                 return 'undefined';
             }
@@ -134,19 +138,21 @@ config.seeLink = function (name: string, kind: string, product?: string) {
         case 'typedef':
             return config.seeBaseUrl + product + '/' + name;
     }
-}
+};
 
 export = config;
 
 interface IConfig {
     cwd: string;
     mainModules: { [product: string]: string };
+    optionTypeMapping: { [key: string]: string };
     seeBaseUrl: string;
     treeNamespaceJsonPath: string;
     treeOptionsJsonPath: string;
     typeMapping: { [key: string]: string };
     filterUndefined (type: string): boolean;
     findUndefined (type: string): boolean;
+    mapOptionType (option: string): string;
     mapType (type: string): string;
     mapValue (value: any): string;
     seeLink (name: string, kind: string, product?: string): string;

@@ -220,7 +220,14 @@ class Parser extends Object {
      */
     private completeNodeTypes (node: INode) {
 
-        if (node.doclet.type && node.doclet.type.names) {
+        if (node.meta.fullname &&
+            typeof config.optionTypeMapping[node.meta.fullname] !== 'undefined'
+        ) {
+            node.doclet.type = {
+                names: [config.optionTypeMapping[node.meta.fullname]]
+            };
+        }
+        else if (node.doclet.type && node.doclet.type.names) {
             // nothing to do
         }
         else if (node.meta.default) {
