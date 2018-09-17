@@ -449,14 +449,41 @@ class Generator extends Object {
             declaration.isPrivate = true;
         }
 
-        if (doclet.parameters) {
-            declaration.setParameters(
-                ...this.generateParameters(doclet.parameters)
-            );
-        }
-
         if (doclet.see) {
             declaration.see.push(...doclet.see);
+        }
+
+        if (doclet.parameters) {
+
+            let parameterDeclarations = this.generateParameters(
+                doclet.parameters
+            );
+
+            if (parameterDeclarations.length > 1 &&
+                parameterDeclarations[0].isOptional &&
+                !parameterDeclarations[1].isOptional
+            ) {
+                let overloadedDeclaration = declaration.clone(),
+                    overloadedParameterDeclarations = parameterDeclarations.map(
+                        parameterDeclaration => parameterDeclaration.clone()
+                    );
+
+                overloadedParameterDeclarations.shift();
+                overloadedDeclaration.setParameters(
+                    ...overloadedParameterDeclarations
+                );
+                targetDeclaration.addChildren(overloadedDeclaration);
+
+                parameterDeclarations[0].isOptional = true;
+                declaration.setParameters(
+                    ...parameterDeclarations
+                );
+            }
+            else {
+                declaration.setParameters(
+                    ...parameterDeclarations
+                );
+            }
         }
 
         targetDeclaration.addChildren(declaration);
@@ -487,10 +514,10 @@ class Generator extends Object {
 
     private generateExternal (
         sourceNode: parser.INode
-    ): tsd.NamespaceDeclaration {
+    ): tsd.InterfaceDeclaration {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.NamespaceDeclaration(
+            declaration = new tsd.InterfaceDeclaration(
                 doclet.name.replace('external:', '')
             ),
             globalDeclaration = (
@@ -501,9 +528,9 @@ class Generator extends Object {
         let existingChild = globalDeclaration.getChildren(declaration.name)[0];
 
         if (existingChild &&
-            existingChild.kind === 'namespace'
+            existingChild.kind === 'interface'
         ) {
-            declaration = existingChild as tsd.NamespaceDeclaration;
+            declaration = existingChild as tsd.InterfaceDeclaration;
         }
 
         if (doclet.description) {
@@ -579,12 +606,6 @@ class Generator extends Object {
             declaration.isStatic = true;
         }
 
-        if (doclet.parameters) {
-            declaration.setParameters(
-                ...this.generateParameters(doclet.parameters)
-            );
-        }
-
         if (doclet.return) {
             if (doclet.return.description) {
                 declaration.typesDescription = doclet.return.description;
@@ -596,6 +617,39 @@ class Generator extends Object {
 
         if (doclet.see) {
             declaration.see.push(...doclet.see);
+        }
+
+        if (doclet.parameters) {
+
+            let parameterDeclarations = this.generateParameters(
+                doclet.parameters
+            );
+
+            if (parameterDeclarations.length > 1 &&
+                parameterDeclarations[0].isOptional &&
+                !parameterDeclarations[1].isOptional
+            ) {
+                let overloadedDeclaration = declaration.clone(),
+                    overloadedParameterDeclarations = parameterDeclarations.map(
+                        parameterDeclaration => parameterDeclaration.clone()
+                    );
+
+                overloadedParameterDeclarations.shift();
+                overloadedDeclaration.setParameters(
+                    ...overloadedParameterDeclarations
+                );
+                targetDeclaration.addChildren(overloadedDeclaration);
+
+                parameterDeclarations[0].isOptional = true;
+                declaration.setParameters(
+                    ...parameterDeclarations
+                );
+            }
+            else {
+                declaration.setParameters(
+                    ...parameterDeclarations
+                );
+            }
         }
 
         targetDeclaration.addChildren(declaration);
