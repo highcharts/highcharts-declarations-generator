@@ -1001,7 +1001,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
         let parameters = this._parameters;
 
-        if (this.hasParameters) {
+        if (!this.hasParameters) {
             return '()';
         }
 
@@ -2163,14 +2163,14 @@ export class TypeDeclaration extends IDeclaration {
             renderedType = 'any';
         }
 
-        if (!this.hasChildren) {
-            renderedType = 'type ' + this.name + ' = ' + renderedType + ';';
-        } else {
+        if (this.hasChildren) {
             renderedType = (
                 'type ' + this.name + ' = {\n\n' +
                 this.renderChildren(childIndent, '\n') +
                 indent + '};'
             );
+        } else {
+            renderedType = 'type ' + this.name + ' = ' + renderedType + ';';
         }
 
         renderedType = this.renderScopePrefix() + renderedType;
