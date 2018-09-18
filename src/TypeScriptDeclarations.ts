@@ -220,8 +220,7 @@ export abstract class IDeclaration extends Object {
 
         let namespaces = name
             .replace(NAMESPACE_KEYWORDS, '$&.')
-            .split('.')
-            .filter(spaceName => !!spaceName);
+            .split('.');
 
         if (subspace) {
             if (subspace.indexOf(':') > 0 &&
@@ -232,6 +231,8 @@ export abstract class IDeclaration extends Object {
             }
             namespaces[namespaces.length-1] += subspace;
         }
+
+        namespaces = namespaces.filter(spaceName => !!spaceName);
 
         if (withFullNames) {
 
