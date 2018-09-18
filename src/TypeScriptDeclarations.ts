@@ -218,7 +218,7 @@ export abstract class IDeclaration extends Object {
             name = name.substr(0, name.length - subspace.length);
         }
 
-        let namespaces = name.replace(NAMESPACE_KEYWORDS, '$0.').split('.');
+        let namespaces = name.replace(NAMESPACE_KEYWORDS, '$&.').split('.');
 
         if (subspace) {
             if (subspace.indexOf(':') > 0 &&
