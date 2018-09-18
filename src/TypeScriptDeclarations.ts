@@ -1743,7 +1743,7 @@ export class ModuleGlobalDeclaration extends IDeclaration {
     public toString(): string {
 
         return (
-            this.renderDescription('') +
+            this.renderDescription('').replace('/**', '/*') +
             '\n' +
             this.renderImports() +
             this.renderChildren('', '\n') +
