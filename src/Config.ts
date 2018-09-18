@@ -112,6 +112,7 @@ config.mapValue = function (value: any): string {
 
 config.seeLink = function (name: string, kind: string, product?: string) {
 
+    name = name.replace(':.', '-');
     product = (product || 'highcharts');
 
     switch (kind) {
