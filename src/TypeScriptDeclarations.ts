@@ -86,6 +86,11 @@ const KIND_ORDER = [
 ] as Array<Kinds>;
 
 /**
+ * Finds separator characters in fullnames.
+ */
+const NAMESPACE_KEYWORDS = /\w+\:/gm;
+
+/**
  * Finds subspaces in fullnames.
  */
 const NAMESPACES_SUBSPACE = /(?:<.+>|\[.+\])$/gm;
@@ -213,7 +218,7 @@ export abstract class IDeclaration extends Object {
             name = name.substr(0, name.length - subspace.length);
         }
 
-        let namespaces = name.split('.');
+        let namespaces = name.replace(NAMESPACE_KEYWORDS, '$0.').split('.');
 
         if (subspace) {
             if (subspace.indexOf(':') > 0 &&
@@ -1802,8 +1807,7 @@ export class NamespaceDeclaration extends IDeclaration {
 
         let childIndent = indent + '    ',
             renderedNamespace = (
-                this.name === 'global' &&
-                this.parent instanceof ModuleGlobalDeclaration ?
+                this.name === 'external:' ?
                 'global' :
                 'namespace ' + this.name
             );
