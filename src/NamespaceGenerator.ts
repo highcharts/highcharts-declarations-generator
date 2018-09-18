@@ -839,7 +839,11 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration;
 
-        if (this.isMainModule) {
+        if (doclet.name.endsWith(':')) {
+            // creates a namespace if it is a special keyword
+            declaration = new tsd.NamespaceDeclaration(doclet.name);
+        }
+        else if (this.isMainModule) {
             // create namespace in highcharts.js
             declaration = this.namespace;
         }
