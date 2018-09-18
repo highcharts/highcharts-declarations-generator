@@ -734,7 +734,7 @@ export abstract class IDeclaration extends Object {
      */
     protected renderDefaultValue (indent: string = ''): string {
 
-        if (this.defaultValue === undefined) {
+        if (typeof this.defaultValue === 'undefined') {
             return '';
         }
 
@@ -770,8 +770,19 @@ export abstract class IDeclaration extends Object {
         );
 
         if (includeMeta) {
-            renderedDescription += this.renderDefaultValue(indent);
-            renderedDescription += this.renderSee(indent);
+            let renderedDefaultValue = this.renderDefaultValue(indent),
+                renderedSee = this.renderSee(indent);
+
+            if (renderedDefaultValue) {
+                renderedDescription += renderedDefaultValue;
+            }
+
+            if (renderedSee) {
+                renderedDescription += (
+                    indent + ' *' + '\n' +
+                    renderedSee
+                );
+            }
         }
 
         return (
@@ -970,13 +981,12 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
         let events = this.events.map(eventName => {
 
-            let colonIndex = eventName.indexOf(':');
+            let colonIndex = eventName.indexOf('#event:');
 
             if (this.parent &&
-                colonIndex > 0 &&
-                eventName.startsWith(this.parent.fullName + '#event:')
+                colonIndex > -1
             ) {
-                return eventName.substr(colonIndex + 1);
+                return eventName.substr(colonIndex + 7);
             }
             else {
                 return eventName;
@@ -1006,8 +1016,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         }
 
         return (
-            '(' +
-            Object
+            '(' + Object
                 .keys(parameters)
                 .map(parameterName => parameters[parameterName].toString())
                 .join(', ') +
@@ -1025,9 +1034,11 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     protected renderExtendedDescription(indent: string = ''): string {
 
         let parameters = this._parameters,
-            list = '';
+            renderedExtendedDescription = '',
+            renderedEvents = this.renderEvents(indent),
+            renderedSee = this.renderSee(indent);
         
-        list += Object
+        renderedExtendedDescription += Object
             .keys(parameters)
             .map(parameterName => parameters[parameterName]
                 .renderParameterDescription(indent)
@@ -1035,42 +1046,47 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             .join(indent + ' *\n');
 
         if (this.typesDescription) {
-            if (list) {
-                list += indent + ' *\n';
+            if (renderedExtendedDescription) {
+                renderedExtendedDescription += indent + ' *\n';
             }
-            list += this.renderReturn(indent);
+            renderedExtendedDescription += this.renderReturn(indent);
         }
 
-        if (this.events.length > 0) {
-            if (list) {
-                list += indent + ' *\n';
+        if (renderedEvents) {
+            if (renderedExtendedDescription) {
+                renderedExtendedDescription += indent + ' *\n';
             }
-            list += this.renderEvents(indent);
+            renderedExtendedDescription += renderedEvents;
         }
 
-        if (this.see.length > 0) {
-            if (list) {
-                list += indent + ' *\n';
+        if (renderedSee) {
+            if (renderedExtendedDescription) {
+                renderedExtendedDescription += indent + ' *\n';
             }
-            list += this.renderSee(indent);
+            renderedExtendedDescription += renderedSee;
         }
 
-        if (!this.description) {
-            if (!list) {
-                return '';
+        if (this.description) {
+            if (renderedExtendedDescription) {
+                renderedExtendedDescription = (
+                    indent + ' *\n' + renderedExtendedDescription
+                );
             }
+            renderedExtendedDescription = (
+                IDeclaration.indent(
+                    IDeclaration.normalize(this.description, true),
+                    indent + ' * '
+                ) +
+                renderedExtendedDescription
+            );
         }
-        else {
-            list = indent + ' *\n' + list;
+        else if (!renderedExtendedDescription) {
+            return '';
         }
 
         return (
             indent + '/**\n' +
-            IDeclaration.indent(
-                IDeclaration.normalize(this.description, true),
-                indent + ' * '
-            ) +
-            list +
+            renderedExtendedDescription +
             indent + ' *' + '/\n'
         );
     }
@@ -1237,7 +1253,9 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
 
         let childIndent = indent + '    ',
-            renderedClass = 'class ' + this.name;
+            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedClass = 'class ' + this.name,
+            renderedDescription = this.renderDescription(indent);
 
         if (this.hasTypes) {
             renderedClass += 'extends ' + this.renderTypes();
@@ -1249,13 +1267,16 @@ export class ClassDeclaration extends IExtendedDeclaration {
 
         renderedClass = this.renderScopePrefix() + renderedClass;
 
+        if (renderedChildren) {
+            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent + '}';
+        }
+        else {
+            renderedChildren = '{}';
+        }
+
         return (
-            this.renderDescription(indent) +
-            indent + renderedClass + ' {\n' +
-            '\n' +
-            this.renderChildren(childIndent, '\n') +
-            '\n' +
-            indent+ '}\n'
+            renderedDescription +
+            indent + renderedClass + ' ' + renderedChildren + '\n'
         );
 
         return renderedClass;
@@ -1335,14 +1356,15 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
      */
     public toString (indent: string = ''): string {
 
-        let renderedConstructor = 'constructor';
+        let renderedConstructor = 'constructor',
+            renderedDescription = this.renderExtendedDescription(indent);
         
         renderedConstructor += ' ' + this.renderParameterBrackets();
 
         renderedConstructor = this.renderScopePrefix() + renderedConstructor;
 
         return (
-            this.renderExtendedDescription(indent) +
+            renderedDescription +
             indent + renderedConstructor + ';\n'
         );
     }
@@ -1393,11 +1415,17 @@ export class EventDeclaration extends IDeclaration {
      */
     public toString(indent: string = ''): string {
 
+        let renderedDescription = this.renderDescription(indent),
+            renderedTypes = this.renderTypes(false);
+
+        if (renderedDescription) {
+            renderedDescription += indent + ' *\n';
+        }
+
         return (
-            this.renderDescription(indent) +
-            indent + ' *\n' +
+            renderedDescription +
             indent + ' * @event ' + this.fullName + '\n' +
-            indent + ' * @type {' + this.renderTypes(false) + '}\n'
+            indent + ' * @type {' + renderedTypes + '}\n'
         );
     }
 }
@@ -1460,7 +1488,8 @@ export class FunctionDeclaration extends IExtendedDeclaration {
      */
     public toString(indent: string = ''): string {
 
-        let renderedFunction = this.name,
+        let renderedDescription = this.renderExtendedDescription(indent),
+            renderedFunction = this.name,
             renderedParameters = this.renderParameterBrackets(),
             renderedScope = this.renderScopePrefix(),
             renderedTypes = this.renderTypes(true);
@@ -1472,12 +1501,12 @@ export class FunctionDeclaration extends IExtendedDeclaration {
             renderedFunction = renderedScope + 'function ' + renderedFunction;
         }
         else {
-            renderedFunction = renderedScope + renderedFunction;
+            renderedFunction = (renderedScope + renderedFunction).trim();
         }
 
         return (
-            this.renderExtendedDescription(indent) +
-            indent + renderedFunction.trim() + ';\n'
+            renderedDescription +
+            indent + renderedFunction + ';\n'
         );
     }
 }
@@ -1536,6 +1565,8 @@ export class InterfaceDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedDescription = this.renderDescription(indent, true),
             renderedInterface = this.name;
 
         if (!this.isInSpace) {
@@ -1551,13 +1582,16 @@ export class InterfaceDeclaration extends IDeclaration {
 
         renderedInterface = this.renderScopePrefix() + renderedInterface;
 
+        if (renderedChildren) {
+            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent + '}';
+        }
+        else {
+            renderedChildren = '{}';
+        }
+
         return (
-            this.renderDescription(indent, true) +
-            indent + renderedInterface + ' {\n' +
-            '\n' +
-            this.renderChildren(childIndent, '\n') +
-            '\n' +
-            indent + '}\n'
+            renderedDescription +
+            indent + renderedInterface + ' ' + renderedChildren + '\n'
         );
     }
 }
@@ -1639,18 +1673,22 @@ export class ModuleDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedDescription = this.renderDescription(indent),
             renderedModule = 'module "' + this.path + '"';
 
         renderedModule = this.renderScopePrefix() + renderedModule;
 
+        if (renderedChildren) {
+            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent+ '}';
+        }
+        else {
+            renderedChildren = '{}'
+        }
+
         return (
-            this.renderDescription(indent) +
-            indent + renderedModule + ' {\n' +
-            '\n' +
-            this.renderChildren(childIndent, '\n') +
-            '\n' +
-            indent + '}\n' +
-            '\n'
+            renderedDescription +
+            indent + renderedModule + ' ' + renderedChildren+ '\n'
         );
     }
 }
@@ -1745,7 +1783,6 @@ export class ModuleGlobalDeclaration extends IDeclaration {
         }
 
         return (
-            '\n' +
             this.exports.join('\n') + '\n'
         );
     }
@@ -1760,8 +1797,7 @@ export class ModuleGlobalDeclaration extends IDeclaration {
         }
 
         return (
-            this.imports.join('\n') + '\n' +
-            '\n'
+            this.imports.join('\n') + '\n'
         );
     }
 
@@ -1770,12 +1806,30 @@ export class ModuleGlobalDeclaration extends IDeclaration {
      */
     public toString(): string {
 
+        let renderedChildren = this.renderChildren('', '\n'),
+            renderedDescription = this.renderDescription(''),
+            renderedExports = this.renderExports(),
+            renderedImports = this.renderImports();
+
+        if (renderedDescription) {
+            renderedDescription = (
+                renderedDescription.replace('/**', '/*') + '\n'
+            );
+        }
+
+        if (renderedImports) {
+            renderedImports += '\n';
+        }
+
+        if (renderedExports) {
+            renderedExports = '\n' + renderedExports;
+        }
+
         return (
-            this.renderDescription('').replace('/**', '/*') +
-            '\n' +
-            this.renderImports() +
-            this.renderChildren('', '\n') +
-            this.renderExports()
+            renderedDescription +
+            renderedImports +
+            renderedChildren +
+            renderedExports
         );
     }
 }
@@ -1834,6 +1888,8 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedDescription = this.renderDescription(indent),
             renderedNamespace = (
                 this.name === 'external:' ?
                 'global' :
@@ -1842,13 +1898,16 @@ export class NamespaceDeclaration extends IDeclaration {
 
         renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
+        if (renderedChildren) {
+            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent + '}';
+        }
+        else {
+            renderedChildren = '{}';
+        }
+
         return (
-            this.renderDescription(indent) +
-            indent + renderedNamespace + ' {\n' +
-            '\n' +
-            this.renderChildren(childIndent, '\n') +
-            '\n' +
-            indent + '}\n'
+            renderedDescription +
+            indent + renderedNamespace + ' ' + renderedChildren+ '\n'
         );
     }
 }
