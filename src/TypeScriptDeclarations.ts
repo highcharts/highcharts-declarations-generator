@@ -218,7 +218,10 @@ export abstract class IDeclaration extends Object {
             name = name.substr(0, name.length - subspace.length);
         }
 
-        let namespaces = name.replace(NAMESPACE_KEYWORDS, '$&.').split('.');
+        let namespaces = name
+            .replace(NAMESPACE_KEYWORDS, '$&.')
+            .split('.')
+            .filter(spaceName => !!spaceName);
 
         if (subspace) {
             if (subspace.indexOf(':') > 0 &&
@@ -711,7 +714,9 @@ export abstract class IDeclaration extends Object {
      */
     protected renderChildren (indent: string = '', infix: string = ''): string {
 
-        let children = this._children;
+        if (!this.hasChildren) {
+            return '';
+        }
 
         return this
             .getChildren()
@@ -806,15 +811,15 @@ export abstract class IDeclaration extends Object {
      */
     protected renderSee (indent: string = ''): string {
 
-        if (this.see.length === 0) {
+        let see = this.see;
+
+        if (see.length === 0) {
             return '';
         }
 
         return (
-            indent + ' *\n' +
-            this.see.map(
-                link => indent + ' * @see ' + IDeclaration.normalize(link)
-            ).join('\n') + '\n'
+            see.map(link => indent + ' * @see ' + link)
+                .join('\n') + '\n'
         );
     }
 
@@ -827,14 +832,21 @@ export abstract class IDeclaration extends Object {
      * @param filterUndefined
      *        Whether to filter undefined, if declaration has an optional flag.
      */
-    protected renderTypes (useParentheses: boolean = false, filterUndefined: boolean = false): string {
+    protected renderTypes (
+        useParentheses: boolean = false,
+        filterUndefined: boolean = false
+    ): string {
 
-        let types = this.types;
+        let types = this.types.slice();
 
         if (filterUndefined &&
             this.isOptional
         ) {
             types = types.filter(type => type !== 'undefined');
+        }
+
+        if (types.length === 0) {
+            return '';
         }
 
         if (useParentheses &&
@@ -975,7 +987,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         }
 
         return (
-            indent + ' *\n' +
             events
                 .map(eventName => indent + ' * @fires ' + eventName)
                 .join('\n') + '\n'
@@ -988,6 +999,10 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     protected renderParameterBrackets(): string {
 
         let parameters = this._parameters;
+
+        if (this.hasParameters) {
+            return '()';
+        }
 
         return (
             '(' +
@@ -1026,19 +1041,26 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         }
 
         if (this.events.length > 0) {
+            if (list) {
+                list += indent + ' *\n';
+            }
             list += this.renderEvents(indent);
         }
 
         if (this.see.length > 0) {
+            if (list) {
+                list += indent + ' *\n';
+            }
             list += this.renderSee(indent);
         }
 
-        if (list) {
-            list = indent + ' *\n' + list;
+        if (!this.description) {
+            if (!list) {
+                return '';
+            }
         }
-
-        if (!this.description && !list) {
-            return '';
+        else {
+            list = indent + ' *\n' + list;
         }
 
         return (
@@ -1060,6 +1082,10 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      *        The indentation string for formatting.
      */
     protected renderReturn(indent: string = ''): string {
+
+        if (!this.typesDescription) {
+            return '';
+        }
 
         return (
             indent + ' * @return ' +
@@ -1715,11 +1741,12 @@ export class ModuleGlobalDeclaration extends IDeclaration {
 
         if (this.exports.length === 0) {
             return '';
-        } else {
-            return (
-                this.exports.join('\n') + '\n'
-            );
         }
+
+        return (
+            '\n' +
+            this.exports.join('\n') + '\n'
+        );
     }
 
     /**
@@ -1729,12 +1756,12 @@ export class ModuleGlobalDeclaration extends IDeclaration {
 
         if (this.imports.length === 0) {
             return '';
-        } else {
-            return (
-                this.imports.join('\n') + '\n' +
-                '\n'
-            );
         }
+
+        return (
+            this.imports.join('\n') + '\n' +
+            '\n'
+        );
     }
 
     /**
@@ -1820,8 +1847,7 @@ export class NamespaceDeclaration extends IDeclaration {
             '\n' +
             this.renderChildren(childIndent, '\n') +
             '\n' +
-            indent + '}\n' +
-            '\n'
+            indent + '}\n'
         );
     }
 }
