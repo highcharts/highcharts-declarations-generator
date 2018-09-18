@@ -149,6 +149,15 @@ class NamespaceParser {
                     }
                 } as INode;
 
+                if (newNode.doclet.name.endsWith(':')) {
+                    newNode.doclet.kind = 'namespace';
+                }
+                else if (node.doclet.name.endsWith(':')) {
+                    newNode.doclet.kind = node.doclet.name.substr(
+                        0, (node.doclet.name.length - 1)
+                    ) as any;
+                }
+                
                 node.children.push(newNode);
 
                 node = newNode;
