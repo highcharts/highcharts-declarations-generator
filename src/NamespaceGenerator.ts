@@ -524,12 +524,10 @@ class Generator extends Object {
     ): tsd.InterfaceDeclaration {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new tsd.InterfaceDeclaration(
-                doclet.name.replace('external:', '')
-            ),
+            declaration = new tsd.InterfaceDeclaration(doclet.name),
             globalDeclaration = (
-                this._moduleGlobal.getChildren('global')[0] ||
-                new tsd.NamespaceDeclaration('global')
+                this._moduleGlobal.getChildren('external:')[0] ||
+                new tsd.NamespaceDeclaration('external:')
             );
 
         let existingChild = globalDeclaration.getChildren(declaration.name)[0];
@@ -841,11 +839,7 @@ class Generator extends Object {
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration;
 
-        if (sourceNode.doclet.name.startsWith('external:')) {
-            // creates a namespace if it is external
-            declaration = new tsd.NamespaceDeclaration(doclet.name);
-        }
-        else if (this.isMainModule) {
+        if (this.isMainModule) {
             // create namespace in highcharts.js
             declaration = this.namespace;
         }
