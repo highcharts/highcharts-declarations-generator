@@ -120,6 +120,15 @@ class Generator extends Object {
                 });
         }
 
+        if (doclet.products) {
+
+            let products = doclet.products
+                .map(utils.capitalize)
+                .join(', ');
+
+            doclet.description = '(' + products + ') ' + description;
+        }
+
         if (doclet.return) {
 
             let returnDescription = doclet.return.description;
