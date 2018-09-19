@@ -336,7 +336,20 @@ export abstract class IDeclaration extends Object {
         let nameA = declarationA.name.toLowerCase(),
             nameB = declarationB.name.toLowerCase();
 
-        return (nameA < nameB ? -1 : nameA > nameB ? 1 : 0);
+        if (nameA !== nameB) {
+            return (nameA < nameB ? -1 : 1);
+        }
+
+        if (declarationA instanceof IExtendedDeclaration &&
+            declarationB instanceof IExtendedDeclaration
+        ) {
+            let lengthA = declarationA.getParameters().length,
+                lengthB = declarationB.getParameters().length;
+
+            return (lengthA - lengthB);
+        }
+
+        return 0;
     }
 
     /**
