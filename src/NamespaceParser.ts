@@ -144,10 +144,10 @@ class NamespaceParser {
             if (!found) {
 
                 let newNode = {
-                    doclet: {
-                        name: spaceName
-                    }
-                } as INode;
+                        doclet: {
+                            name: spaceName
+                        }
+                    } as INode;
 
                 if (newNode.doclet.name.endsWith(':')) {
                     newNode.doclet.kind = 'namespace';
@@ -157,12 +157,91 @@ class NamespaceParser {
                         0, (node.doclet.name.length - 1)
                     ) as any;
                 }
-                
+                else if (index !== indexEnd) {
+
+                    let referenceNode = this.findNodeInMainModules(
+                        spaceName
+                    );
+
+                    if (referenceNode &&
+                        referenceNode.doclet.kind
+                    ) {
+                        newNode.doclet.kind = referenceNode.doclet.kind;
+                    }
+                }
+
                 node.children.push(newNode);
 
                 node = newNode;
             }
         });
+
+        return node;
+    }
+
+    /**
+     * Finds a node in the main modules for reference.
+     *
+     * @param nodeName
+     *        The full name of the node to find.
+     */
+    private findNodeInMainModules (nodeName: string): (INode|undefined) {
+
+        let found = false,
+            mainModules = config.mainModules,
+            node = undefined as (INode|undefined),
+            spaceNames = tsd.IDeclaration.namespaces(nodeName, true),
+            indexEnd = (spaceNames.length - 1);
+
+        Object
+            .keys(mainModules)
+            .map(key => this.targetModules[mainModules[key]])
+            .some(mainModule => {
+
+                node = mainModule;
+
+                spaceNames
+                    .every((spaceName, index) => {
+
+                        if (!node ||
+                            !node.children ||
+                            node.children.length === 0
+                        ) {
+                            return false;
+                        }
+
+                        node.children
+                            .some(child => {
+                                if (child.doclet.name === spaceName) {
+                                    node = child;
+                                    return true;
+                                }
+                                else {
+                                    node = undefined;
+                                    return false;
+                                }
+                            });
+
+                        if (node &&
+                            node !== mainModule &&
+                            Object.keys(node.doclet).length > 1
+                        ) {
+                            found = (index === indexEnd);
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    });
+
+                if (found) {
+                    return true;
+                }
+                else {
+                    node = undefined;
+                    return false;
+                };
+            });
 
         return node;
     }
@@ -289,6 +368,7 @@ export interface IDoclet {
     isPrivate?: boolean;
     isStatic?: boolean;
     parameters?: utils.Dictionary<IParameter>;
+    products?: Array<string>
     return?: IReturn;
     see?: Array<string>;
     types?: ITypes;
