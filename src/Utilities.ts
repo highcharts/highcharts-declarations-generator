@@ -13,7 +13,7 @@ import * as request from 'request';
 
 
 
-const EXTRACT_TYPE_NAME: RegExp = /^[\w\.]+?(?=\||\(|\<|\,|$)/gm;
+const EXTRACT_TYPE_NAME: RegExp = /[\w\.]+?(?=\||\,|\(|\)|\[|\]|\<|\>|$)/gm;
 
 const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
@@ -229,6 +229,7 @@ export function isCoreType (typeName: string): boolean {
     }
 
     switch (typeName) {
+        case 'any':
         case 'Array':
         case 'Boolean':
         case 'false':
