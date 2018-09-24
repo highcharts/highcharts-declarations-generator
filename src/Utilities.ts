@@ -13,6 +13,8 @@ import * as request from 'request';
 
 
 
+const EXTRACT_TYPE_NAME: RegExp = /^[\w\.]+?(?=\||\(|\<|\,|$)/gm;
+
 const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
 const JSON_QUOTE: RegExp = /['`]/gm;
@@ -30,6 +32,13 @@ const REMOVE_LINK_SPACE = /\s/gm;
 const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d+\.)\s+/gm;
 
 const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
+
+
+
+export interface TypeTree extends Array<TypeTree> {
+    kind: ('array'|'generic'|'list');
+    name: string;
+}
 
 
 
@@ -181,11 +190,18 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<s
 
 
 
+export function extractTypeNames (type: string): Array<string> {
+
+    let search = new RegExp(EXTRACT_TYPE_NAME);
+
+    return (type.match(EXTRACT_TYPE_NAME) || []);
+}
+
+
+
 export function isBasicType (typeName: string): boolean {
 
     switch (typeName) {
-        default:
-            return false;
         case 'boolean':
         case 'function':
         case 'number':
@@ -194,16 +210,50 @@ export function isBasicType (typeName: string): boolean {
         case 'undefined':
             return true;
     }
+
+    return false;
 }
 
 
 
 export function isCoreType (typeName: string): boolean {
 
-    return (
-        typeName.startsWith('Array') ||
-        isBasicType(typeName)
-    );
+    if (isBasicType(typeName)) {
+        return true;
+    }
+
+    switch (typeName) {
+        case 'Array':
+        case 'Boolean':
+        case 'false':
+        case 'true':
+        case 'Function':
+        case 'Number':
+        case 'NaN':
+        case 'Object':
+        case 'String':
+        case 'Symbol':
+            return true;
+    }
+
+    if (typeName.startsWith('Array<')) {
+        return true;
+    }
+
+    if (typeName.length > 1) {
+
+        let firstCharacter = typeName[0],
+            lastCharacter = typeName[typeName.length-1];
+
+        switch (firstCharacter + lastCharacter) {
+            case '[]':
+            case '\'\'':
+            case '""':
+                return true;
+        }
+    }
+
+    return false;
 }
 
 
@@ -316,30 +366,6 @@ export function log<T> (obj: T): Promise<T> {
         console.log(obj);
         resolve(obj);
     });
-}
-
-
-
-export function mergeArrays<T>(
-    ...sources: Array<Array<T>>
-): Array<T> {
-
-    let firstSource = sources.shift();
-
-    if (!firstSource) {
-        return [];
-    }
-
-    let target = firstSource.slice();
-
-    sources.forEach(source => source.forEach(item => {
-
-        if (target.indexOf(item) === -1) {
-            target.push(item);
-        }
-    }));
-
-    return target;
 }
 
 
@@ -472,6 +498,23 @@ export function save (filePath: string, str: string): Promise<string> {
 export function transformLists (text: string): string {
 
     return text.replace(TRANSFORM_LISTS, '\n\n$1 ');
+}
+
+
+
+export function uniqueArray<T>(
+    ...sources: Array<Array<T>>
+): Array<T> {
+
+    let target = [] as Array<T>;
+
+    sources.forEach(
+        source => target.push(
+            ...source.filter(item => target.indexOf(item) === -1)
+        )
+    );
+
+    return target;
 }
 
 
