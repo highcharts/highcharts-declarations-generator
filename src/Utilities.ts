@@ -222,17 +222,29 @@ export function isCoreType (typeName: string): boolean {
         return true;
     }
 
+    if (typeName.startsWith('global.') ||
+        typeName.startsWith('window.')
+    ) {
+        typeName = typeName.substr(7);
+    }
+
     switch (typeName) {
         case 'Array':
         case 'Boolean':
         case 'false':
         case 'true':
+        case 'Error':
+        case 'Event':
         case 'Function':
+        case 'Global':
+        case 'global':
         case 'Number':
         case 'NaN':
         case 'Object':
         case 'String':
         case 'Symbol':
+        case 'Window':
+        case 'window':
             return true;
     }
 
