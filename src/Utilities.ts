@@ -13,7 +13,7 @@ import * as request from 'request';
 
 
 
-const EXTRACT_TYPE_NAME: RegExp = /[\w\.]+?(?=\||\,|\(|\)|\[|\]|\<|\>|$)/gm;
+const EXTRACT_TYPE_NAME: RegExp = /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/gm;
 
 const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
@@ -194,7 +194,7 @@ export function extractTypeNames (type: string): Array<string> {
 
     let search = new RegExp(EXTRACT_TYPE_NAME);
 
-    return (type.match(EXTRACT_TYPE_NAME) || []);
+    return (type.match(search) || []);
 }
 
 
@@ -234,6 +234,7 @@ export function isCoreType (typeName: string): boolean {
         case 'Boolean':
         case 'false':
         case 'true':
+        case 'Date':
         case 'Error':
         case 'Event':
         case 'Function':
@@ -242,6 +243,7 @@ export function isCoreType (typeName: string): boolean {
         case 'Number':
         case 'NaN':
         case 'Object':
+        case 'RegExp':
         case 'String':
         case 'Symbol':
         case 'Window':
@@ -264,6 +266,12 @@ export function isCoreType (typeName: string): boolean {
             case '""':
                 return true;
         }
+    }
+
+    if (!isNaN(parseFloat(typeName)) ||
+        !isNaN(parseInt(typeName))
+    ) {
+        return true;
     }
 
     return false;
