@@ -66,7 +66,7 @@ class Generator extends Object {
         );
     }
 
-    private static getModifiedDoclet (node: parser.INode): parser.IDoclet {
+    private static getNormalizedDoclet (node: parser.INode): parser.IDoclet {
 
         let doclet = node.doclet,
             description = (node.doclet.description || '').trim(),
@@ -151,7 +151,7 @@ class Generator extends Object {
             }
         });
 
-        // this.generateSeriesDeclaration();
+        this.generateSeriesDeclaration();
     }
 
     /* *
@@ -179,7 +179,11 @@ class Generator extends Object {
         sourceNode: parser.INode
     ): (tsd.InterfaceDeclaration|undefined) {
 
-        let doclet = Generator.getModifiedDoclet(sourceNode);
+        if (sourceNode.doclet.access === 'private') {
+            return undefined;
+        }
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
 /*
         if (doclet.products &&
             doclet.products.indexOf(this._product) === -1
@@ -228,7 +232,11 @@ class Generator extends Object {
         targetDeclaration: tsd.IDeclaration
     ): (tsd.PropertyDeclaration|undefined) {
 
-        let doclet = Generator.getModifiedDoclet(sourceNode);
+        if (sourceNode.doclet.access === 'private') {
+            return undefined;
+        }
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
 /*
         if (doclet.products &&
             doclet.products.indexOf(this._product) === -1
@@ -296,8 +304,12 @@ class Generator extends Object {
             }
         }
 
-        if (!declaration.hasTypes && doclet.type) {
-            declaration.types.push(...doclet.type.names);
+        if (doclet.type) {
+            let mergedTypes = utils.uniqueArray(
+                declaration.types, doclet.type.names
+            );
+            declaration.types.length = 0;
+            declaration.types.push(...mergedTypes);
         }
 
         targetDeclaration.addChildren(declaration);
@@ -309,7 +321,11 @@ class Generator extends Object {
         sourceNode: parser.INode
     ): (tsd.InterfaceDeclaration|undefined) {
 
-        let doclet = Generator.getModifiedDoclet(sourceNode);
+        if (sourceNode.doclet.access === 'private') {
+            return undefined;
+        }
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode);
 /*
         if (doclet.products &&
             doclet.products.indexOf(this._product) === -1
@@ -352,16 +368,15 @@ class Generator extends Object {
 
         this.generatePropertyDeclaration(dataNode, declaration);
 
-        let typeDeclaration = new tsd.PropertyDeclaration('type');
+        let typePropertyDeclaration = new tsd.PropertyDeclaration('type');
 
-        typeDeclaration.description = (
-            utils.capitalize(sourceNode.meta.name) +
-            ' series type.'
+        typePropertyDeclaration.description = (
+            utils.capitalize(sourceNode.meta.name) + ' series type.'
         );
-        typeDeclaration.isOptional = true;
-        typeDeclaration.types.push('"' + sourceNode.meta.name + '"');
+        typePropertyDeclaration.isOptional = true;
+        typePropertyDeclaration.types.push('"' + sourceNode.meta.name + '"');
 
-        declaration.addChildren(typeDeclaration);
+        declaration.addChildren(typePropertyDeclaration);
 
         let childrenNames = declaration.getChildrenNames(),
             excludeDeclaration;
@@ -411,7 +426,7 @@ class Generator extends Object {
             'Array<SeriesOptions>' // + seriesTypeDeclaration.fullName + '>'
         );
     }
-
+ 
     public toString(): string {
 
         return this.namespace.toString();

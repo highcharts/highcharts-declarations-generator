@@ -12,7 +12,7 @@ import * as utils from './Utilities';
 /**
  * Parse options JSON and returns a dictionary of options nodes.
  *
- * @param {Dictionary<INode>} optionsJSON
+ * @param optionsJSON
  *        The JSON dictionary to parse.
  */
 export function parse(optionsJSON: utils.Dictionary<INode>): Promise<utils.Dictionary<INode>> {
@@ -44,7 +44,7 @@ class Parser extends Object {
     /**
      * Complete nodes in the JSON dictionary with inherited children.
      *
-     * @param {Dictionary<INode>} optionsJSON
+     * @param optionsJSON
      *        The JSON dictionary to complete.
      */
     public constructor (optionsJSON: utils.Dictionary<INode>) {
@@ -76,7 +76,9 @@ class Parser extends Object {
      *  Properties
      *
      * */
+
     private _clone?: INode;
+
     public get options(): utils.Dictionary<INode> {
         return this._options;
     }
@@ -91,7 +93,7 @@ class Parser extends Object {
     /**
      * Completes nodes with inherited children.
      *
-     * @param {INode} node
+     * @param node
      *        The node to complete.
      */
     private completeNodeExtensions(node: INode) {
@@ -156,10 +158,10 @@ class Parser extends Object {
     /**
      * Update the node names with the give one.
      *
-     * @param {INode} node
+     * @param node
      *        Node to update.
      *
-     * @param {string} nodeName
+     * @param nodeName
      *        New fullname.
      */
     private completeNodeNames (node: INode, nodeName: string) {
@@ -221,10 +223,10 @@ class Parser extends Object {
     private completeNodeTypes (node: INode) {
 
         if (node.meta.fullname &&
-            typeof config.optionTypeMapping[node.meta.fullname] !== 'undefined'
+            config.mapOptionType(node.meta.fullname)
         ) {
             node.doclet.type = {
-                names: [config.optionTypeMapping[node.meta.fullname]]
+                names: [config.mapOptionType(node.meta.fullname)]
             };
         }
         else if (node.doclet.type && node.doclet.type.names) {
@@ -290,7 +292,7 @@ class Parser extends Object {
     /**
      * Finds a node in the json dictionary.
      *
-     * @param {string} nodeName
+     * @param nodeName
      *        The name of the node to find.
      */
     private findNode (nodeName: string): (INode | undefined) {
@@ -341,6 +343,7 @@ export interface INode {
 // Level 2
 
 export interface IDoclet {
+    access?: string;
     context?: string;
     default?: IDefault;
     defaultByProduct?: utils.Dictionary<string>;
