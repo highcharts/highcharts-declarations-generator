@@ -61,79 +61,6 @@ interface PathElements {
 
 /* *
  *
- *  Constants
- *
- * */
-
-/**
- * Order of the different declaration kinds.
- */
-const KIND_ORDER = [
-    'global',
-    'type',
-    'interface',
-    'class',
-    'constant',
-    'static property',
-    'static function',
-    'constructor',
-    'property',
-    'event',
-    'function',
-    'parameter',
-    'module',
-    'namespace'
-] as Array<Kinds>;
-
-/**
- * Finds separator characters in fullnames.
- */
-const NAMESPACE_KEYWORDS = /\w+\:/gm;
-
-/**
- * Finds subspaces in fullnames.
- */
-const NAMESPACES_SUBSPACE = /(?:<.+>|\[.+\])$/gm;
-
-/**
- * Escape double lines like in Markdown.
- */
-const NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
-
-/**
- * Escape lists like in Markdown.
- */
-const NORMALIZE_LIST: RegExp = /\n(?:[\-\+\*]|\d+\.) /gm;
-
-/**
- * Reduce spaces and line breaks to one space character.
- */
-const NORMALIZE_SPACE: RegExp = /\s+/gm;
-
-/**
- * Unescape double lines.
- */
-const NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
-
-/**
- * Split strings between spaces and line breaks.
- */
-const PAD_SPACE: RegExp = /\s/gm;
-
-/**
- * Splits a path in four groups: scope, path, name, and extension.
- */
-const PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/gm;
-
-/**
- * Split pathes
- */
-const PATH_SEPARATOR: RegExp = /\/\\/gm;
-
-
-
-/* *
- *
  *  Classes
  *
  * */
@@ -147,9 +74,99 @@ export abstract class IDeclaration extends Object {
 
     /* *
      *
+     *  Static Properties
+     *
+     * */
+
+    /**
+     * Order of the different declaration kinds.
+     */
+    private static readonly KIND_ORDER = [
+        'global',
+        'type',
+        'interface',
+        'class',
+        'constant',
+        'static property',
+        'static function',
+        'constructor',
+        'property',
+        'event',
+        'function',
+        'parameter',
+        'module',
+        'namespace'
+    ] as Array<Kinds>;
+
+    /**
+     * Finds all type names.
+     */
+    private static readonly EXTRACT_TYPE_NAMES: RegExp = /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/gm;
+
+    /**
+     * Finds separator characters in fullnames.
+     */
+    private static readonly NAMESPACE_KEYWORDS = /\w+\:/gm;
+
+    /**
+     * Finds subspaces in fullnames.
+     */
+    private static readonly NAMESPACES_SUBSPACE = /(?:<.+>|\[.+\])$/gm;
+
+    /**
+     * Escape double lines like in Markdown.
+     */
+    private static readonly NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
+
+    /**
+     * Escape lists like in Markdown.
+     */
+    private static readonly NORMALIZE_LIST: RegExp = /\n(?:[\-\+\*]|\d+\.) /gm;
+
+    /**
+     * Reduce spaces and line breaks to one space character.
+     */
+    private static readonly NORMALIZE_SPACE: RegExp = /\s+/gm;
+
+    /**
+     * Unescape double lines.
+     */
+    private static readonly NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
+
+    /**
+     * Split strings between spaces and line breaks.
+     */
+    private static readonly PAD_SPACE: RegExp = /\s/gm;
+
+    /**
+     * Splits a path in four groups: scope, path, name, and extension.
+     */
+    private static readonly PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/gm;
+
+    /**
+     * Split pathes
+     */
+    private static readonly PATH_SEPARATOR: RegExp = /\/\\/gm;
+
+    /**
+     * Finds all type names.
+     */
+    private static readonly SIMPLIFY_TYPE: RegExp = /(^|[\|\,\(\)\[\]\<])([\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/gm;
+
+    /* *
+     *
      *  Static Functions
      *
      * */
+
+    public static extractTypeNames (type: string): Array<string> {
+
+        let search = new RegExp(IDeclaration.EXTRACT_TYPE_NAMES);
+
+        return (type.match(search) || []);
+    }
+
+
 
     /**
      * Returns a indented string, that fits into a specific width and spans over
@@ -171,7 +188,7 @@ export abstract class IDeclaration extends Object {
         let newLine = true,
             line = '',
             paddedStr = '',
-            words = text.split(PAD_SPACE);
+            words = text.split(IDeclaration.PAD_SPACE);
 
         words.forEach(word => {
 
@@ -212,14 +229,14 @@ export abstract class IDeclaration extends Object {
             return [];
         }
 
-        let subspace = (name.match(NAMESPACES_SUBSPACE) || [])[0];
+        let subspace = (name.match(IDeclaration.NAMESPACES_SUBSPACE) || [])[0];
 
         if (subspace) {
             name = name.substr(0, name.length - subspace.length);
         }
 
         let namespaces = name
-            .replace(NAMESPACE_KEYWORDS, '$&.')
+            .replace(IDeclaration.NAMESPACE_KEYWORDS, '$&.')
             .split('.');
 
         if (subspace) {
@@ -270,12 +287,12 @@ export abstract class IDeclaration extends Object {
 
         if (preserveParagraphs) {
             return text
-                .replace(NORMALIZE_ESCAPE, '<br>')
-                .replace(NORMALIZE_LIST, '<br>-')
-                .replace(NORMALIZE_SPACE, ' ')
-                .replace(NORMALIZE_UNESCAPE, '\n\n');
+                .replace(IDeclaration.NORMALIZE_ESCAPE, '<br>')
+                .replace(IDeclaration.NORMALIZE_LIST, '<br>-')
+                .replace(IDeclaration.NORMALIZE_SPACE, ' ')
+                .replace(IDeclaration.NORMALIZE_UNESCAPE, '\n\n');
         } else {
-            return text.replace(NORMALIZE_SPACE, ' ');
+            return text.replace(IDeclaration.NORMALIZE_SPACE, ' ');
         }
     }
 
@@ -288,10 +305,10 @@ export abstract class IDeclaration extends Object {
      */
     protected static pathElements (path: string): PathElements {
 
-        let match = (path.match(PATH_ELEMENTS) || [])[0];
+        let match = (path.match(IDeclaration.PATH_ELEMENTS) || [])[0];
 
         return {
-            directories: match[2].split(PATH_SEPARATOR),
+            directories: match[2].split(IDeclaration.PATH_SEPARATOR),
             extension: match[4],
             file: match[3] + match[4],
             name: match[3],
@@ -314,6 +331,29 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Returns a simplified type.
+     *
+     * @param type
+     *        The type to simplify.
+     *
+     * @param scope
+     *        The scope to remove.
+     */
+    public static simplifyType (type: string, scopeName: string): string {
+
+        let scopeLength = scopeName.length;
+
+        return type.replace(
+            IDeclaration.SIMPLIFY_TYPE,
+            (match, matchPrefix, matchName) => (
+                matchName.startsWith(scopeName) ?
+                matchPrefix + matchName.substr(scopeLength) :
+                match
+            )
+        );
+    }
+
+    /**
      * Sorts: KIND_ORDER:0 < KIND_ORDER:1
      *
      * @param declarationA
@@ -326,8 +366,8 @@ export abstract class IDeclaration extends Object {
         declarationA: IDeclaration, declarationB: IDeclaration
     ): number {
 
-        let index1 = KIND_ORDER.indexOf(declarationA.kind),
-            index2 = KIND_ORDER.indexOf(declarationB.kind);
+        let index1 = IDeclaration.KIND_ORDER.indexOf(declarationA.kind),
+            index2 = IDeclaration.KIND_ORDER.indexOf(declarationB.kind);
 
         if (index1 !== index2) {
             return (index1 - index2);
@@ -511,13 +551,6 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
-     * Parent relation.
-     */
-    public get isInSpace(): boolean {
-        return this.isIn('global', 'module', 'namespace');
-    }
-
-    /**
      * Requirement of this TypeScript declaration.
      */
     public get isOptional(): boolean {
@@ -621,6 +654,51 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Test parent relation and returns true if parent kind matchs.
+     *
+     * @param kinds
+     *        The possible kinds to test again.
+     */
+    public childOfKind (...kinds: Array<Kinds>): boolean {
+
+        let parentKind = (this.parent && this.parent.kind);
+
+        return kinds.some(kind => kind === parentKind);
+    }
+
+    /**
+     * Test parent relations and returns true if one of the parents contains
+     * type.
+     *
+     * @param fullName
+     *        Full name to check.
+     */
+    public childOfName (fullName: string): boolean {
+
+        let found = false,
+            parent = this.parent;
+
+        while (parent) {
+            if (fullName === parent.fullName) {
+                found = true;
+                break;
+            }
+            else {
+                parent = parent.parent;
+            }
+        }
+
+        return found;
+    }
+
+    /**
+     * Checks parent relation.
+     */
+    public childOfSpace(): boolean {
+        return this.childOfKind('global', 'module', 'namespace');
+    }
+
+    /**
      * Returns a clone of this declaration.
      */
     public abstract clone(): IDeclaration;
@@ -653,19 +731,6 @@ export abstract class IDeclaration extends Object {
     public getChildrenNames(): Array<string> {
 
         return this.getChildren().map(child => child.name);
-    }
-
-    /**
-     * Test parent relation and returns true if parent kind matchs.
-     *
-     * @param kinds
-     *        The possible kinds to test again.
-     */
-    public isIn (...kinds: Array<Kinds>): boolean {
-
-        let parentKind = (this.parent && this.parent.kind);
-
-        return kinds.some(kind => kind === parentKind);
     }
 
     /**
@@ -814,7 +879,7 @@ export abstract class IDeclaration extends Object {
             default:
                 return '';
             case 'class':
-                let str = 'public ';
+                let str = ''; // public is default
                 if (this.isPrivate) {
                     str = 'private ';
                 }
@@ -862,7 +927,21 @@ export abstract class IDeclaration extends Object {
         filterUndefined: boolean = false
     ): string {
 
-        let types = this.types.slice();
+        let scope = this.parent,
+            types = this.types.slice();
+
+        while (scope && scope.parent && scope.parent.name) {
+            scope = scope.parent;
+        }
+
+        if (scope &&
+            scope.kind !== 'module'
+        ) {
+
+            let scopeName = scope.name + '.';
+
+            types = types.map(type => (scope ? IDeclaration.simplifyType(type, scopeName) : type));
+        }
 
         if (filterUndefined &&
             this.isOptional
@@ -1031,7 +1110,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         return (
             '(' + Object
                 .keys(parameters)
-                .map(parameterName => parameters[parameterName].toString())
+                .map(parameterName => parameters[parameterName])
+                .map(parameter => parameter.toString())
                 .join(', ') +
             ')'
         );
@@ -1144,6 +1224,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             if (declaration.parent) {
                 throw new Error('Parameter declaration has already a parent.');
             }
+
+            declaration.setParameterParent(this);
 
             name = declaration.name;
 
@@ -1372,7 +1454,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
         let renderedConstructor = 'constructor',
             renderedDescription = this.renderExtendedDescription(indent);
         
-        renderedConstructor += ' ' + this.renderParameterBrackets();
+        renderedConstructor += this.renderParameterBrackets();
 
         renderedConstructor = this.renderScopePrefix() + renderedConstructor;
 
@@ -1507,10 +1589,10 @@ export class FunctionDeclaration extends IExtendedDeclaration {
             renderedScope = this.renderScopePrefix(),
             renderedTypes = this.renderTypes(true);
 
-        renderedFunction += ' ' + renderedParameters + ': ';
+        renderedFunction += renderedParameters + ': ';
         renderedFunction += (renderedTypes || 'void');
 
-        if (this.isInSpace) {
+        if (this.childOfSpace()) {
             renderedFunction = renderedScope + 'function ' + renderedFunction;
         }
         else {
@@ -1582,7 +1664,7 @@ export class InterfaceDeclaration extends IDeclaration {
             renderedDescription = this.renderDescription(indent, true),
             renderedInterface = this.name;
 
-        if (!this.isInSpace) {
+        if (!this.childOfSpace()) {
             renderedInterface += ': ';
         } else {
 
@@ -1976,6 +2058,15 @@ export class ParameterDeclaration extends IDeclaration {
     }
     private _isVariable: boolean;
 
+    public get parameterParent (): (IDeclaration|undefined) {
+        return this._parameterParent;
+    }
+    private _parameterParent: (IDeclaration|undefined);
+
+    public get parent (): (IDeclaration|undefined) {
+        return (this.parameterParent && this.parameterParent.parent);
+    }
+
     /* *
      *
      *  Functions
@@ -2024,6 +2115,11 @@ export class ParameterDeclaration extends IDeclaration {
                 indent + ' *        '
             )
         );
+    }
+
+    public setParameterParent (parentDeclaration: IDeclaration) {
+
+        this._parameterParent = parentDeclaration;
     }
 
     /**
@@ -2144,7 +2240,7 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember = 'readonly ' + renderedMember;
         }
 
-        if (this.isInSpace) {
+        if (this.childOfSpace()) {
             renderedMember = 'let ' + renderedMember;
         }
 
