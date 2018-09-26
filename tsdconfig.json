@@ -8,7 +8,7 @@
         "highmaps": "code/highmaps"
     },
     "optionTypeMapping": {
-        "chart.type": "keyof Highcharts.seriesTypes"
+        "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },
     "typeMapping": {
         "*": "any",
