@@ -297,14 +297,23 @@ class Generator extends Object {
 
         declaration.isOptional = true;
 
+        let isValueType = false;
+
         if (doclet.values) {
             let values = utils.json(doclet.values, true);
             if (values instanceof Array) {
-                declaration.types.push(...values.map(config.mapValue));
+                let mergedTypes = utils.uniqueArray(
+                    declaration.types, values.map(config.mapValue)
+                );
+                declaration.types.length = 0;
+                declaration.types.push(...mergedTypes);
+                isValueType = true;
             }
         }
 
-        if (doclet.type) {
+        if (!isValueType &&
+            doclet.type
+        ) {
             let mergedTypes = utils.uniqueArray(
                 declaration.types, doclet.type.names
             );
