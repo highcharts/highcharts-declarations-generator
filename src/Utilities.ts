@@ -13,8 +13,6 @@ import * as request from 'request';
 
 
 
-const EXTRACT_TYPE_NAME: RegExp = /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/gm;
-
 const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
 const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
 const JSON_QUOTE: RegExp = /['`]/gm;
@@ -186,15 +184,6 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<s
             }
         });
     });
-}
-
-
-
-export function extractTypeNames (type: string): Array<string> {
-
-    let search = new RegExp(EXTRACT_TYPE_NAME);
-
-    return (type.match(search) || []);
 }
 
 
