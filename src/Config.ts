@@ -128,12 +128,12 @@ config.seeLink = function (name: string, kind: string, product?: string) {
             return (
                 config.seeBaseUrl + 'class-reference/' +
                 name.replace(SEE_LINK_NAME_LAST, '#$1')
-            )
+            );
         case 'member':
             return (
                 config.seeBaseUrl + 'class-reference/' +
                 name.replace(SEE_LINK_NAME_LAST, '#.$1')
-            )
+            );
         case 'interface':
         case 'option':
         case 'typedef':
