@@ -166,7 +166,12 @@ class NamespaceParser {
                     if (referenceNode &&
                         referenceNode.doclet.kind
                     ) {
-                        newNode.doclet.kind = referenceNode.doclet.kind;
+                        switch (referenceNode.doclet.kind) {
+                            default:
+                                newNode.doclet.kind = referenceNode.doclet.kind;
+                            case 'class':
+                                newNode.doclet.kind = 'interface';
+                        }
                     }
                 }
 
