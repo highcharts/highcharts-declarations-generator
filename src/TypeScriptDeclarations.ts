@@ -888,7 +888,13 @@ export abstract class IDeclaration extends Object {
                 }
                 return str;
             case 'global':
-                return 'declare ';
+                switch (this.kind) {
+                    default:
+                        return 'declare ';
+                    case 'interface':
+                    case 'type':
+                        return '';
+                }
         }
     }
 
@@ -2249,7 +2255,7 @@ export class PropertyDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedMember = this.name;
+            renderedMember = this.name.replace(':', ': ');
 
         if (this.isReadOnly) {
             renderedMember = 'readonly ' + renderedMember;
