@@ -1320,6 +1320,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
         clone.events.push(...this.events);
+        clone.implements.push(...this.implements);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -1353,7 +1354,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
             renderedDescription = this.renderDescription(indent);
 
         if (this.hasTypes) {
-            renderedClass += 'extends ' + this.renderTypes();
+            renderedClass += 'extends ' + this.renderTypes().replace('|', ', ');
         }
 
         if (this.hasImplements) {
@@ -1673,7 +1674,7 @@ export class InterfaceDeclaration extends IDeclaration {
             renderedInterface = 'interface ' + renderedInterface;
 
             if (this.hasTypes) {
-                renderedInterface += ' extends ' + this.types.join(', ');
+                renderedInterface += ' extends ' + this.renderTypes().replace('|', ', ');
             }
         }
 
