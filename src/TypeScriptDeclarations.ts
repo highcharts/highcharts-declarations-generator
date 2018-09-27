@@ -1363,7 +1363,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
         renderedClass = this.renderScopePrefix() + renderedClass;
 
         if (renderedChildren) {
-            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent + '}';
+            renderedChildren = '{\n' + renderedChildren + '\n' + indent + '}';
         }
         else {
             renderedChildren = '{}';
@@ -1373,8 +1373,6 @@ export class ClassDeclaration extends IExtendedDeclaration {
             renderedDescription +
             indent + renderedClass + ' ' + renderedChildren + '\n'
         );
-
-        return renderedClass;
     }
 }
 
@@ -1775,7 +1773,7 @@ export class ModuleDeclaration extends IDeclaration {
         renderedModule = this.renderScopePrefix() + renderedModule;
 
         if (renderedChildren) {
-            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent+ '}';
+            renderedChildren = '{\n' + renderedChildren + '\n' + indent+ '}';
         }
         else {
             renderedChildren = '{}'
@@ -1994,7 +1992,7 @@ export class NamespaceDeclaration extends IDeclaration {
         renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
         if (renderedChildren) {
-            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent + '}';
+            renderedChildren = '{\n' + renderedChildren + '\n' + indent + '}';
         }
         else {
             renderedChildren = '{}';
@@ -2250,7 +2248,7 @@ export class PropertyDeclaration extends IDeclaration {
 
         if (this.hasChildren) {
             renderedMember += (
-                ': {\n\n' +
+                ': {\n' +
                 this.renderChildren(childIndent, '\n') +
                 indent + '};'
             );
@@ -2325,6 +2323,7 @@ export class TypeDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent, '\n'),
             renderedType = this.renderTypes(true);
         
         if (!renderedType) {
@@ -2333,8 +2332,8 @@ export class TypeDeclaration extends IDeclaration {
 
         if (this.hasChildren) {
             renderedType = (
-                'type ' + this.name + ' = {\n\n' +
-                this.renderChildren(childIndent, '\n') +
+                'type ' + this.name + ' = {\n' +
+                renderedChildren +
                 indent + '};'
             );
         } else {
