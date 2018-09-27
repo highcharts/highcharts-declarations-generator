@@ -814,7 +814,7 @@ class Generator extends Object {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = this._moduleGlobal;
-        console.log('⭕️', 'module', declaration.name, doclet);
+
         if (this.isMainModule &&
             doclet.description
         ) {
