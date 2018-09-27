@@ -193,7 +193,7 @@ export abstract class IDeclaration extends Object {
         words.forEach(word => {
 
             if (!newLine && word === '') {
-                paddedStr += line.trimRight() + '\n' + linePrefix + '\n';
+                paddedStr += line.trimRight() + '\n' + linePrefix.trimRight() + '\n';
                 newLine = true;
                 return;
             }
@@ -1363,7 +1363,11 @@ export class ClassDeclaration extends IExtendedDeclaration {
         renderedClass = this.renderScopePrefix() + renderedClass;
 
         if (renderedChildren) {
-            renderedChildren = '{\n' + renderedChildren + '\n' + indent + '}';
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
         }
         else {
             renderedChildren = '{}';
@@ -1676,7 +1680,11 @@ export class InterfaceDeclaration extends IDeclaration {
         renderedInterface = this.renderScopePrefix() + renderedInterface;
 
         if (renderedChildren) {
-            renderedChildren = '{\n\n' + renderedChildren + '\n' + indent + '}';
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
         }
         else {
             renderedChildren = '{}';
@@ -1773,7 +1781,11 @@ export class ModuleDeclaration extends IDeclaration {
         renderedModule = this.renderScopePrefix() + renderedModule;
 
         if (renderedChildren) {
-            renderedChildren = '{\n' + renderedChildren + '\n' + indent+ '}';
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
         }
         else {
             renderedChildren = '{}'
@@ -1992,7 +2004,11 @@ export class NamespaceDeclaration extends IDeclaration {
         renderedNamespace = this.renderScopePrefix() + renderedNamespace;
 
         if (renderedChildren) {
-            renderedChildren = '{\n' + renderedChildren + '\n' + indent + '}';
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
         }
         else {
             renderedChildren = '{}';
@@ -2337,14 +2353,14 @@ export class TypeDeclaration extends IDeclaration {
                 indent + '};'
             );
         } else {
-            renderedType = 'type ' + this.name + ' = ' + renderedType + ';';
+            renderedType = 'type ' + this.name + ' = ' + renderedType + ';\n';
         }
 
         renderedType = this.renderScopePrefix() + renderedType;
 
         return (
             this.renderDescription(indent) +
-            indent + renderedType + '\n'
+            indent + renderedType
         );
     }
 }
