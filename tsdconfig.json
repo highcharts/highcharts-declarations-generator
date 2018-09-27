@@ -20,7 +20,6 @@
         "array": "Array",
         "function": "Function",
         "function()": "Function",
-        "object": "any",
         "AnimationObject": "Highcharts.AnimationObject",
         "AnimationOptions": "Highcharts.AnimationOptionsObject",
         "Color": "Highcharts.ColorString",
