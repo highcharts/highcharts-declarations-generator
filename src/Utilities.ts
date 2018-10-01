@@ -191,12 +191,14 @@ export function copy (sourceFilePath: string, targetFilePath: string): Promise<s
 export function isBasicType (typeName: string): boolean {
 
     switch (typeName) {
+        case 'any':
         case 'boolean':
         case 'function':
         case 'number':
         case 'string':
         case 'symbol':
         case 'undefined':
+        case 'void':
             return true;
     }
 
