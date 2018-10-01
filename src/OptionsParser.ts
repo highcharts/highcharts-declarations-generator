@@ -91,6 +91,62 @@ class Parser extends Object {
      * */
 
     /**
+     * Transfers non existing properties and children to a node.
+     *
+     * @param sourceNode
+     *        Node to clone from.
+     *
+     * @param targetNode
+     *        Node to clone into.
+     */
+    private cloneNodeInto (sourceNode: INode, targetNode: INode) {
+
+        let sourceDoclet = sourceNode.doclet as any,
+            sourceMeta = sourceNode.meta as any,
+            targetDoclet = targetNode.doclet as any,
+            targetMeta = targetNode.meta as any,
+            targetName = (targetMeta.fullname || targetMeta.name);
+
+        let sourceChildren = sourceNode.children,
+            targetChildren = targetNode.children;
+
+        Object
+            .keys(sourceDoclet)
+            .filter(key => typeof targetDoclet[key] === 'undefined')
+            .forEach(key => targetDoclet[key] = utils.clone(
+                sourceDoclet[key], Number.MAX_SAFE_INTEGER
+            ));
+
+        Object
+            .keys(sourceMeta)
+            .filter(key => typeof targetMeta[key] === 'undefined')
+            .forEach(key => targetMeta[key] = utils.clone(
+                sourceMeta[key], Number.MAX_SAFE_INTEGER
+            ));
+
+        Object
+            .keys(sourceChildren)
+            .forEach(key => {
+
+                if (!targetChildren[key]) {
+                    targetChildren[key] = {
+                        children: {},
+                        doclet: {},
+                        meta: {
+                            filename: sourceMeta.filename,
+                            fullname: (targetName && targetName + key),
+                            line: sourceMeta.line,
+                            lineEnd: sourceMeta.lineEnd,
+                            name: key
+                        }
+                    }
+                }
+
+                this.cloneNodeInto(sourceChildren[key], targetChildren[key]);
+            });
+    }
+
+    /**
      * Completes nodes with inherited children.
      *
      * @param node
@@ -131,27 +187,14 @@ class Parser extends Object {
                         return;
                     }
 
-                    let xChildren = xNode.children;
-
-                    Object
-                        .keys(xChildren)
-                        .forEach(xChildName => {
-                            if (!nodeChildren[xChildName] &&
-                                nodeExcludes.indexOf(xChildName) === -1
-                            ) {
-                                nodeChildren[xChildName] = utils.clone(
-                                    xChildren[xChildName],
-                                    Number.MAX_SAFE_INTEGER
-                                );
-                            }
-                        });
+                    this.cloneNodeInto(xNode, node);
                 });
         }
 
         Object
             .keys(nodeChildren)
-            .forEach(nodeChildName => this.completeNodeExtensions(
-                nodeChildren[nodeChildName]
+            .forEach(key => this.completeNodeExtensions(
+                nodeChildren[key]
             ));
     }
 
@@ -322,6 +365,7 @@ class Parser extends Object {
 
         return currentNode;
     }
+
 }
 
 
