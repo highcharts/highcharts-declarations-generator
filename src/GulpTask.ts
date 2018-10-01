@@ -22,16 +22,15 @@ export function task (done: Function) {
     ));
 
     return utils
-        .load(config.treeOptionsJsonPath)
+        .load(config.treeOptionsJsonFile)
         .then(optionsParser.parse)
         .then(optionsGenerator.generate)
-        .then(typeDeclarations => utils
-            .load(config.treeNamespaceJsonPath)
+        .then(optionsDeclarations => utils
+            .load(config.treeNamespaceJsonFile)
             .then(namespaceParser.parseIntoFiles)
             .then(filesDictionary => namespaceGenerator
-                .saveIntoFiles(filesDictionary, typeDeclarations)
+                .generate(filesDictionary, optionsDeclarations)
             )
-            .then(() => typeDeclarations)
         )
         .then(() => console.log(colors.green.bold(
             'Finished creating TypeScript declarations.'
