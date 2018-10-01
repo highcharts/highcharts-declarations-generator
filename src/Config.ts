@@ -17,7 +17,7 @@ const config = (function () {
     }
 }()) as IConfig;
 
-config.cwd = process.cwd();
+config.cwd = (config.cwd || process.cwd());
 
 config.filterUndefined = function (type: string): boolean {
     return (type !== 'undefined');
@@ -28,7 +28,7 @@ config.findUndefined = function (type: string): boolean {
 };
 
 config.mapOptionType = function (option: string): string {
-    return config.optionTypeMapping[option];
+    return config.optionValueMapping[option];
 };
 
 config.mapType = function (type: string): string {
@@ -146,10 +146,11 @@ export = config;
 interface IConfig {
     cwd: string;
     mainModules: { [product: string]: string };
-    optionTypeMapping: { [key: string]: string };
+    optionValueMapping: { [key: string]: string };
+    outputPath: string;
     seeBaseUrl: string;
-    treeNamespaceJsonPath: string;
-    treeOptionsJsonPath: string;
+    treeNamespaceJsonFile: string;
+    treeOptionsJsonFile: string;
     typeMapping: { [key: string]: string };
     filterUndefined (type: string): boolean;
     findUndefined (type: string): boolean;

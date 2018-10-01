@@ -1,26 +1,26 @@
 {
+    "outputPath": "../highcharts-typescript-beta/",
     "seeBaseUrl": "https://api.highcharts.com/",
-    "treeNamespaceJsonPath": "tree-namespace.json",
-    "treeOptionsJsonPath": "tree.json",
+    "treeNamespaceJsonFile": "tree-namespace.json",
+    "treeOptionsJsonFile": "tree.json",
     "mainModules": {
         "highcharts": "code/highcharts",
         "highstock": "code/highstock",
         "highmaps": "code/highmaps"
     },
-    "optionTypeMapping": {
+    "optionValueMapping": {
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },
     "typeMapping": {
         "*": "any",
-        "Array": "Array<any>",
+        "Array": "any[]",
         "Boolean": "boolean",
         "Number": "number",
-        "Object": "any",
+        "Object": "object",
         "String": "string",
-        "array": "Array",
+        "array": "any[]",
         "function": "Function",
         "function()": "Function",
-        "AnimationObject": "Highcharts.AnimationObject",
         "AnimationOptions": "Highcharts.AnimationOptionsObject",
         "Color": "Highcharts.ColorString",
         "Mixed": "any",
