@@ -151,7 +151,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Finds all type names.
      */
-    private static readonly SIMPLIFY_TYPE: RegExp = /(^|[\|\,\(\)\[\]\<])([\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/gm;
+    private static readonly SIMPLIFY_TYPE: RegExp = /(^|[\s\|\,\(\)\[\]\<])([\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\s\|\,\(\)\[\]\<\>]|$)/gm;
 
     /* *
      *
@@ -466,10 +466,10 @@ export abstract class IDeclaration extends Object {
     }
 
     /* *
-    *
-    *  Constructor
-    *
-    * */
+     *
+     *  Constructor
+     *
+     * */
 
     /**
      * Initiates a new TypeScript declaration.
@@ -930,7 +930,8 @@ export abstract class IDeclaration extends Object {
      */
     protected renderTypes (
         useParentheses: boolean = false,
-        filterUndefined: boolean = false
+        filterUndefined: boolean = false,
+        filterFunctions: boolean = false
     ): string {
 
         let scope = this.parent,
@@ -953,6 +954,18 @@ export abstract class IDeclaration extends Object {
             this.isOptional
         ) {
             types = types.filter(type => type !== 'undefined');
+        }
+
+        if (filterFunctions) {
+            types = types.map(type => {
+                switch(type) {
+                    default:
+                        return type;
+                    case 'function':
+                    case 'Function':
+                        return '() => void';
+                }
+            });
         }
 
         if (types.length === 0) {
@@ -1355,7 +1368,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedChildren = this.renderChildren(childIndent),
             renderedClass = 'class ' + this.name,
             renderedDescription = this.renderDescription(indent);
 
@@ -1596,10 +1609,10 @@ export class FunctionDeclaration extends IExtendedDeclaration {
             renderedFunction = this.name,
             renderedParameters = this.renderParameterBrackets(),
             renderedScope = this.renderScopePrefix(),
-            renderedTypes = this.renderTypes(true);
+            renderedReturn = this.renderTypes(true, true, true);
 
         renderedFunction += renderedParameters + ': ';
-        renderedFunction += (renderedTypes || 'void');
+        renderedFunction += (renderedReturn || 'void');
 
         if (this.childOfSpace()) {
             renderedFunction = renderedScope + 'function ' + renderedFunction;
@@ -1669,7 +1682,7 @@ export class InterfaceDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedChildren = this.renderChildren(childIndent),
             renderedDescription = this.renderDescription(indent, true),
             renderedInterface = this.name;
 
@@ -1781,7 +1794,7 @@ export class ModuleDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedChildren = this.renderChildren(childIndent),
             renderedDescription = this.renderDescription(indent),
             renderedModule = 'module "' + this.path + '"';
 
@@ -1918,7 +1931,7 @@ export class ModuleGlobalDeclaration extends IDeclaration {
      */
     public toString(): string {
 
-        let renderedChildren = this.renderChildren('', '\n'),
+        let renderedChildren = this.renderChildren(''),
             renderedDescription = this.renderDescription(''),
             renderedExports = this.renderExports(),
             renderedImports = this.renderImports();
@@ -2000,7 +2013,7 @@ export class NamespaceDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedChildren = this.renderChildren(childIndent),
             renderedDescription = this.renderDescription(indent),
             renderedNamespace = (
                 this.name === 'external:' ?
@@ -2149,7 +2162,7 @@ export class ParameterDeclaration extends IDeclaration {
     public toString (): string {
 
         let renderedParameter = this.name,
-            renderedTypes = this.renderTypes(true, true);
+            renderedTypes = this.renderTypes(true, true, true);
 
         if (this.isOptional) {
             renderedParameter += '?';
@@ -2272,12 +2285,12 @@ export class PropertyDeclaration extends IDeclaration {
         if (this.hasChildren) {
             renderedMember += (
                 ': {\n' +
-                this.renderChildren(childIndent, '\n') +
+                this.renderChildren(childIndent) +
                 indent + '};'
             );
         } else if (this.hasTypes) {
             renderedMember += (
-                ': ' + this.renderTypes(true, this.isIndexer) + ';'
+                ': ' + this.renderTypes(true, this.isIndexer, true) + ';'
             );
         } else {
             renderedMember += ': any;';
@@ -2346,7 +2359,7 @@ export class TypeDeclaration extends IDeclaration {
     public toString(indent: string = ''): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent, '\n'),
+            renderedChildren = this.renderChildren(childIndent),
             renderedType = this.renderTypes(true);
         
         if (!renderedType) {
@@ -2360,10 +2373,10 @@ export class TypeDeclaration extends IDeclaration {
                 indent + '};'
             );
         } else {
-            renderedType = 'type ' + this.name + ' = ' + renderedType + ';\n';
+            renderedType = 'type ' + this.name + ' = ' + renderedType + ';';
         }
 
-        renderedType = this.renderScopePrefix() + renderedType;
+        renderedType = this.renderScopePrefix() + renderedType + '\n';
 
         return (
             this.renderDescription(indent) +
