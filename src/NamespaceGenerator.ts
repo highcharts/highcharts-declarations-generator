@@ -11,14 +11,17 @@ import * as utils from './Utilities';
 
 
 
-export function saveIntoFiles(
+export function generate(
     modulesDictionary: utils.Dictionary<parser.INode>,
     optionsDeclarations: utils.Dictionary<tsd.NamespaceDeclaration>
 ): Promise<void> {
 
+    const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/gm;
+
+    const IMPORT_HIGHCHARTS_MODULE = /(import \* as Highcharts from ")(.*highcharts)(";)/gm;
+
     // no product specific options tree for convenience
     let mainOptionsDeclarations = optionsDeclarations['highcharts'],
-        mainOptionsTypes = Generator.getOptionTypes(mainOptionsDeclarations),
         promises = [] as Array<Promise<void>>;
 
     Object
@@ -32,8 +35,7 @@ export function saveIntoFiles(
                 generator = new Generator(
                     modulePath,
                     modulesDictionary[modulePath],
-                    mainOptionsDeclarations,
-                    mainOptionsTypes
+                    mainOptionsDeclarations
                 );
 
             return {
@@ -52,14 +54,14 @@ export function saveIntoFiles(
                     .then(() => console.info('Saved ' + dtsFilePath))
             );
 
-            let dtsSourceFilceContent = dtsFileContent
+            let dtsSourceFileContent = dtsFileContent
                     .replace(IMPORT_HIGHCHARTS_MODULE, '$1$2.src$3')
                     .replace(DECLARE_HIGHCHARTS_MODULE, '$1$2.src$3'),
                 dtsSourceFilePath = dts.modulePath + '.src.d.ts';
 
             promises.push(
                 utils
-                    .save(dtsSourceFilePath, dtsSourceFilceContent)
+                    .save(dtsSourceFilePath, dtsSourceFileContent)
                     .then(() => console.info('Saved ' + dtsSourceFilePath))
             );
         })
@@ -71,15 +73,17 @@ export function saveIntoFiles(
 
 
 
-const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/gm;
-
-const IMPORT_HIGHCHARTS_MODULE = /(import \* as Highcharts from ")(.*highcharts)(";)/gm;
-
-const CUSTOM_TYPE = /Highcharts.\w(?:<.*?>)?/gm;
-
-
-
 class Generator extends Object {
+
+    /* *
+     *
+     *  Static Properties
+     *
+     * */
+
+    private static readonly CUSTOM_TYPE = /^Highcharts.\w+?(?:<.*?>)?$/gm;
+
+    private static readonly OPTION_TYPE = /^Highcharts.\w+?(?:Options|Object)$/gm;
 
     /* *
      *
@@ -205,23 +209,6 @@ class Generator extends Object {
 
         return doclet;
     }
-
-    public static getOptionTypes(declaration: tsd.IDeclaration): Array<string> {
-
-        return utils
-            .uniqueArray(
-                ...declaration.types
-                    .map(tsd.IDeclaration.extractTypeNames),
-                ...declaration
-                    .getChildren()
-                    .map(child => Generator.getOptionTypes(child))
-            )
-            .filter(type =>
-                !utils.isCoreType(type) &&
-                type.indexOf('Highcharts.') === 0 &&
-                type.lastIndexOf('Options') !== (type.length - 8)
-            );
-    }
 /*
     public static mergeDeclarations(
         targetDeclaration: tsd.IDeclaration,
@@ -261,8 +248,7 @@ class Generator extends Object {
     public constructor (
         modulePath: string,
         node: parser.INode,
-        optionDeclarations: tsd.NamespaceDeclaration,
-        optionTypes: Array<string>
+        optionDeclarations: tsd.NamespaceDeclaration
     ) {
 
         super();
@@ -270,10 +256,9 @@ class Generator extends Object {
         this._modulePath = modulePath;
         this._moduleGlobal = new tsd.ModuleGlobalDeclaration();
         this._namespace = optionDeclarations;
-        this._optionTypes = optionTypes;
 
         if (this.isMainModule) {
-            this.moduleGlobal.addChildren(this.namespace);
+            this.moduleGlobal.addChildren(this.mainNamespace);
             this.moduleGlobal.exports.push(
                 'export = Highcharts;',
                 'export as namespace Highcharts;'
@@ -318,11 +303,6 @@ class Generator extends Object {
         return (this.modulePath === config.mainModules['highcharts']);
     }
 
-    public get optionTypes(): Array<string> {
-        return this._optionTypes;
-    }
-    private _optionTypes: Array<string>;
-
     public get moduleGlobal(): tsd.ModuleGlobalDeclaration {
         return this._moduleGlobal;
     }
@@ -333,7 +313,7 @@ class Generator extends Object {
     }
     private _modulePath: string;
 
-    public get namespace(): tsd.NamespaceDeclaration {
+    public get mainNamespace(): tsd.NamespaceDeclaration {
         return this._namespace;
     }
     private _namespace: tsd.NamespaceDeclaration;
@@ -427,7 +407,7 @@ class Generator extends Object {
         else if (this.isMainModule &&
             targetDeclaration.kind !== 'namespace'
         ) {
-            targetDeclaration = this.namespace;
+            targetDeclaration = this.mainNamespace;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -448,7 +428,8 @@ class Generator extends Object {
 
         if (doclet.types) {
             let mergedTypes = utils.uniqueArray(
-                declaration.types, doclet.types.filter(type => type !== 'any')
+                declaration.types,
+                doclet.types.filter(type => !utils.isBasicType(type))
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
@@ -729,7 +710,7 @@ class Generator extends Object {
             this.isOptionType(doclet.name)) &&
             targetDeclaration.kind !== 'namespace'
         ) {
-            targetDeclaration = this.namespace;
+            targetDeclaration = this.mainNamespace;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -751,7 +732,10 @@ class Generator extends Object {
         if (doclet.types) {
             let mergedTypes = utils.uniqueArray(
                 declaration.types,
-                doclet.types.filter(type => type !== 'Function')
+                doclet.types.filter(type =>
+                    type !== 'Function' &&
+                    !utils.isBasicType(type)
+                )
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
@@ -857,7 +841,7 @@ class Generator extends Object {
             this.isOptionType(doclet.name)) &&
             targetDeclaration.kind !== 'namespace'
         ) {
-            targetDeclaration = this.namespace;
+            targetDeclaration = this.mainNamespace;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -878,7 +862,8 @@ class Generator extends Object {
 
         if (doclet.types) {
             let mergedTypes = utils.uniqueArray(
-                declaration.types, doclet.types.filter(type => type !== 'any')
+                declaration.types,
+                doclet.types.filter(type => !utils.isBasicType(type))
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
@@ -909,7 +894,7 @@ class Generator extends Object {
         }
         else if (this.isMainModule) {
             // create namespace in highcharts.js
-            declaration = this.namespace;
+            declaration = this.mainNamespace;
         }
         else {
             // reference namespace of highcharts.js with module path
@@ -1066,7 +1051,7 @@ class Generator extends Object {
             this.isOptionType(doclet.name)) &&
             targetDeclaration.kind !== 'namespace'
         ) {
-            targetDeclaration = this.namespace;
+            targetDeclaration = this.mainNamespace;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -1087,7 +1072,11 @@ class Generator extends Object {
 
         if (doclet.types) {
             let mergedTypes = utils.uniqueArray(
-                declaration.types, doclet.types
+                declaration.types,
+                doclet.types.filter(type =>
+                    !sourceNode.children ||
+                    !utils.isBasicType(type)
+                )
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
@@ -1104,18 +1093,20 @@ class Generator extends Object {
         return declaration;
     }
 
-    private isOptionType (name: string): boolean {
+    private isOptionType (name: string, declaration: tsd.IDeclaration = this.mainNamespace): boolean {
 
         if (!name.startsWith('Highcharts.')) {
             name = ('Highcharts.' + name);
         }
 
-        if (this.optionTypes.indexOf(name) > -1) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return (
+            declaration.types
+                .filter(type => Generator.OPTION_TYPE.test(type))
+                .some(type => type === name) ||
+            declaration
+                .getChildren()
+                .some(child => this.isOptionType(name, child))
+        );
     }
 
     public toString (): string {
