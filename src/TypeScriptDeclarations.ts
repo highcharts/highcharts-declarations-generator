@@ -151,7 +151,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Finds all type names.
      */
-    private static readonly SIMPLIFY_TYPE: RegExp = /(^|[\s\|\,\(\)\[\]\<])([\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\s\|\,\(\)\[\]\<\>]|$)/gm;
+    private static readonly SIMPLIFY_TYPE: RegExp = /(^|[\s\|\,\(\)\[\]\<])([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")(?=[\s\|\,\(\)\[\]\<\>]|$)/gm;
 
     /* *
      *
@@ -159,11 +159,20 @@ export abstract class IDeclaration extends Object {
      *
      * */
 
-    public static extractTypeNames (type: string): Array<string> {
+    /**
+     * Extract all types in given type strings.
+     *
+     * @param types
+     *        The types to extract from.
+     */
+    public static extractTypeNames (...types: Array<string>): Array<string> {
 
-        let search = new RegExp(IDeclaration.EXTRACT_TYPE_NAMES);
+        let extractedTypes = [] as Array<string>,
+            search = new RegExp(IDeclaration.EXTRACT_TYPE_NAMES);
 
-        return (type.match(search) || []);
+        types.forEach(type => extractedTypes.push(...(type.match(search) || [])));
+
+        return extractedTypes;
     }
 
 
@@ -333,24 +342,24 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns a simplified type.
      *
-     * @param type
-     *        The type to simplify.
+     * @param rootName
+     *        The root to remove.
      *
-     * @param scope
-     *        The scope to remove.
+     * @param types
+     *        The types to simplify.
      */
-    public static simplifyType (type: string, scopeName: string): string {
+    public static simplifyType (rootName: string, ...types: Array<string>): Array<string> {
 
-        let scopeLength = scopeName.length;
+        let scopeLength = rootName.length;
 
-        return type.replace(
+        return types.map(type => type.replace(
             IDeclaration.SIMPLIFY_TYPE,
             (match, matchPrefix, matchName) => (
-                matchName.startsWith(scopeName) ?
+                matchName.startsWith(rootName) ?
                 matchPrefix + matchName.substr(scopeLength) :
                 match
             )
-        );
+        ));
     }
 
     /**
@@ -380,8 +389,10 @@ export abstract class IDeclaration extends Object {
             return (nameA < nameB ? -1 : 1);
         }
 
-        if (declarationA instanceof IExtendedDeclaration &&
-            declarationB instanceof IExtendedDeclaration
+        if ((declarationA instanceof ConstructorDeclaration ||
+            declarationA instanceof FunctionDeclaration) &&
+            (declarationB instanceof ConstructorDeclaration ||
+            declarationB instanceof FunctionDeclaration)
         ) {
             let lengthA = declarationA.getParameters().length,
                 lengthB = declarationB.getParameters().length;
@@ -605,6 +616,20 @@ export abstract class IDeclaration extends Object {
     private _parent: (IDeclaration | undefined);
 
     /**
+     * Named root of this declaration.
+     */
+    public get root (): (IDeclaration | undefined) {
+
+        let root = this.parent;
+
+        while (root && root.parent && root.parent.name) {
+            root = root.parent;
+        }
+
+        return root;
+    }
+
+    /**
      * Link references in this TypeScript declaration.
      */
     public get see(): Array<string> {
@@ -641,6 +666,15 @@ export abstract class IDeclaration extends Object {
 
             name = declaration.name;
 
+            if (declaration === this ||
+                declaration === this.root
+            ) {
+                throw new Error(
+                    'Declaration is already part of this namespace.' +
+                    ' (' + name + '<=>' + this.name + ')'
+                );
+            }
+
             if (declaration.parent) {
                 throw new Error(
                     'Declaration has already a parent.' +
@@ -660,10 +694,7 @@ export abstract class IDeclaration extends Object {
      *        The possible kinds to test again.
      */
     public childOfKind (...kinds: Array<Kinds>): boolean {
-
-        let parentKind = (this.parent && this.parent.kind);
-
-        return kinds.some(kind => kind === parentKind);
+        return (this.parent && this.parent.kindOf(...kinds) || false);
     }
 
     /**
@@ -694,14 +725,14 @@ export abstract class IDeclaration extends Object {
     /**
      * Checks parent relation.
      */
-    public childOfSpace(): boolean {
+    public childOfSpace (): boolean {
         return this.childOfKind('global', 'module', 'namespace');
     }
 
     /**
      * Returns a clone of this declaration.
      */
-    public abstract clone(): IDeclaration;
+    public abstract clone (): IDeclaration;
 
     /**
      * Returns the child declarations of this declaration, if founded.
@@ -709,11 +740,12 @@ export abstract class IDeclaration extends Object {
      * @param name
      *        The name of the child declaration.
      */
-    public getChildren(name?: string): Array<IDeclaration> {
+    public getChildren (name?: string): Array<IDeclaration> {
 
         if (!name) {
             return this._children.sort(IDeclaration.sortDeclaration);
         }
+
         let foundChildren = [] as Array<IDeclaration>;
 
         this._children.forEach(child => {
@@ -728,9 +760,18 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns a sorted array with the names of all child declarations.
      */
-    public getChildrenNames(): Array<string> {
-
+    public getChildrenNames (): Array<string> {
         return this.getChildren().map(child => child.name);
+    }
+
+    /**
+     * Returns true, if declaration is of given kind.
+     *
+     * @param kinds
+     *        Declarations kinds looking for.
+     */
+    public kindOf (...kinds: Array<Kinds>): boolean {
+        return kinds.some(kind => kind === this.kind);
     }
 
     /**
@@ -934,20 +975,12 @@ export abstract class IDeclaration extends Object {
         filterFunctions: boolean = false
     ): string {
 
-        let scope = this.parent,
+        let root = this.root,
+            rootName = root && root.name,
             types = this.types.slice();
 
-        while (scope && scope.parent && scope.parent.name) {
-            scope = scope.parent;
-        }
-
-        if (scope &&
-            scope.kind !== 'module'
-        ) {
-
-            let scopeName = scope.name + '.';
-
-            types = types.map(type => (scope ? IDeclaration.simplifyType(type, scopeName) : type));
+        if (rootName) {
+            types = IDeclaration.simplifyType((rootName + '.'), ...types);
         }
 
         if (filterUndefined &&
@@ -1631,6 +1664,84 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
 
 /**
+ * Class for namespace declarations in TypeScript.
+ *
+ * @extends IDeclaration
+ */
+export class GlobalDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'namespace';
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this namespace declaration.
+     */
+    public clone (): GlobalDeclaration {
+
+        let clone = new GlobalDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of this namespace declaration.
+     *
+     * @param indent
+     *        The indentation string for formatting.
+     */
+    public toString (indent: string = ''): string {
+
+        let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent),
+            renderedDescription = this.renderDescription(indent),
+            renderedNamespace = 'global';
+
+        renderedNamespace = this.renderScopePrefix() + renderedNamespace;
+
+        if (renderedChildren) {
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
+        }
+        else {
+            renderedChildren = '{}';
+        }
+
+        return (
+            renderedDescription +
+            indent + renderedNamespace + ' ' + renderedChildren+ '\n'
+        );
+    }
+}
+
+
+
+/**
  * Class for interface declarations in TypeScript.
  *
  * @extends IDeclaration
@@ -1836,9 +1947,9 @@ export class ModuleGlobalDeclaration extends IDeclaration {
     /**
      * Initiates a new global declaration.
      */
-    public constructor () {
+    public constructor (name: string = '') {
 
-        super('');
+        super(name);
 
         this._exports = [];
         this._imports = [];
@@ -1955,88 +2066,6 @@ export class ModuleGlobalDeclaration extends IDeclaration {
             renderedImports +
             renderedChildren +
             renderedExports
-        );
-    }
-}
-
-
-
-/**
- * Class for namespace declarations in TypeScript.
- *
- * @extends IDeclaration
- */
-export class NamespaceDeclaration extends IDeclaration {
-
-    /* *
-     *
-     *  Properties
-     *
-     * */
-
-    /**
-     * Kind of declaration.
-     */
-    public readonly kind = 'namespace';
-
-    /* *
-     *
-     *  Functions
-     *
-     * */
-
-    /**
-     * Returns a clone of this namespace declaration.
-     */
-    public clone (): NamespaceDeclaration {
-
-        let clone = new NamespaceDeclaration(this.name);
-
-        clone.defaultValue = this.defaultValue;
-        clone.description = this.description;
-        clone.isOptional = this.isOptional;
-        clone.isPrivate = this.isPrivate;
-        clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
-        clone.addChildren(...this.getChildren().map(child => child.clone()));
-
-        return clone;
-    }
-
-    /**
-     * Returns a rendered string of this namespace declaration.
-     *
-     * @param indent
-     *        The indentation string for formatting.
-     */
-    public toString (indent: string = ''): string {
-
-        let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
-            renderedDescription = this.renderDescription(indent),
-            renderedNamespace = (
-                this.name === 'external:' ?
-                'global' :
-                'namespace ' + this.name
-            );
-
-        renderedNamespace = this.renderScopePrefix() + renderedNamespace;
-
-        if (renderedChildren) {
-            renderedChildren = (
-                '{\n' +
-                renderedChildren +
-                indent + '}'
-            );
-        }
-        else {
-            renderedChildren = '{}';
-        }
-
-        return (
-            renderedDescription +
-            indent + renderedNamespace + ' ' + renderedChildren+ '\n'
         );
     }
 }
@@ -2269,6 +2298,23 @@ export class PropertyDeclaration extends IDeclaration {
 
         let childIndent = indent + '    ',
             renderedMember = this.name.replace(':', ': ');
+
+        if (renderedMember[0] === '[' &&
+            renderedMember.indexOf(' ') > -1
+        ) {
+
+            let root = this.root,
+                rootName = (root && root.name);
+
+            if (rootName) {
+
+                let typePosition = (renderedMember.lastIndexOf(' ') + 1),
+                    type = renderedMember.substr(typePosition);
+
+                renderedMember = renderedMember.substr(0, typePosition);
+                renderedMember += IDeclaration.simplifyType((rootName + '.'), type)[0];
+            }
+        }
 
         if (this.isReadOnly) {
             renderedMember = 'readonly ' + renderedMember;
