@@ -1664,84 +1664,6 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
 
 /**
- * Class for namespace declarations in TypeScript.
- *
- * @extends IDeclaration
- */
-export class GlobalDeclaration extends IDeclaration {
-
-    /* *
-     *
-     *  Properties
-     *
-     * */
-
-    /**
-     * Kind of declaration.
-     */
-    public readonly kind = 'namespace';
-
-    /* *
-     *
-     *  Functions
-     *
-     * */
-
-    /**
-     * Returns a clone of this namespace declaration.
-     */
-    public clone (): GlobalDeclaration {
-
-        let clone = new GlobalDeclaration(this.name);
-
-        clone.defaultValue = this.defaultValue;
-        clone.description = this.description;
-        clone.isOptional = this.isOptional;
-        clone.isPrivate = this.isPrivate;
-        clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
-        clone.addChildren(...this.getChildren().map(child => child.clone()));
-
-        return clone;
-    }
-
-    /**
-     * Returns a rendered string of this namespace declaration.
-     *
-     * @param indent
-     *        The indentation string for formatting.
-     */
-    public toString (indent: string = ''): string {
-
-        let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
-            renderedDescription = this.renderDescription(indent),
-            renderedNamespace = 'global';
-
-        renderedNamespace = this.renderScopePrefix() + renderedNamespace;
-
-        if (renderedChildren) {
-            renderedChildren = (
-                '{\n' +
-                renderedChildren +
-                indent + '}'
-            );
-        }
-        else {
-            renderedChildren = '{}';
-        }
-
-        return (
-            renderedDescription +
-            indent + renderedNamespace + ' ' + renderedChildren+ '\n'
-        );
-    }
-}
-
-
-
-/**
  * Class for interface declarations in TypeScript.
  *
  * @extends IDeclaration
@@ -2066,6 +1988,88 @@ export class ModuleGlobalDeclaration extends IDeclaration {
             renderedImports +
             renderedChildren +
             renderedExports
+        );
+    }
+}
+
+
+
+/**
+ * Class for namespace declarations in TypeScript.
+ *
+ * @extends IDeclaration
+ */
+export class NamespaceDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'namespace';
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this namespace declaration.
+     */
+    public clone (): NamespaceDeclaration {
+
+        let clone = new NamespaceDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of this namespace declaration.
+     *
+     * @param indent
+     *        The indentation string for formatting.
+     */
+    public toString (indent: string = ''): string {
+
+        let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent),
+            renderedDescription = this.renderDescription(indent),
+            renderedNamespace = (
+                this.name === 'external:' ?
+                'global' :
+                'namespace ' + this.name.replace(':', '')
+            );
+
+        renderedNamespace = this.renderScopePrefix() + renderedNamespace;
+
+        if (renderedChildren) {
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
+        }
+        else {
+            renderedChildren = '{}';
+        }
+
+        return (
+            renderedDescription +
+            indent + renderedNamespace + ' ' + renderedChildren+ '\n'
         );
     }
 }
