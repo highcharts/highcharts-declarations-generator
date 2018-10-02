@@ -13,7 +13,7 @@ import * as utils from './Utilities';
 
 export function generate(
     modulesDictionary: utils.Dictionary<parser.INode>,
-    optionsDeclarations: utils.Dictionary<tsd.NamespaceDeclaration>
+    optionsDeclarations: utils.Dictionary<tsd.IDeclaration>
 ): Promise<void> {
 
     const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/gm;
@@ -83,7 +83,7 @@ class Generator extends Object {
 
     private static readonly CUSTOM_TYPE = /^Highcharts.\w+?(?:<.*?>)?$/gm;
 
-    private static readonly OPTION_TYPE = /^Highcharts.\w+?(?:Options|Object)$/gm;
+    private static readonly OPTION_TYPE = /^Highcharts.\w+?(?:CallbackFunction|Object|Options)$/gm;
 
     /* *
      *
@@ -248,14 +248,14 @@ class Generator extends Object {
     public constructor (
         modulePath: string,
         node: parser.INode,
-        optionDeclarations: tsd.NamespaceDeclaration
+        optionDeclarations: tsd.IDeclaration
     ) {
 
         super();
 
-        this._modulePath = modulePath;
+        this._mainNamespace = optionDeclarations;
         this._moduleGlobal = new tsd.ModuleGlobalDeclaration();
-        this._namespace = optionDeclarations;
+        this._modulePath = modulePath;
 
         if (this.isMainModule) {
             this.moduleGlobal.addChildren(this.mainNamespace);
@@ -313,10 +313,10 @@ class Generator extends Object {
     }
     private _modulePath: string;
 
-    public get mainNamespace(): tsd.NamespaceDeclaration {
-        return this._namespace;
+    public get mainNamespace(): tsd.IDeclaration {
+        return this._mainNamespace;
     }
-    private _namespace: tsd.NamespaceDeclaration;
+    private _mainNamespace: tsd.IDeclaration;
 
     /* *
      *
@@ -405,7 +405,7 @@ class Generator extends Object {
             targetDeclaration = this.moduleGlobal;
         }
         else if (this.isMainModule &&
-            targetDeclaration.kind !== 'namespace'
+            targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
         }
@@ -556,7 +556,7 @@ class Generator extends Object {
             declaration = new tsd.InterfaceDeclaration(doclet.name),
             globalDeclaration = (
                 this._moduleGlobal.getChildren('external:')[0] ||
-                new tsd.NamespaceDeclaration('external:')
+                new tsd.GlobalDeclaration('external:')
             );
 
         let existingChild = globalDeclaration.getChildren(declaration.name)[0];
@@ -708,7 +708,7 @@ class Generator extends Object {
         }
         else if ((this.isMainModule ||
             this.isOptionType(doclet.name)) &&
-            targetDeclaration.kind !== 'namespace'
+            targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
         }
@@ -805,8 +805,8 @@ class Generator extends Object {
             declaration.description = doclet.description;
         }
 
-        if (!this._namespace.description) {
-            this._namespace.description = declaration.description;
+        if (!this._mainNamespace.description) {
+            this._mainNamespace.description = declaration.description;
         }
 
         if (doclet.see) {
@@ -839,7 +839,7 @@ class Generator extends Object {
         }
         else if ((this.isMainModule ||
             this.isOptionType(doclet.name)) &&
-            targetDeclaration.kind !== 'namespace'
+            targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
         }
@@ -890,10 +890,10 @@ class Generator extends Object {
 
         if (doclet.name.endsWith(':')) {
             // creates a namespace if it is a special keyword
-            declaration = new tsd.NamespaceDeclaration(doclet.name);
+            declaration = new tsd.GlobalDeclaration(doclet.name);
         }
         else if (this.isMainModule) {
-            // create namespace in highcharts.js
+            // use main namespace in highcharts.js
             declaration = this.mainNamespace;
         }
         else {
@@ -918,7 +918,7 @@ class Generator extends Object {
         if (existingChild &&
             existingChild.kind === 'namespace'
         ) {
-            declaration = existingChild as tsd.NamespaceDeclaration;
+            declaration = existingChild as tsd.GlobalDeclaration;
         }
 
         if (doclet.description) {
@@ -1049,7 +1049,7 @@ class Generator extends Object {
         }
         else if ((this.isMainModule ||
             this.isOptionType(doclet.name)) &&
-            targetDeclaration.kind !== 'namespace'
+            targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
         }
@@ -1093,20 +1093,33 @@ class Generator extends Object {
         return declaration;
     }
 
-    private isOptionType (name: string, declaration: tsd.IDeclaration = this.mainNamespace): boolean {
+    private isOptionType (name: string): boolean {
 
         if (!name.startsWith('Highcharts.')) {
             name = ('Highcharts.' + name);
         }
 
-        return (
-            declaration.types
-                .filter(type => Generator.OPTION_TYPE.test(type))
-                .some(type => type === name) ||
-            declaration
-                .getChildren()
-                .some(child => this.isOptionType(name, child))
-        );
+        if (!Generator.OPTION_TYPE.test(name)) {
+            return false;
+        }
+
+        return this.mainNamespace
+            .getChildren()
+            .filter(child => child.kindOf('interface', 'type'))
+            .some(child => (
+                tsd.IDeclaration
+                    .extractTypeNames(...child.types)
+                    .filter(type => type.indexOf('.') > -1)
+                    .some(type => type === name) ||
+                child
+                    .getChildren()
+                    .filter(child => child.kind === 'property')
+                    .some(child => tsd.IDeclaration
+                        .extractTypeNames(...child.types)
+                        .filter(type => type.indexOf('.') > -1)
+                        .some(type => type === name)
+                    )
+            ));
     }
 
     public toString (): string {
