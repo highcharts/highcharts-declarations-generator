@@ -556,7 +556,7 @@ class Generator extends Object {
             declaration = new tsd.InterfaceDeclaration(doclet.name),
             globalDeclaration = (
                 this._moduleGlobal.getChildren('external:')[0] ||
-                new tsd.GlobalDeclaration('external:')
+                new tsd.NamespaceDeclaration('external:')
             );
 
         let existingChild = globalDeclaration.getChildren(declaration.name)[0];
@@ -890,7 +890,7 @@ class Generator extends Object {
 
         if (doclet.name.endsWith(':')) {
             // creates a namespace if it is a special keyword
-            declaration = new tsd.GlobalDeclaration(doclet.name);
+            declaration = new tsd.NamespaceDeclaration(doclet.name);
         }
         else if (this.isMainModule) {
             // use main namespace in highcharts.js
@@ -918,7 +918,7 @@ class Generator extends Object {
         if (existingChild &&
             existingChild.kind === 'namespace'
         ) {
-            declaration = existingChild as tsd.GlobalDeclaration;
+            declaration = existingChild as tsd.NamespaceDeclaration;
         }
 
         if (doclet.description) {

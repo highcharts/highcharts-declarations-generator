@@ -13,11 +13,11 @@ import * as utils from './Utilities';
 
 export function generate (
     optionsJSON: utils.Dictionary<parser.INode>
-): Promise<utils.Dictionary<tsd.NamespaceDeclaration>> {
+): Promise<utils.Dictionary<tsd.IDeclaration>> {
     return new Promise((resolve, reject) => {
 
         let productNamespaces = (
-            new utils.Dictionary<tsd.NamespaceDeclaration>()
+            new utils.Dictionary<tsd.IDeclaration>()
         );
 
         Object
@@ -26,7 +26,7 @@ export function generate (
 
                 let generator = new Generator(product, optionsJSON);
                 
-                productNamespaces[product] = generator.namespace
+                productNamespaces[product] = generator.mainNamespace
             }); 
 
         resolve(productNamespaces);
@@ -134,7 +134,7 @@ class Generator extends Object {
 
         super();
 
-        this._namespace = new tsd.NamespaceDeclaration('Highcharts');
+        this._mainNamespace = new tsd.NamespaceDeclaration('Highcharts');
         this._product = product;
         this._seriesTypes = [];
 
@@ -160,10 +160,10 @@ class Generator extends Object {
      *
      * */
 
-    public get namespace(): tsd.NamespaceDeclaration {
-        return this._namespace;
+    public get mainNamespace(): tsd.NamespaceDeclaration {
+        return this._mainNamespace;
     }
-    private _namespace: tsd.NamespaceDeclaration;
+    private _mainNamespace: tsd.NamespaceDeclaration;
 
     private _product: string;
 
@@ -202,7 +202,7 @@ class Generator extends Object {
             declaration.see.push(...doclet.see);
         }
 
-        this.namespace.addChildren(declaration);
+        this.mainNamespace.addChildren(declaration);
 
         utils.Dictionary
             .values(sourceNode.children)
@@ -373,7 +373,7 @@ class Generator extends Object {
             return;
         }
 
-        this.namespace.addChildren(declaration);
+        this.mainNamespace.addChildren(declaration);
 
         this.generatePropertyDeclaration(dataNode, declaration);
 
@@ -407,7 +407,7 @@ class Generator extends Object {
 
     private generateSeriesDeclaration () {
 
-        let optionsDeclaration = this.namespace.getChildren('Options')[0];
+        let optionsDeclaration = this.mainNamespace.getChildren('Options')[0];
 
         if (!optionsDeclaration) {
             console.error('Highcharts.Options not declared!');
@@ -428,7 +428,7 @@ class Generator extends Object {
         seriesTypeDeclaration.description = 'The possible series types.';
         seriesTypeDeclaration.types.push(...this._seriesTypes);
 
-        this.namespace.addChildren(seriesTypeDeclaration);
+        this.mainNamespace.addChildren(seriesTypeDeclaration);
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
@@ -438,6 +438,6 @@ class Generator extends Object {
  
     public toString(): string {
 
-        return this.namespace.toString();
+        return this.mainNamespace.toString();
     }
 }
