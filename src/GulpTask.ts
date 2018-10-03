@@ -17,7 +17,7 @@ import * as utils from './Utilities';
 
 export function task (done: Function) {
 
-    console.log(colors.yellow.bold(
+    console.info(colors.yellow.bold(
         'Start creating TypeScript declarations...'
     ));
 
@@ -32,7 +32,7 @@ export function task (done: Function) {
                 .generate(filesDictionary, optionsDeclarations)
             )
         )
-        .then(() => console.log(colors.green.bold(
+        .then(() => console.info(colors.green.bold(
             'Finished creating TypeScript declarations.'
         )));
 }
