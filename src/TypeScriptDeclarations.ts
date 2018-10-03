@@ -1975,14 +1975,6 @@ export class ModuleGlobalDeclaration extends IDeclaration {
             );
         }
 
-        if (renderedImports) {
-            renderedImports += '\n';
-        }
-
-        if (renderedExports) {
-            renderedExports = '\n' + renderedExports;
-        }
-
         return (
             renderedDescription +
             renderedImports +
