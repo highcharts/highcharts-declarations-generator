@@ -8,22 +8,21 @@
         "highstock": "code/highstock",
         "highmaps": "code/highmaps"
     },
-    "optionValueMapping": {
+    "optionTypeMapping": {
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },
     "typeMapping": {
-        "*": "any",
-        "Array": "any[]",
-        "Boolean": "boolean",
-        "Number": "number",
-        "Object": "object",
-        "String": "string",
         "array": "any[]",
         "function": "Function",
         "function()": "Function",
         "AnimationOptions": "Highcharts.AnimationOptionsObject",
+        "Array": "any[]",
+        "Boolean": "boolean",
         "Color": "Highcharts.ColorString",
+        "Highcharts.AnimationObject": "Highcharts.AnimationOptionsObject",
         "Mixed": "any",
-        "Highcharts.AnimationObject": "Highcharts.AnimationOptionsObject"
+        "Number": "number",
+        "Object": "object",
+        "String": "string"
     }
 }

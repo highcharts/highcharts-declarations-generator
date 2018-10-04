@@ -4,78 +4,69 @@
  * 
  * */
 
-const MAP_TYPE_GENERIC: RegExp = /^([\w\.]+?)\.?<(.+)>$/gm;
-const MAP_TYPE_LIST: RegExp = /^\((.+)\)$/gm;
+import * as tsd from './TypeScriptDeclarations';
+
+const MAP_TYPE_MINIARRAY: RegExp = /Array<(["\w\.]+(?:<[^,]+>)?,\s*(?:["\w\.\,]+|\([^,]+\)|\[[^,]+\]|<[^,]+>)+)>/gm;
+const MAP_TYPE: RegExp = /([\w\.]+|\*)+(\||,|<|>|\(|\)|\s|$)/gm;
 
 const SEE_LINK_NAME_LAST = /\.(\w+)$/gm;
 
 const config = (function () {
+
+    let config: any;
+
     try {
-        return require(process.cwd() + '/tsdconfig.json');
+        config = require(process.cwd() + '/tsdconfig.json');
     } catch {
-        return require('../tsdconfig.json');
+        config = require('../tsdconfig.json');
     }
+
+    let sortedTypeMapping = {} as any;
+
+    Object
+        .keys(config.typeMapping)
+        .sort((a, b) => (b.length - a.length))
+        .forEach(key => sortedTypeMapping[key] = config.typeMapping[key]);
+
+    config.typeMapping = sortedTypeMapping;
+
+    return config;
+
 }()) as IConfig;
 
 config.cwd = (config.cwd || process.cwd());
 
-config.filterUndefined = function (type: string): boolean {
-    return (type !== 'undefined');
-};
-
-config.findUndefined = function (type: string): boolean {
-    return (type === 'undefined');
-};
-
 config.mapOptionType = function (option: string): string {
-    return config.optionValueMapping[option];
+    return config.optionTypeMapping[option];
 };
 
-config.mapType = function (type: string): string {
+config.mapType = function (type: string, withoutConfig: boolean = false): string {
 
-    type = type.replace(MAP_TYPE_LIST, '$1');
+    type = type
+        .replace(/\(\)/gm, '')
+        .replace(/\s+/gm, ' ')
+        .replace(/\.</gm, '<')
+        .replace(/\*/gm, 'any');
 
-    if (MAP_TYPE_GENERIC.test(type)) {
+    if (MAP_TYPE_MINIARRAY.test(type)) {
+        type = type.replace(MAP_TYPE_MINIARRAY, '[$1]');
+    }
+
+    if (tsd.IDeclaration.TYPE_SUFFIX.test(type)) {
         return type.replace(
-            MAP_TYPE_GENERIC,
-            (match, generic, genericType) => {
-                if (generic === 'Array' &&
-                    genericType.indexOf(',') > 0 &&
-                    genericType.indexOf('<') === -1
-                ) {
-                    return '[' + config.mapType(genericType) + ']';
+            tsd.IDeclaration.TYPE_NAME,
+            (match: string, type: string, suffix: string) => {
+                if (type.lastIndexOf('.') === (type.length - 1)) {
+                    type = type.substr(0, (type.length - 1));
                 }
-                else {
-                    return generic + '<' + config.mapType(genericType) + '>';
-                }
+                return config.mapType(type, (suffix === '<')) + suffix;
             }
         );
     }
 
-    if (type.indexOf('|') > 0) {
-
-        let genericLevel = 0,
-            typeList = [] as Array<string>;
-
-        type.split('|')
-            .forEach(type => {
-                if (type.indexOf('<') > 0) {
-                    genericLevel += (
-                        type.split('<').length - type.split('>').length
-                    );
-                    typeList.push(type);
-                } else if (genericLevel > 0) {
-                    genericLevel -= type.split('>').length - 1;
-                    typeList[typeList.length-1] += '|' + type;
-                } else {
-                    typeList.push(type);
-                }
-            });
-
-        return '(' + typeList.map(config.mapType).join('|') + ')';
-    }
-
-    if (config.typeMapping[type]) {
+    if (!withoutConfig
+        && config.typeMapping[type]
+    ) {
         type = config.typeMapping[type];
     }
 
@@ -146,16 +137,14 @@ export = config;
 interface IConfig {
     cwd: string;
     mainModules: { [product: string]: string };
-    optionValueMapping: { [key: string]: string };
+    optionTypeMapping: { [option: string]: string };
     outputPath: string;
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;
-    typeMapping: { [key: string]: string };
-    filterUndefined (type: string): boolean;
-    findUndefined (type: string): boolean;
+    typeMapping: { [type: string]: string };
     mapOptionType (option: string): string;
-    mapType (type: string): string;
+    mapType (type: string, withoutConfig?: boolean): string;
     mapValue (value: any): string;
     seeLink (name: string, kind: string, product?: string): string;
 }
