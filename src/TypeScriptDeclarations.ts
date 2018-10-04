@@ -134,24 +134,30 @@ export abstract class IDeclaration extends Object {
     private static readonly NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
 
     /**
-     * Split strings between spaces and line breaks.
+     * Finds spaces and line breaks.
      */
     private static readonly PAD_SPACE: RegExp = /\s/gm;
 
     /**
-     * Splits a path in four groups: scope, path, name, and extension.
+     * Finds path and match into four groups: scope, path, name, and extension.
      */
     private static readonly PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/gm;
 
     /**
-     * Split pathes
+     * Finds path separator
      */
     private static readonly PATH_SEPARATOR: RegExp = /\/\\/gm;
 
     /**
-     * Finds all type names.
+     * Finds all possible separator characters after a type name.
      */
-    private static readonly SIMPLIFY_TYPE: RegExp = /(^|[\s\|\,\(\)\[\]\<])([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")(?=[\s\|\,\(\)\[\]\<\>]|$)/gm;
+    public static readonly TYPE_SUFFIX: RegExp = /[\|\,\(\)\[\]\<\>]/gm;
+
+    /**
+     * Finds all type names and match into two groups: type name and separator
+     * suffixes (or string end).
+     */
+    public static readonly TYPE_NAME: RegExp = /([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")([\|\,\(\)\[\]\<\>]|$)/gm;
 
     /* *
      *
@@ -353,10 +359,10 @@ export abstract class IDeclaration extends Object {
         let scopeLength = rootName.length;
 
         return types.map(type => type.replace(
-            IDeclaration.SIMPLIFY_TYPE,
-            (match, matchPrefix, matchName) => (
-                matchName.startsWith(rootName) ?
-                matchPrefix + matchName.substr(scopeLength) :
+            IDeclaration.TYPE_NAME,
+            (match, name, suffix) => (
+                name.startsWith(rootName) ?
+                name.substr(scopeLength) + suffix :
                 match
             )
         ));
