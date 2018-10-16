@@ -101,63 +101,63 @@ export abstract class IDeclaration extends Object {
     /**
      * Finds all type names.
      */
-    private static readonly EXTRACT_TYPE_NAMES: RegExp = /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/gm;
+    private static readonly EXTRACT_TYPE_NAMES: RegExp = /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/;
 
     /**
      * Finds separator characters in fullnames.
      */
-    private static readonly NAMESPACE_KEYWORDS = /\w+\:/gm;
+    private static readonly NAMESPACE_KEYWORDS = /\w+\:/;
 
     /**
      * Finds subspaces in fullnames.
      */
-    private static readonly NAMESPACES_SUBSPACE = /(?:<.+>|\[.+\])$/gm;
+    private static readonly NAMESPACES_SUBSPACE = /(?:<.+>|\[.+\])$/;
 
     /**
      * Escape double lines like in Markdown.
      */
-    private static readonly NORMALIZE_ESCAPE: RegExp = /\n\s*\n/gm;
+    private static readonly NORMALIZE_ESCAPE: RegExp = /\n\s*\n/;
 
     /**
      * Escape lists like in Markdown.
      */
-    private static readonly NORMALIZE_LIST: RegExp = /\n(?:[\-\+\*]|\d+\.) /gm;
+    private static readonly NORMALIZE_LIST: RegExp = /\n(?:[\-\+\*]|\d+\.) /;
 
     /**
      * Reduce spaces and line breaks to one space character.
      */
-    private static readonly NORMALIZE_SPACE: RegExp = /\s+/gm;
+    private static readonly NORMALIZE_SPACE: RegExp = /\s+/;
 
     /**
      * Unescape double lines.
      */
-    private static readonly NORMALIZE_UNESCAPE: RegExp = /<br>/gm;
+    private static readonly NORMALIZE_UNESCAPE: RegExp = /<br>/;
 
     /**
      * Finds spaces and line breaks.
      */
-    private static readonly PAD_SPACE: RegExp = /\s/gm;
+    private static readonly PAD_SPACE: RegExp = /\s/;
 
     /**
      * Finds path and match into four groups: scope, path, name, and extension.
      */
-    private static readonly PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/gm;
+    private static readonly PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/;
 
     /**
      * Finds path separator
      */
-    private static readonly PATH_SEPARATOR: RegExp = /\/\\/gm;
-
-    /**
-     * Finds all possible separator characters after a type name.
-     */
-    public static readonly TYPE_SUFFIX: RegExp = /[\|\,\(\)\[\]\<\>]/gm;
+    private static readonly PATH_SEPARATOR: RegExp = /\/\\/;
 
     /**
      * Finds all type names and match into two groups: type name and separator
      * suffixes (or string end).
      */
-    public static readonly TYPE_NAME: RegExp = /([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")([\|\,\(\)\[\]\<\>]|$)/gm;
+    public static readonly TYPE_NAME: RegExp = /([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")([\|\,\(\)\[\]\<\>]|$)/;
+
+    /**
+     * Finds all possible separator characters after a type name.
+     */
+    public static readonly TYPE_SUFFIX: RegExp = /[\|\,\(\)\[\]\<\>]/;
 
     /* *
      *
@@ -174,7 +174,7 @@ export abstract class IDeclaration extends Object {
     public static extractTypeNames (...types: Array<string>): Array<string> {
 
         let extractedTypes = [] as Array<string>,
-            search = new RegExp(IDeclaration.EXTRACT_TYPE_NAMES);
+            search = new RegExp(IDeclaration.EXTRACT_TYPE_NAMES, 'gm');
 
         types.forEach(type => extractedTypes.push(...(type.match(search) || [])));
 
@@ -203,7 +203,7 @@ export abstract class IDeclaration extends Object {
         let newLine = true,
             line = '',
             paddedStr = '',
-            words = text.split(IDeclaration.PAD_SPACE);
+            words = text.split(new RegExp(IDeclaration.PAD_SPACE, 'gm'));
 
         words.forEach(word => {
 
@@ -244,14 +244,14 @@ export abstract class IDeclaration extends Object {
             return [];
         }
 
-        let subspace = (name.match(IDeclaration.NAMESPACES_SUBSPACE) || [])[0];
+        let subspace = (name.match(new RegExp(IDeclaration.NAMESPACES_SUBSPACE, 'gm')) || [])[0];
 
         if (subspace) {
             name = name.substr(0, name.length - subspace.length);
         }
 
         let namespaces = name
-            .replace(IDeclaration.NAMESPACE_KEYWORDS, '$&.')
+            .replace(new RegExp(IDeclaration.NAMESPACE_KEYWORDS, 'gm'), '$&.')
             .split('.');
 
         if (subspace) {
@@ -302,12 +302,12 @@ export abstract class IDeclaration extends Object {
 
         if (preserveParagraphs) {
             return text
-                .replace(IDeclaration.NORMALIZE_ESCAPE, '<br>')
-                .replace(IDeclaration.NORMALIZE_LIST, '<br>-')
-                .replace(IDeclaration.NORMALIZE_SPACE, ' ')
-                .replace(IDeclaration.NORMALIZE_UNESCAPE, '\n\n');
+                .replace(new RegExp(IDeclaration.NORMALIZE_ESCAPE, 'gm'), '<br>')
+                .replace(new RegExp(IDeclaration.NORMALIZE_LIST, 'gm'), '<br>-')
+                .replace(new RegExp(IDeclaration.NORMALIZE_SPACE, 'gm'), ' ')
+                .replace(new RegExp(IDeclaration.NORMALIZE_UNESCAPE, 'gm'), '\n\n');
         } else {
-            return text.replace(IDeclaration.NORMALIZE_SPACE, ' ');
+            return text.replace(new RegExp(IDeclaration.NORMALIZE_SPACE, 'gm'), ' ');
         }
     }
 
@@ -320,10 +320,10 @@ export abstract class IDeclaration extends Object {
      */
     protected static pathElements (path: string): PathElements {
 
-        let match = (path.match(IDeclaration.PATH_ELEMENTS) || [])[0];
+        let match = (path.match(new RegExp(IDeclaration.PATH_ELEMENTS, 'gm')) || [])[0];
 
         return {
-            directories: match[2].split(IDeclaration.PATH_SEPARATOR),
+            directories: match[2].split(new RegExp(IDeclaration.PATH_SEPARATOR, 'gm')),
             extension: match[4],
             file: match[3] + match[4],
             name: match[3],
@@ -359,7 +359,7 @@ export abstract class IDeclaration extends Object {
         let scopeLength = rootName.length;
 
         return types.map(type => type.replace(
-            IDeclaration.TYPE_NAME,
+            new RegExp(IDeclaration.TYPE_NAME, 'gm'),
             (match, name, suffix) => (
                 name.startsWith(rootName) ?
                 name.substr(scopeLength) + suffix :
@@ -940,7 +940,7 @@ export abstract class IDeclaration extends Object {
                         return 'declare ';
                     case 'interface':
                     case 'type':
-                        return '';
+                        return 'export ';
                 }
         }
     }
@@ -982,10 +982,13 @@ export abstract class IDeclaration extends Object {
     ): string {
 
         let root = this.root,
+            rootKind = root && root.kind,
             rootName = root && root.name,
             types = this.types.slice();
 
-        if (rootName) {
+        if (rootName &&
+            rootKind === 'namespace'
+        ) {
             types = IDeclaration.simplifyType((rootName + '.'), ...types);
         }
 

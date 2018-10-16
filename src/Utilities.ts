@@ -13,23 +13,23 @@ import * as request from 'request';
 
 
 
-const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/gm;
-const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/gm;
-const JSON_QUOTE: RegExp = /['`]/gm;
+const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/;
+const JSON_QUOTE: RegExp = /['`]/;
+const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/;
 
-const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/gm;
-const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/gm;
-const REMOVE_EXAMPLE_MARKDOWN = /```[^`]*?```/gm;
+const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/;
+const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/;
+const REMOVE_EXAMPLE_MARKDOWN = /\s*```[^`]*?```/;
 const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
 
-const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|]+)(?:\|([^\}]+))?\}/gm;
-const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)]+)\)/gm;
-const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}]+)\}/gm;
-const REMOVE_LINK_SPACE = /\s/gm;
+const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|]+)(?:\|([^\}]+))?\}/;
+const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)]+)\)/;
+const REMOVE_LINK_MIX = /\[([^\]]+)\]\{@link\s+([^\}]+)\}/;
+const REMOVE_LINK_SPACE = /\s/;
 
-const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d+\.)\s+/gm;
+const TRANSFORM_LISTS = /\n\s*([\-\+\*]|\d+\.)\s+/;
 
-const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/g;
+const URL_WEB = /[\w\-\+]+\:\S+[\w\/]/;
 
 
 
@@ -195,6 +195,7 @@ export function isBasicType (typeName: string): boolean {
         case 'boolean':
         case 'function':
         case 'number':
+        case 'object':
         case 'string':
         case 'symbol':
         case 'undefined':
@@ -341,14 +342,14 @@ export function json (
     }
 
     let results = JSON.parse(json
-        .replace(JSON_QUOTE, '"')
-        .replace(JSON_ESCAPE, '$1"$2"$3')
+        .replace(new RegExp(JSON_QUOTE, 'gm'), '"')
+        .replace(new RegExp(JSON_ESCAPE, 'gm'), '$1"$2"$3')
     );
 
     if (typeof results.map === 'function') {
         results.map((result: any) => (
             typeof result === 'string' ?
-            result.replace(JSON_UNESCAPE, '$1') :
+            result.replace(new RegExp(JSON_UNESCAPE, 'gm'), '$1') :
             result
         ));
     }
@@ -445,9 +446,9 @@ export function relative (
 
 export function removeExamples (text: string): string {
     return text
-        .replace(REMOVE_EXAMPLE_HTML, REMOVE_EXAMPLE_REPLACEMENT)
-        .replace(REMOVE_EXAMPLE_JSDOC, REMOVE_EXAMPLE_REPLACEMENT)
-        .replace(REMOVE_EXAMPLE_MARKDOWN, REMOVE_EXAMPLE_REPLACEMENT);
+        .replace(new RegExp(REMOVE_EXAMPLE_HTML, 'gm'), REMOVE_EXAMPLE_REPLACEMENT)
+        .replace(new RegExp(REMOVE_EXAMPLE_JSDOC, 'gm'), REMOVE_EXAMPLE_REPLACEMENT)
+        .replace(new RegExp(REMOVE_EXAMPLE_MARKDOWN, 'gm'), REMOVE_EXAMPLE_REPLACEMENT);
 }
 
 
@@ -460,7 +461,7 @@ export function removeLinks(
 
     function replaceLink (match: string, title: string, link: string) {
         if (removedLinks) {
-            linkUrl = url(link.replace(REMOVE_LINK_SPACE, ''));
+            linkUrl = url(link.replace(new RegExp(REMOVE_LINK_SPACE, 'gm'), ''));
             if (linkUrl) {
                 removedLinks.push(linkUrl);
             }
@@ -473,10 +474,10 @@ export function removeLinks(
     }
 
     return text
-        .replace(REMOVE_LINK_MIX, replaceLink)
-        .replace(REMOVE_LINK_MARKDOWN, replaceLink)
+        .replace(new RegExp(REMOVE_LINK_MIX, 'gm'), replaceLink)
+        .replace(new RegExp(REMOVE_LINK_MARKDOWN, 'gm'), replaceLink)
         .replace(
-            REMOVE_LINK_JSDOC,
+            new RegExp(REMOVE_LINK_JSDOC, 'gm'),
             (match: string, link: string, title: string) =>
             replaceLink(match, title, link)
         );
@@ -509,7 +510,7 @@ export function save (filePath: string, str: string): Promise<string> {
 
 export function transformLists (text: string): string {
 
-    return text.replace(TRANSFORM_LISTS, '\n\n$1 ');
+    return text.replace(new RegExp(TRANSFORM_LISTS, 'gm'), '\n\n$1 ');
 }
 
 
@@ -533,7 +534,7 @@ export function uniqueArray<T>(
 
 export function url (text: string): (string|null) {
 
-    let match = text.match(URL_WEB);
+    let match = text.match(new RegExp(URL_WEB, 'g'));
 
     if (match) {
         return match[0];
@@ -546,7 +547,7 @@ export function url (text: string): (string|null) {
 
 export function urls (text: string): Array<string> {
 
-    let matches = text.match(URL_WEB);
+    let matches = text.match(new RegExp(URL_WEB, 'g'));
 
     if (matches) {
         return new Array(...matches);
