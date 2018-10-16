@@ -5,4 +5,5 @@ highcharts.d.ts
 temp*.json
 cache/
 dist/
+lib/
 *.cache.json
