@@ -112,7 +112,11 @@ class Parser extends Object {
 
         Object
             .keys(sourceDoclet)
-            .filter(key => typeof targetDoclet[key] === 'undefined')
+            .filter(key => (
+                key !== 'extends' &&
+                key !== 'exclude' &&
+                typeof targetDoclet[key] === 'undefined'
+            ))
             .forEach(key => targetDoclet[key] = utils.clone(
                 sourceDoclet[key], Number.MAX_SAFE_INTEGER
             ));
@@ -265,12 +269,13 @@ class Parser extends Object {
      */
     private completeNodeTypes (node: INode) {
 
-        if (node.meta.fullname &&
+        let mappedOptionType = (
+            node.meta.fullname &&
             config.mapOptionType(node.meta.fullname)
-        ) {
-            node.doclet.type = {
-                names: [config.mapOptionType(node.meta.fullname)]
-            };
+        );
+
+        if (mappedOptionType) {
+            node.doclet.type = { names: [mappedOptionType] };
         }
         else if (node.doclet.type && node.doclet.type.names) {
             // nothing to do

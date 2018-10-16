@@ -35,13 +35,11 @@ export function generate (
 
 
 
-const GENERIC_ANY_TYPE = /([\<\(\|])any([\|\)\>])/gm;
-
-const SERIES_TYPE = /^series\.(\w+)$/gm;
+const GENERIC_ANY_TYPE = /([\<\(\|])any([\|\)\>])/;
 
 
 
-class Generator extends Object {
+class Generator {
 
     /* *
      *
@@ -83,8 +81,9 @@ class Generator extends Object {
         }
 
         if (doclet.type && doclet.type.names) {
-            doclet.type.names = doclet.type.names
-                .map(config.mapType);
+            doclet.type.names = doclet.type.names.map(
+                type => config.mapType(type)
+            );
         }
         else {
             doclet.type = { names: [ 'any' ] };
@@ -131,8 +130,6 @@ class Generator extends Object {
         product: string,
         optionsJSON: utils.Dictionary<parser.INode>
     ) {
-
-        super();
 
         this._mainNamespace = new tsd.NamespaceDeclaration('Highcharts');
         this._product = product;
@@ -258,19 +255,19 @@ class Generator extends Object {
             sourceNode.children = {};
             sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
-                .map(config.mapType)
-                .filter(name => name !== 'any')
-                .map(name => {
-                    if (name.indexOf('any') === -1 ||
-                        !GENERIC_ANY_TYPE.test(name) ||
+                .map(type => config.mapType(type))
+                .filter(type => type !== 'any')
+                .map(type => {
+                    if (type.indexOf('any') === -1 ||
+                        !GENERIC_ANY_TYPE.test(type) ||
                         !interfaceDeclaration
                     ) {
-                        return name;
+                        return type;
                     }
                     else {
                         replacedAnyType = true;
-                        return name.replace(
-                            GENERIC_ANY_TYPE,
+                        return type.replace(
+                            new RegExp(GENERIC_ANY_TYPE, 'gm'),
                             '$1' + interfaceDeclaration.name + '$2'
                         );
                     }
@@ -387,20 +384,14 @@ class Generator extends Object {
 
         declaration.addChildren(typePropertyDeclaration);
 
-        let childrenNames = declaration.getChildrenNames(),
-            excludeDeclaration;
-
-        (sourceNode.doclet.exclude || [])
-            .filter(name => childrenNames.indexOf(name) === -1)
-            .forEach(name => {
-
-                excludeDeclaration = new tsd.PropertyDeclaration(name);
-
+        (sourceNode.doclet.exclude || []).forEach(name => {
+            if (!declaration.getChildren(name)) {
+                let excludeDeclaration = new tsd.PropertyDeclaration(name);
                 excludeDeclaration.isOptional = true;
                 excludeDeclaration.types.push('undefined');
-
                 declaration.addChildren(excludeDeclaration);
-            });
+            }
+        });
 
         return declaration;
     }
