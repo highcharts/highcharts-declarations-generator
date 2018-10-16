@@ -6,10 +6,9 @@
 
 import * as tsd from './TypeScriptDeclarations';
 
-const MAP_TYPE_MINIARRAY: RegExp = /Array<(["\w\.]+(?:<[^,]+>)?,\s*(?:["\w\.\,]+|\([^,]+\)|\[[^,]+\]|<[^,]+>)+)>/gm;
-const MAP_TYPE: RegExp = /([\w\.]+|\*)+(\||,|<|>|\(|\)|\s|$)/gm;
+const MAP_TYPE_MINIARRAY: RegExp = /Array<(["\w\.]+(?:<[^,]+>)?,\s*(?:["\w\.\,]+|\([^,]+\)|\[[^,]+\]|<[^,]+>)+)>/;
 
-const SEE_LINK_NAME_LAST = /\.(\w+)$/gm;
+const SEE_LINK_NAME_LAST = /\.(\w+)$/;
 
 const config = (function () {
 
@@ -49,12 +48,12 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         .replace(/\*/gm, 'any');
 
     if (MAP_TYPE_MINIARRAY.test(type)) {
-        type = type.replace(MAP_TYPE_MINIARRAY, '[$1]');
+        type = type.replace(new RegExp(MAP_TYPE_MINIARRAY, 'gm'), '[$1]');
     }
 
     if (tsd.IDeclaration.TYPE_SUFFIX.test(type)) {
         return type.replace(
-            tsd.IDeclaration.TYPE_NAME,
+            new RegExp(tsd.IDeclaration.TYPE_NAME, 'gm'),
             (match: string, type: string, suffix: string) => {
                 if (type.lastIndexOf('.') === (type.length - 1)) {
                     type = type.substr(0, (type.length - 1));
@@ -118,12 +117,12 @@ config.seeLink = function (name: string, kind: string, product?: string) {
         case 'function':
             return (
                 config.seeBaseUrl + 'class-reference/' +
-                name.replace(SEE_LINK_NAME_LAST, '#$1')
+                name.replace(new RegExp(SEE_LINK_NAME_LAST, 'gm'), '#$1')
             );
         case 'member':
             return (
                 config.seeBaseUrl + 'class-reference/' +
-                name.replace(SEE_LINK_NAME_LAST, '#.$1')
+                name.replace(new RegExp(SEE_LINK_NAME_LAST, 'gm'), '#.$1')
             );
         case 'interface':
         case 'option':
@@ -138,7 +137,6 @@ interface IConfig {
     cwd: string;
     mainModules: { [product: string]: string };
     optionTypeMapping: { [option: string]: string };
-    outputPath: string;
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;
