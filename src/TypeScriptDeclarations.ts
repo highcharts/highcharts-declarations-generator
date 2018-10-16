@@ -982,13 +982,10 @@ export abstract class IDeclaration extends Object {
     ): string {
 
         let root = this.root,
-            rootKind = root && root.kind,
             rootName = root && root.name,
             types = this.types.slice();
 
-        if (rootName &&
-            rootKind === 'namespace'
-        ) {
+        if (rootName) {
             types = IDeclaration.simplifyType((rootName + '.'), ...types);
         }
 
@@ -2304,15 +2301,17 @@ export class PropertyDeclaration extends IDeclaration {
         let childIndent = indent + '    ',
             renderedMember = this.name.replace(':', ': ');
 
+        // special treatment for indexers
         if (renderedMember[0] === '[' &&
             renderedMember.indexOf(' ') > -1
         ) {
 
             let root = this.root,
-                rootName = (root && root.name);
+                rootName = root && root.name;
 
             if (rootName) {
 
+                // type is part of the member name
                 let typePosition = (renderedMember.lastIndexOf(' ') + 1),
                     type = renderedMember.substr(typePosition);
 

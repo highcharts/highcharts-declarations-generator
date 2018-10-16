@@ -1,5 +1,4 @@
 {
-    "outputPath": "../highcharts-typescript-beta/",
     "seeBaseUrl": "https://api.highcharts.com/",
     "treeNamespaceJsonFile": "tree-namespace.json",
     "treeOptionsJsonFile": "tree.json",
