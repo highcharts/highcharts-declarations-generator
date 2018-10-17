@@ -281,7 +281,6 @@ class Generator {
             );
             this.moduleGlobal.exports.push(
                 'export = Highcharts;',
-                'export default Highcharts;',
                 'export as namespace Highcharts;'
             );
         } else {

@@ -2166,6 +2166,10 @@ export class ParameterDeclaration extends IDeclaration {
      */
     public renderParameterDescription (indent: string = ''): string {
 
+        if (!this.description) {
+            return '';
+        }
+
         let defaultValue = (this.defaultValue || '').toString(),
             renderedTypes = '@param ' + this.name;
 
