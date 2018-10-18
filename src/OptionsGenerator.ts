@@ -13,11 +13,11 @@ import * as utils from './Utilities';
 
 export function generate (
     optionsJSON: utils.Dictionary<parser.INode>
-): Promise<utils.Dictionary<tsd.IDeclaration>> {
+): Promise<utils.Dictionary<tsd.ModuleGlobalDeclaration>> {
     return new Promise((resolve, reject) => {
 
         let productNamespaces = (
-            new utils.Dictionary<tsd.IDeclaration>()
+            new utils.Dictionary<tsd.ModuleGlobalDeclaration>()
         );
 
         Object
@@ -131,7 +131,7 @@ class Generator {
         optionsJSON: utils.Dictionary<parser.INode>
     ) {
 
-        this._mainNamespace = new tsd.NamespaceDeclaration('Highcharts');
+        this._mainNamespace = new tsd.ModuleGlobalDeclaration('Highcharts');
         this._product = product;
         this._seriesTypes = [];
 
@@ -157,10 +157,10 @@ class Generator {
      *
      * */
 
-    public get mainNamespace(): tsd.NamespaceDeclaration {
+    public get mainNamespace(): tsd.ModuleGlobalDeclaration {
         return this._mainNamespace;
     }
-    private _mainNamespace: tsd.NamespaceDeclaration;
+    private _mainNamespace: tsd.ModuleGlobalDeclaration;
 
     private _product: string;
 

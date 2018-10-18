@@ -13,7 +13,7 @@ import * as utils from './Utilities';
 
 export function generate(
     modulesDictionary: utils.Dictionary<parser.INode>,
-    optionsDeclarations: utils.Dictionary<tsd.IDeclaration>
+    optionsDeclarations: utils.Dictionary<tsd.ModuleGlobalDeclaration>
 ): Promise<void> {
 
     const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/;
@@ -262,16 +262,19 @@ class Generator {
         modulePath: string,
         node: parser.INode,
         globalDeclarations: tsd.IDeclaration,
-        optionDeclarations: tsd.IDeclaration
+        optionDeclarations: tsd.ModuleGlobalDeclaration
     ) {
 
         this._globalNamespace = globalDeclarations;
         this._mainNamespace = optionDeclarations;
-        this._moduleGlobal = new tsd.ModuleGlobalDeclaration();
         this._modulePath = modulePath;
 
         if (this.isMainModule) {
-            this.moduleGlobal.addChildren(this.mainNamespace);
+
+            this._moduleGlobal = optionDeclarations;
+
+            //this.moduleGlobal.addChildren(this.mainNamespace);
+
             this.moduleGlobal.imports.push(
                 ('import * as globals from "' + utils.relative(
                     modulePath, config.mainModules['highcharts'].replace(
@@ -279,11 +282,14 @@ class Generator {
                     ), true
                 ) + '";'),
             );
+
             this.moduleGlobal.exports.push(
-                'export = Highcharts;',
                 'export as namespace Highcharts;'
             );
+
         } else {
+
+            this._moduleGlobal = new tsd.ModuleGlobalDeclaration();
 
             let factoryDeclaration = new tsd.FunctionDeclaration(
                 'factory'
@@ -311,11 +317,14 @@ class Generator {
                     modulePath, config.mainModules['highcharts'], true
                 ) + '";')
             );
+
             this.moduleGlobal.addChildren(factoryDeclaration);
             this.moduleGlobal.exports.push('export default factory;');
+
         }
 
         this.generate(node);
+
     }
 
     /* *
@@ -394,20 +403,33 @@ class Generator {
                 this.generateProperty(sourceNode, targetDeclaration);
                 break;
             case 'typedef':
-                if (sourceNode.doclet.parameters ||
-                    sourceNode.doclet.return
-                ) {
-                    this.generateFunctionInterface(sourceNode, targetDeclaration);
-                }
-                else if (sourceNode.children &&
+                if (sourceNode.children &&
                     sourceNode.children.length > 0 &&
                     sourceNode.doclet.types &&
                     sourceNode.doclet.types[0] !== '*'
                 ) {
-                    this.generateInterface(sourceNode, targetDeclaration);
+                    if (sourceNode.doclet.parameters ||
+                        sourceNode.doclet.return
+                    ) {
+                        this.generateFunctionInterface(
+                            sourceNode, targetDeclaration
+                        );
+                    }
+                    else {
+                        this.generateInterface(sourceNode, targetDeclaration);
+                    }
                 }
                 else {
-                    this.generateType(sourceNode, targetDeclaration);
+                    if (sourceNode.doclet.parameters ||
+                        sourceNode.doclet.return
+                    ) {
+                        this.generateFunctionType(
+                            sourceNode, targetDeclaration
+                        );
+                    }
+                    else {
+                        this.generateType(sourceNode, targetDeclaration);
+                    }
                 }
                 break;
         }
@@ -725,6 +747,67 @@ class Generator {
         return declaration;
     }
 
+    private generateFunctionType (
+        sourceNode: parser.INode,
+        targetDeclaration: tsd.IDeclaration
+    ): tsd.FunctionTypeDeclaration {
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode),
+            declaration = new tsd.FunctionTypeDeclaration(doclet.name);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this.globalNamespace;
+        }
+        else if ((this.isMainModule ||
+            this.isOptionType(doclet.name)) &&
+            targetDeclaration.kind !== this.mainNamespace.kind
+        ) {
+            targetDeclaration = this.mainNamespace;
+        }
+
+        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
+
+        if (existingChild &&
+            existingChild.kind === 'type'
+        ) {
+            declaration = existingChild as tsd.FunctionTypeDeclaration;
+        }
+
+        if (doclet.description) {
+            declaration.description = doclet.description;
+        }
+
+        if (doclet.parameters) {
+            declaration.setParameters(
+                ...this.generateParameters(doclet.parameters)
+            );
+        }
+
+        if (doclet.return) {
+            if (doclet.return.description) {
+                declaration.typesDescription = doclet.return.description;
+            }
+            if (doclet.return.types) {
+                let mergedTypes = utils.uniqueArray(
+                    declaration.types,
+                    doclet.return.types
+                );
+                declaration.types.length = 0;
+                declaration.types.push(...mergedTypes);
+            }
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        if (!declaration.parent) {
+            targetDeclaration.addChildren(declaration);
+        }
+
+        return declaration;
+    }
+
     private generateFunctionInterface (
         sourceNode: parser.INode,
         targetDeclaration: tsd.IDeclaration
@@ -954,6 +1037,13 @@ class Generator {
         else if (this.isMainModule) {
             // use main namespace in highcharts.js
             declaration = this.mainNamespace;
+
+            if (declaration === this.mainNamespace) {
+                if (sourceNode.children) {
+                    this.generateChildren(sourceNode.children, declaration);
+                }
+                return declaration;
+            }
         }
         else {
             return this.generateModule(sourceNode, targetDeclaration);

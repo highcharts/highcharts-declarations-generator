@@ -934,13 +934,26 @@ export abstract class IDeclaration extends Object {
                     str += 'static ';
                 }
                 return str;
+            case 'namespace':
+                switch (this.parent && this.parent.name) {
+                    default:
+                        switch (this.kind) {
+                            default:
+                                return 'declare ';
+                            case 'function':
+                            case 'property':
+                                return 'export ';
+                        }
+                    case 'external:':
+                        return '';
+                }
             case 'global':
                 switch (this.kind) {
                     default:
-                        return 'declare ';
-                    case 'interface':
-                    case 'type':
                         return 'export ';
+                    case 'module':
+                    case 'namespace':
+                        return 'declare ';
                 }
         }
     }
@@ -1663,6 +1676,87 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         return (
             renderedDescription +
             indent + renderedFunction + ';\n'
+        );
+    }
+}
+
+
+
+/**
+ * Class for function type declarations in TypeScript.
+ *
+ * @extends IExtendedDeclaration
+ */
+export class FunctionTypeDeclaration extends IExtendedDeclaration {
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'type';
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this type declaration.
+     */
+    public clone (): TypeDeclaration {
+
+        let clone = new FunctionTypeDeclaration(this.name);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.typesDescription = this.typesDescription;
+        clone.events.push(...this.events.slice());
+        clone.see.push(...this.see.slice());
+        clone.types.push(...this.types.slice());
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+        clone.setParameters(...this.getParameters().map(
+            parameter => parameter.clone()
+        ));
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of this type declaration.
+     *
+     * @param indent
+     *        The indentation string for formatting.
+     */
+    public toString(indent: string = ''): string {
+
+        let renderedDescription = this.renderExtendedDescription(indent),
+            renderedParameters = this.renderParameterBrackets(),
+            renderedScope = this.renderScopePrefix(),
+            renderedType = this.renderTypes(true);
+        
+        if (!renderedType) {
+            renderedType = 'void';
+        }
+
+        renderedType = renderedParameters + ' => ' + renderedType;
+        renderedType = 'type ' + this.name + ' = ' + renderedType + ';';
+
+        if (renderedScope) {
+            renderedType = renderedScope + renderedType;
+        }
+
+        return (
+            renderedDescription +
+            indent + renderedType + '\n'
         );
     }
 }
@@ -2415,7 +2509,7 @@ export class TypeDeclaration extends IDeclaration {
         let childIndent = indent + '    ',
             renderedChildren = this.renderChildren(childIndent),
             renderedType = this.renderTypes(true);
-        
+
         if (!renderedType) {
             renderedType = 'any';
         }
