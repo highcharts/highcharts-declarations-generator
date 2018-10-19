@@ -289,7 +289,7 @@ class Generator {
 
         } else {
 
-            this._moduleGlobal = new tsd.ModuleGlobalDeclaration();
+            this._moduleGlobal = new tsd.ModuleGlobalDeclaration('Highcharts');
 
             let factoryDeclaration = new tsd.FunctionDeclaration(
                 'factory'
@@ -403,33 +403,31 @@ class Generator {
                 this.generateProperty(sourceNode, targetDeclaration);
                 break;
             case 'typedef':
-                if (sourceNode.children &&
-                    sourceNode.children.length > 0 &&
-                    sourceNode.doclet.types &&
-                    sourceNode.doclet.types[0] !== '*'
+                if (sourceNode.doclet.parameters ||
+                    sourceNode.doclet.return
                 ) {
-                    if (sourceNode.doclet.parameters ||
-                        sourceNode.doclet.return
+                    if (sourceNode.children &&
+                        sourceNode.children.length > 0
                     ) {
                         this.generateFunctionInterface(
                             sourceNode, targetDeclaration
                         );
                     }
                     else {
-                        this.generateInterface(sourceNode, targetDeclaration);
-                    }
-                }
-                else {
-                    if (sourceNode.doclet.parameters ||
-                        sourceNode.doclet.return
-                    ) {
                         this.generateFunctionType(
                             sourceNode, targetDeclaration
                         );
                     }
-                    else {
-                        this.generateType(sourceNode, targetDeclaration);
-                    }
+                }
+                else if (sourceNode.children &&
+                    sourceNode.children.length > 0 &&
+                    sourceNode.doclet.types &&
+                    sourceNode.doclet.types[0] !== '*'
+                ) {
+                    this.generateInterface(sourceNode, targetDeclaration);
+                }
+                else {
+                    this.generateType(sourceNode, targetDeclaration);
                 }
                 break;
         }
@@ -481,7 +479,7 @@ class Generator {
         if (doclet.types) {
             let mergedTypes = utils.uniqueArray(
                 declaration.types,
-                doclet.types.filter(type => !utils.isBasicType(type))
+                doclet.types.filter(type => type !== type.toLowerCase())
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
@@ -932,7 +930,7 @@ class Generator {
         if (doclet.types) {
             let mergedTypes = utils.uniqueArray(
                 declaration.types,
-                doclet.types.filter(type => !utils.isBasicType(type))
+                doclet.types.filter(type => type !== type.toLowerCase())
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
@@ -1217,7 +1215,7 @@ class Generator {
                 declaration.types,
                 doclet.types.filter(type =>
                     !sourceNode.children ||
-                    !utils.isBasicType(type)
+                    type !== type.toLowerCase()
                 )
             );
             declaration.types.length = 0;

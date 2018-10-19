@@ -258,19 +258,17 @@ class Generator {
                 .map(type => config.mapType(type))
                 .filter(type => type !== 'any')
                 .map(type => {
-                    if (type.indexOf('any') === -1 ||
-                        !GENERIC_ANY_TYPE.test(type) ||
-                        !interfaceDeclaration
+                    if (type.indexOf('any') > -1 &&
+                        GENERIC_ANY_TYPE.test(type) &&
+                        interfaceDeclaration
                     ) {
-                        return type;
-                    }
-                    else {
                         replacedAnyType = true;
                         return type.replace(
                             new RegExp(GENERIC_ANY_TYPE, 'gm'),
                             '$1' + interfaceDeclaration.name + '$2'
                         );
                     }
+                    return type;
                 });
 
             if (!replacedAnyType) {

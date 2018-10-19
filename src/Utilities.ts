@@ -51,10 +51,6 @@ export class Dictionary<T> {
      *
      * */
 
-    /**
-     * 
-     * @param {Dictionary} dictionary 
-     */
     public static values<T> (dictionary: Dictionary<T>): Array<T> {
         return Object
             .keys(dictionary)
@@ -66,6 +62,7 @@ export class Dictionary<T> {
      *  Static Properties
      *
      * */
+
     [key: string]: T;
 }
 
@@ -115,12 +112,13 @@ export function clone<T> (
 
     if (obj === null ||
         obj === undefined ||
-        isBasicType(typeof obj)
+        (typeof obj !== 'object' &&
+        isBasicType(typeof obj))
     ) {
         return obj;
     }
 
-    let nextDepth = (maxDepth - 1);
+    let nextMaxDepth = (maxDepth - 1);
 
     if (obj instanceof Array) {
 
@@ -134,10 +132,8 @@ export function clone<T> (
             duplicatedArray = obj.slice();
         }
 
-        if (maxDepth > 0) {
-            duplicatedArray.map(
-                item => clone(item, nextDepth, filterFn)
-            );
+        if (nextMaxDepth >= 0) {
+            duplicatedArray.map(item => clone(item, nextMaxDepth, filterFn));
         }
 
         return duplicatedArray as any;
@@ -155,14 +151,14 @@ export function clone<T> (
         keys = keys.filter(key => filterFn(originalObj[key], key, obj));
     }
 
-    if (maxDepth === 0) {
+    if (nextMaxDepth < 0) {
         keys.forEach(key => {
             duplicatedObj[key] = originalObj[key];
         });
     } else {
         keys.forEach(key => {
             duplicatedObj[key] = clone(
-                originalObj[key], nextDepth, filterFn
+                originalObj[key], nextMaxDepth, filterFn
             );
         });
     }
@@ -221,7 +217,6 @@ export function isCoreType (typeName: string): boolean {
     }
 
     switch (typeName) {
-        case 'any':
         case 'Array':
         case 'Boolean':
         case 'false':
