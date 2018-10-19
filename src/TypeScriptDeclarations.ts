@@ -157,7 +157,7 @@ export abstract class IDeclaration extends Object {
     /**
      * Finds all possible separator characters after a type name.
      */
-    public static readonly TYPE_SUFFIX: RegExp = /[\|\,\(\)\[\]\<\>]/;
+    public static readonly TYPE_SEPARATOR: RegExp = /[\|\,\(\)\[\]\<\>]/;
 
     /* *
      *
@@ -1009,15 +1009,18 @@ export abstract class IDeclaration extends Object {
         }
 
         if (filterFunctions) {
-            types = types.map(type => {
-                switch(type) {
-                    default:
-                        return type;
-                    case 'function':
-                    case 'Function':
-                        return '() => void';
-                }
-            });
+            types = types.map(type => type.replace(
+                    new RegExp(IDeclaration.TYPE_NAME, 'gm'),
+                    (match, name, separator) => {
+                        switch(name) {
+                            default:
+                                return match;
+                            case 'function':
+                            case 'Function':
+                                return '() => void' + separator;
+                        }
+                    }
+            ));
         }
 
         if (types.length === 0) {
@@ -1425,11 +1428,13 @@ export class ClassDeclaration extends IExtendedDeclaration {
             renderedDescription = this.renderDescription(indent);
 
         if (this.hasTypes) {
-            renderedClass += 'extends ' + this.renderTypes().replace('|', ', ');
+            renderedClass += (
+                ' extends ' + this.renderTypes().replace('|', ', ')
+            );
         }
 
         if (this.hasImplements) {
-            renderedClass += 'implements ' + this.implements.join(', ');
+            renderedClass += ' implements ' + this.implements.join(', ');
         }
 
         renderedClass = this.renderScopePrefix() + renderedClass;
