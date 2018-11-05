@@ -2,11 +2,7 @@
     "seeBaseUrl": "https://api.highcharts.com/",
     "treeNamespaceJsonFile": "tree-namespace.json",
     "treeOptionsJsonFile": "tree.json",
-    "mainModules": {
-        "highcharts": "code/highcharts",
-        "highstock": "code/highstock",
-        "highmaps": "code/highmaps"
-    },
+    "mainModule": "code/highcharts",
     "optionTypeMapping": {
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },

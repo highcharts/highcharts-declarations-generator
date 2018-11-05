@@ -4,7 +4,8 @@
  * 
  * */
 
-import * as tsd from './TypeScriptDeclarations';
+import * as TSD from './TypeScriptDeclarations';
+import * as Utils from './Utilities';
 
 const MAP_TYPE_MINIARRAY: RegExp = /Array<(["\w\.]+(?:<[^,]+>)?,\s*(?:["\w\.\,]+|\([^,]+\)|\[[^,]+\]|<[^,]+>)+)>/;
 
@@ -33,6 +34,8 @@ const config = (function () {
 
 }()) as IConfig;
 
+config.cgd = (config.cgd || Utils.parent(__dirname));
+
 config.cwd = (config.cwd || process.cwd());
 
 config.mapOptionType = function (option: string): string {
@@ -51,9 +54,9 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         type = type.replace(new RegExp(MAP_TYPE_MINIARRAY, 'gm'), '[$1]');
     }
 
-    if (tsd.IDeclaration.TYPE_SEPARATOR.test(type)) {
+    if (TSD.IDeclaration.TYPE_SEPARATOR.test(type)) {
         return type.replace(
-            new RegExp(tsd.IDeclaration.TYPE_NAME, 'gm'),
+            new RegExp(TSD.IDeclaration.TYPE_NAME, 'gm'),
             (match: string, type: string, suffix: string) => {
                 if (type.lastIndexOf('.') === (type.length - 1)) {
                     type = type.substr(0, (type.length - 1));
@@ -134,8 +137,9 @@ config.seeLink = function (name: string, kind: string, product?: string) {
 export = config;
 
 interface IConfig {
+    cgd: string;
     cwd: string;
-    mainModules: { [product: string]: string };
+    mainModule: string;
     optionTypeMapping: { [option: string]: string };
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
