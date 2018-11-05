@@ -4,12 +4,17 @@
  * 
  * */
 
-import * as config from './Config';
-import * as parser from './NamespaceParser';
-import * as utils from './Utilities';
+import * as Config from './Config';
+import * as Utils from './Utilities';
 
 export function generate(): Promise<void> {
-    return utils
-        .copyAll(config.cgd, config.mainModule)
-        .then(files => files.forEach(file => console.info('Saved', file)));
+
+    return Utils
+        .copyAll(
+            Utils.path(Config.cgd, 'static'),
+            Utils.path(Config.cwd, Utils.parent(Config.mainModule))
+        )
+        .then(files => files.forEach(
+            file => console.info('Saved', file.substr(Config.cwd.length + 1))
+        ));
 };

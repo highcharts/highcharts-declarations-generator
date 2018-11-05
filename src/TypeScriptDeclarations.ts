@@ -101,7 +101,9 @@ export abstract class IDeclaration extends Object {
     /**
      * Finds all type names.
      */
-    private static readonly EXTRACT_TYPE_NAMES: RegExp = /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/;
+    private static readonly EXTRACT_TYPE_NAMES: RegExp = (
+        /(?:[\w\.]+?|\"(?:[^\"]|\\\")*?\")(?=[\|\,\(\)\[\]\<\>]|$)/
+    );
 
     /**
      * Finds separator characters in fullnames.
@@ -141,7 +143,9 @@ export abstract class IDeclaration extends Object {
     /**
      * Finds path and match into four groups: scope, path, name, and extension.
      */
-    private static readonly PATH_ELEMENTS: RegExp = /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/;
+    private static readonly PATH_ELEMENTS: RegExp = (
+        /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/
+    );
 
     /**
      * Finds path separator
@@ -152,7 +156,9 @@ export abstract class IDeclaration extends Object {
      * Finds all type names and match into two groups: type name and separator
      * suffixes (or string end).
      */
-    public static readonly TYPE_NAME: RegExp = /([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")([\|\,\(\)\[\]\<\>]|$)/;
+    public static readonly TYPE_NAME: RegExp = (
+        /([\w\.]+?|\"(?:\\\\|\\\"|[^\"])*?\")([\|\,\(\)\[\]\<\>]|$)/
+    );
 
     /**
      * Finds all possible separator characters after a type name.
@@ -176,7 +182,9 @@ export abstract class IDeclaration extends Object {
         let extractedTypes = [] as Array<string>,
             search = new RegExp(IDeclaration.EXTRACT_TYPE_NAMES, 'gm');
 
-        types.forEach(type => extractedTypes.push(...(type.match(search) || [])));
+        types.forEach(type => extractedTypes.push(
+            ...(type.match(search) || [])
+        ));
 
         return extractedTypes;
     }
@@ -208,7 +216,10 @@ export abstract class IDeclaration extends Object {
         words.forEach(word => {
 
             if (!newLine && word === '') {
-                paddedStr += line.trimRight() + '\n' + linePrefix.trimRight() + '\n';
+                paddedStr += (
+                    line.trimRight() + '\n' +
+                    linePrefix.trimRight() + '\n'
+                );
                 newLine = true;
                 return;
             }
@@ -238,7 +249,9 @@ export abstract class IDeclaration extends Object {
      * @param withFullNames
      *        Array contains the full names of the spaces.
      */
-    public static namespaces (name: string, withFullNames: boolean = false): Array<string> {
+    public static namespaces (
+        name: string, withFullNames: boolean = false
+    ): Array<string> {
 
         if (!name) {
             return [];

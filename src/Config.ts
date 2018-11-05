@@ -141,6 +141,7 @@ interface IConfig {
     cwd: string;
     mainModule: string;
     optionTypeMapping: { [option: string]: string };
+    products: Array<string>;
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;

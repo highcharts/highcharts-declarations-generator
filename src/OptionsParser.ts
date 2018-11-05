@@ -4,9 +4,9 @@
  * 
  * */
 
-import * as config from './Config';
-import * as tsd from './TypeScriptDeclarations';
-import * as utils from './Utilities';
+import * as Config from './Config';
+import * as TSD from './TypeScriptDeclarations';
+import * as Utils from './Utilities';
 
 
 /**
@@ -15,7 +15,7 @@ import * as utils from './Utilities';
  * @param optionsJSON
  *        The JSON dictionary to parse.
  */
-export function parse(optionsJSON: utils.Dictionary<INode>): Promise<utils.Dictionary<INode>> {
+export function parse(optionsJSON: Utils.Dictionary<INode>): Promise<Utils.Dictionary<INode>> {
     return new Promise((resolve, reject) => {
 
         let parsedOptions = new Parser(optionsJSON);
@@ -47,7 +47,7 @@ class Parser extends Object {
      * @param optionsJSON
      *        The JSON dictionary to complete.
      */
-    public constructor (optionsJSON: utils.Dictionary<INode>) {
+    public constructor (optionsJSON: Utils.Dictionary<INode>) {
 
         super();
 
@@ -63,8 +63,7 @@ class Parser extends Object {
                     this.completeNodeExtensions(optionsJSON[key]);
                     this.completeNodeNames(optionsJSON[key], key);
                     this.completeNodeProducts(
-                        optionsJSON[key],
-                        Object.keys(config.mainModules)
+                        optionsJSON[key], Config.products
                     );
                     this.completeNodeTypes(optionsJSON[key]);
                 }
@@ -79,10 +78,10 @@ class Parser extends Object {
 
     private _clone?: INode;
 
-    public get options(): utils.Dictionary<INode> {
+    public get options(): Utils.Dictionary<INode> {
         return this._options;
     }
-    private _options: utils.Dictionary<INode>;
+    private _options: Utils.Dictionary<INode>;
 
     /* *
      *
@@ -117,14 +116,14 @@ class Parser extends Object {
                 key !== 'exclude' &&
                 typeof targetDoclet[key] === 'undefined'
             ))
-            .forEach(key => targetDoclet[key] = utils.clone(
+            .forEach(key => targetDoclet[key] = Utils.clone(
                 sourceDoclet[key], Number.MAX_SAFE_INTEGER
             ));
 
         Object
             .keys(sourceMeta)
             .filter(key => typeof targetMeta[key] === 'undefined')
-            .forEach(key => targetMeta[key] = utils.clone(
+            .forEach(key => targetMeta[key] = Utils.clone(
                 sourceMeta[key], Number.MAX_SAFE_INTEGER
             ));
 
@@ -271,7 +270,7 @@ class Parser extends Object {
 
         let mappedOptionType = (
             node.meta.fullname &&
-            config.mapOptionType(node.meta.fullname)
+            Config.mapOptionType(node.meta.fullname)
         );
 
         if (mappedOptionType) {
@@ -355,7 +354,7 @@ class Parser extends Object {
             meta: {}
         } as INode;
 
-        tsd.IDeclaration
+        TSD.IDeclaration
             .namespaces(nodeName)
             .every(spaceName => {
                 currentNode = currentNode.children[spaceName];
@@ -384,7 +383,7 @@ class Parser extends Object {
 // Level 1
 
 export interface INode {
-    children: utils.Dictionary<INode>;
+    children: Utils.Dictionary<INode>;
     doclet: IDoclet;
     meta: IMeta;
 }
@@ -395,7 +394,7 @@ export interface IDoclet {
     access?: string;
     context?: string;
     default?: IDefault;
-    defaultByProduct?: utils.Dictionary<string>;
+    defaultByProduct?: Utils.Dictionary<string>;
     defaultvalue?: string;
     deprecated?: boolean;
     description?: string;

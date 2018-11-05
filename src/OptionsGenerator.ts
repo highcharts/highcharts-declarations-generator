@@ -4,32 +4,19 @@
  * 
  * */
 
-import * as config from './Config';
-import * as parser from './OptionsParser';
-import * as tsd from './TypeScriptDeclarations';
-import * as utils from './Utilities';
+import * as Config from './Config';
+import * as Parser from './OptionsParser';
+import * as TSD from './TypeScriptDeclarations';
+import * as Utils from './Utilities';
 
 
 
 export function generate (
-    optionsJSON: utils.Dictionary<parser.INode>
-): Promise<utils.Dictionary<tsd.ModuleGlobalDeclaration>> {
+    optionsJSON: Utils.Dictionary<Parser.INode>
+): Promise<TSD.ModuleGlobalDeclaration> {
     return new Promise((resolve, reject) => {
-
-        let productNamespaces = (
-            new utils.Dictionary<tsd.ModuleGlobalDeclaration>()
-        );
-
-        Object
-            .keys(config.mainModules)
-            .forEach(product => {
-
-                let generator = new Generator(product, optionsJSON);
-                
-                productNamespaces[product] = generator.mainNamespace
-            }); 
-
-        resolve(productNamespaces);
+        const generator = new Generator(optionsJSON);
+        resolve(generator.mainNamespace);
     });
 }
 
@@ -47,7 +34,7 @@ class Generator {
      *
      * */
 
-    private static getCamelCaseName (node: parser.INode): string {
+    private static getCamelCaseName (node: Parser.INode): string {
 
         let name = (node.meta.fullname || node.meta.name || '');
 
@@ -55,25 +42,25 @@ class Generator {
             name = name.substr(11);
         }
 
-        return (tsd.IDeclaration
+        return (TSD.IDeclaration
             .namespaces(name)
-            .map(utils.capitalize)
+            .map(Utils.capitalize)
             .join('')
             .replace('Options', '') +
             'Options'
         );
     }
 
-    private static getNormalizedDoclet (node: parser.INode): parser.IDoclet {
+    private static getNormalizedDoclet (node: Parser.INode): Parser.IDoclet {
 
         let doclet = node.doclet,
             description = (node.doclet.description || '').trim(),
             name = (node.meta && (node.meta.fullname || node.meta.name) || ''),
             removedLinks = [] as Array<string>;
 
-        description = utils.removeExamples(description);
-        description = utils.removeLinks(description, removedLinks);
-        description = utils.transformLists(description);
+        description = Utils.removeExamples(description);
+        description = Utils.removeLinks(description, removedLinks);
+        description = Utils.transformLists(description);
 
         if (doclet.see) {
             removedLinks.push(...doclet.see);
@@ -82,7 +69,7 @@ class Generator {
 
         if (doclet.type && doclet.type.names) {
             doclet.type.names = doclet.type.names.map(
-                type => config.mapType(type)
+                type => Config.mapType(type)
             );
         }
         else {
@@ -94,7 +81,7 @@ class Generator {
             removedLinks.length = 0;
 
             doclet.products.forEach(product =>
-                removedLinks.push(config.seeLink(name, 'option', product))
+                removedLinks.push(Config.seeLink(name, 'option', product))
             );
 
             if (description &&
@@ -102,7 +89,7 @@ class Generator {
             ) {
                 description = (
                     '(' + doclet.products
-                        .map(utils.capitalize)
+                        .map(Utils.capitalize)
                         .join(', ') +
                     ') ' + description
                 );
@@ -111,7 +98,7 @@ class Generator {
 
         if (removedLinks.length > 0) {
             doclet.see = removedLinks
-                .map(link => utils.urls(link)[0])
+                .map(link => Utils.urls(link)[0])
                 .filter(link => !!link);
         }
 
@@ -127,12 +114,10 @@ class Generator {
      * */
 
     public constructor (
-        product: string,
-        optionsJSON: utils.Dictionary<parser.INode>
+        optionsJSON: Utils.Dictionary<Parser.INode>
     ) {
 
-        this._mainNamespace = new tsd.ModuleGlobalDeclaration('Highcharts');
-        this._product = product;
+        this._mainNamespace = new TSD.ModuleGlobalDeclaration('Highcharts');
         this._seriesTypes = [];
 
         this.generateInterfaceDeclaration({
@@ -157,12 +142,10 @@ class Generator {
      *
      * */
 
-    public get mainNamespace(): tsd.ModuleGlobalDeclaration {
+    public get mainNamespace(): TSD.ModuleGlobalDeclaration {
         return this._mainNamespace;
     }
-    private _mainNamespace: tsd.ModuleGlobalDeclaration;
-
-    private _product: string;
+    private _mainNamespace: TSD.ModuleGlobalDeclaration;
 
     private _seriesTypes: Array<string>;
 
@@ -173,23 +156,16 @@ class Generator {
      * */
 
     private generateInterfaceDeclaration (
-        sourceNode: parser.INode
-    ): (tsd.InterfaceDeclaration|undefined) {
+        sourceNode: Parser.INode
+    ): (TSD.InterfaceDeclaration|undefined) {
 
         if (sourceNode.doclet.access === 'private') {
             return undefined;
         }
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode);
-/*
-        if (doclet.products &&
-            doclet.products.indexOf(this._product) === -1
-        ) {
-            return;
-        }
- */
-        let name = Generator.getCamelCaseName(sourceNode),
-            declaration = new tsd.InterfaceDeclaration(name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode),
+            name = Generator.getCamelCaseName(sourceNode),
+            declaration = new TSD.InterfaceDeclaration(name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -201,7 +177,7 @@ class Generator {
 
         this.mainNamespace.addChildren(declaration);
 
-        utils.Dictionary
+        Utils.Dictionary
             .values(sourceNode.children)
             .forEach(child => {
                 if (name === 'SeriesOptions' &&
@@ -225,22 +201,16 @@ class Generator {
     }
 
     private generatePropertyDeclaration (
-        sourceNode: parser.INode,
-        targetDeclaration: tsd.IDeclaration
-    ): (tsd.PropertyDeclaration|undefined) {
+        sourceNode: Parser.INode,
+        targetDeclaration: TSD.IDeclaration
+    ): (TSD.PropertyDeclaration|undefined) {
 
         if (sourceNode.doclet.access === 'private') {
             return undefined;
         }
 
         let doclet = Generator.getNormalizedDoclet(sourceNode);
-/*
-        if (doclet.products &&
-            doclet.products.indexOf(this._product) === -1
-        ) {
-            return;
-        }
- */
+
         if (Object.keys(sourceNode.children).length > 0) {
 
             let interfaceDeclaration = this.generateInterfaceDeclaration(
@@ -255,7 +225,7 @@ class Generator {
             sourceNode.children = {};
             sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
-                .map(type => config.mapType(type))
+                .map(type => Config.mapType(type))
                 .filter(type => type !== 'any')
                 .map(type => {
                     if (type.indexOf('any') > -1 &&
@@ -278,7 +248,7 @@ class Generator {
             }
         }
 
-        let declaration = new tsd.PropertyDeclaration(
+        let declaration = new TSD.PropertyDeclaration(
                 sourceNode.meta.name || ''
             );
 
@@ -295,10 +265,10 @@ class Generator {
         let isValueType = false;
 
         if (doclet.values) {
-            let values = utils.json(doclet.values, true);
+            let values = Utils.json(doclet.values, true);
             if (values instanceof Array) {
-                let mergedTypes = utils.uniqueArray(
-                    declaration.types, values.map(config.mapValue)
+                let mergedTypes = Utils.uniqueArray(
+                    declaration.types, values.map(Config.mapValue)
                 );
                 declaration.types.length = 0;
                 declaration.types.push(...mergedTypes);
@@ -309,7 +279,7 @@ class Generator {
         if (!isValueType &&
             doclet.type
         ) {
-            let mergedTypes = utils.uniqueArray(
+            let mergedTypes = Utils.uniqueArray(
                 declaration.types, doclet.type.names
             );
             declaration.types.length = 0;
@@ -322,27 +292,18 @@ class Generator {
     }
 
     private generateSeriesTypeDeclaration (
-        sourceNode: parser.INode
-    ): (tsd.InterfaceDeclaration|undefined) {
+        sourceNode: Parser.INode
+    ): (TSD.InterfaceDeclaration|undefined) {
 
-        if (sourceNode.doclet.access === 'private') {
+        if (sourceNode.doclet.access === 'private' ||
+            !sourceNode.meta.name
+        ) {
             return undefined;
         }
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode);
-/*
-        if (doclet.products &&
-            doclet.products.indexOf(this._product) === -1
-        ) {
-            return;
-        }
- */
-        if (!sourceNode.meta.name) {
-            return;
-        }
-
-        let name = Generator.getCamelCaseName(sourceNode),
-            declaration = new tsd.InterfaceDeclaration(name);
+        let doclet = Generator.getNormalizedDoclet(sourceNode),
+            name = Generator.getCamelCaseName(sourceNode),
+            declaration = new TSD.InterfaceDeclaration(name);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -355,7 +316,7 @@ class Generator {
         declaration.types.push(
             (
                 'Highcharts.Plot' +
-                utils.capitalize(sourceNode.meta.name) +
+                Utils.capitalize(sourceNode.meta.name) +
                 'Options'
             ),
             'Highcharts.SeriesOptions'
@@ -372,10 +333,10 @@ class Generator {
 
         this.generatePropertyDeclaration(dataNode, declaration);
 
-        let typePropertyDeclaration = new tsd.PropertyDeclaration('type');
+        let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 
         typePropertyDeclaration.description = (
-            utils.capitalize(sourceNode.meta.name) + ' series type.'
+            Utils.capitalize(sourceNode.meta.name) + ' series type.'
         );
         typePropertyDeclaration.isOptional = true;
         typePropertyDeclaration.types.push('"' + sourceNode.meta.name + '"');
@@ -384,7 +345,7 @@ class Generator {
 
         (sourceNode.doclet.exclude || []).forEach(name => {
             if (!declaration.getChildren(name)) {
-                let excludeDeclaration = new tsd.PropertyDeclaration(name);
+                let excludeDeclaration = new TSD.PropertyDeclaration(name);
                 excludeDeclaration.isOptional = true;
                 excludeDeclaration.types.push('undefined');
                 declaration.addChildren(excludeDeclaration);
@@ -412,7 +373,7 @@ class Generator {
             return;
         }
 
-        let seriesTypeDeclaration = new tsd.TypeDeclaration('SeriesType');
+        let seriesTypeDeclaration = new TSD.TypeDeclaration('SeriesType');
 
         seriesTypeDeclaration.description = 'The possible series types.';
         seriesTypeDeclaration.types.push(...this._seriesTypes);

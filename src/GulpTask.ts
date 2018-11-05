@@ -4,35 +4,38 @@
  * 
  * */
 
-import * as colors from 'colors'; require('colors');
-import * as config from './Config';
-import * as namespaceGenerator from './NamespaceGenerator';
-import * as namespaceParser from './NamespaceParser';
-import * as optionsGenerator from './OptionsGenerator';
-import * as optionsParser from './OptionsParser';
-import * as tsd from './TypeScriptDeclarations';
-import * as utils from './Utilities';
+import * as Colors from 'colors'; require('colors');
+import * as Config from './Config';
+import * as NamespaceGenerator from './NamespaceGenerator';
+import * as NamespaceParser from './NamespaceParser';
+import * as OptionsGenerator from './OptionsGenerator';
+import * as OptionsParser from './OptionsParser';
+import * as StaticGenerator from './StaticGenerator';
+import * as Utils from './Utilities';
 
 
 
 export function task (done: Function) {
 
-    console.info(colors.yellow.bold(
+    console.info(Colors.yellow.bold(
         'Start creating TypeScript declarations...'
     ));
 
-    return utils
-        .load(config.treeOptionsJsonFile)
-        .then(optionsParser.parse)
-        .then(optionsGenerator.generate)
-        .then(optionsDeclarations => utils
-            .load(config.treeNamespaceJsonFile)
-            .then(namespaceParser.parseIntoFiles)
-            .then(filesDictionary => namespaceGenerator
-                .generate(filesDictionary, optionsDeclarations)
-            )
+    return Utils
+        .load(Config.treeOptionsJsonFile)
+        .then(OptionsParser.parse)
+        .then(OptionsGenerator.generate)
+        .then(optionsDeclarations => Utils
+            .load(Config.treeNamespaceJsonFile)
+            .then(NamespaceParser.parseIntoFiles)
+            .then(filesDictionary => Promise.all([
+                NamespaceGenerator.generate(
+                    filesDictionary, optionsDeclarations
+                ),
+                StaticGenerator.generate()
+            ]))
         )
-        .then(() => console.info(colors.green.bold(
+        .then(() => console.info(Colors.green.bold(
             'Finished creating TypeScript declarations.'
         )));
 }

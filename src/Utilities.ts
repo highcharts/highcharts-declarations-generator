@@ -6,10 +6,10 @@
 
 
 
-import * as fs from 'fs';
-import * as mkdirp from 'mkdirp';
-import * as path from 'path';
-import * as request from 'request';
+import * as FS from 'fs';
+import * as MkDirP from 'mkdirp';
+import * as Path from 'path';
+import * as Request from 'request';
 
 
 
@@ -41,7 +41,7 @@ export interface TypeTree extends Array<TypeTree> {
 
 
 /**
- * 
+ * Generic dictionary
  */
 export class Dictionary<T> {
 
@@ -70,7 +70,7 @@ export class Dictionary<T> {
 
 export function ajax (url: string): Promise<any> {
     return new Promise((resolve, reject) => {
-        request(url, (err, response, body) => {
+        Request(url, (err, response, body) => {
             if (err) {
                 reject(err);
             } else {
@@ -83,7 +83,7 @@ export function ajax (url: string): Promise<any> {
 
 
 export function base (filePath: string): string {
-    let slashIndex = filePath.lastIndexOf(path.sep),
+    let slashIndex = filePath.lastIndexOf(Path.sep),
         pointIndex = filePath.indexOf('.', slashIndex);
     if (pointIndex > slashIndex + 1) {
         return filePath.substring(0, pointIndex);
@@ -168,16 +168,93 @@ export function clone<T> (
 
 
 
-export function copy (sourceFilePath: string, targetFilePath: string): Promise<string> {
+export function copy (
+    sourceFilePath: string, targetFilePath: string
+): Promise<string> {
+
+    if (sourceFilePath[0] !== '/') {
+        sourceFilePath = Path.resolve(process.cwd(), sourceFilePath);
+    }
+
+    if (targetFilePath[0] !== '/') {
+        targetFilePath = Path.resolve(process.cwd(), targetFilePath);
+    }
+
     return new Promise((resolve, reject) => {
-        sourceFilePath = path.resolve(process.cwd(), sourceFilePath);
-        targetFilePath = path.resolve(process.cwd(), targetFilePath);
-        fs.copyFile(sourceFilePath, targetFilePath, (err) => {
+        MkDirP(Path.dirname(targetFilePath), err => {
+
             if (err) {
                 reject(err);
-            } else {
-                resolve(targetFilePath);
+                return;
             }
+
+            FS.copyFile(sourceFilePath, targetFilePath, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(targetFilePath);
+                }
+            });
+
+        });
+    });
+}
+
+
+
+export function copyAll (
+    sourcePath: string, targetPath: string, recursive: boolean = false
+): Promise<Array<string>> {
+
+    if (sourcePath[0] !== '/') {
+        sourcePath = Path.resolve(process.cwd(), sourcePath);
+    }
+
+    if (targetPath[0] !== '/') {
+        targetPath = Path.resolve(process.cwd(), targetPath);
+    }
+
+    return new Promise((resolve, reject) => {
+        FS.readdir(sourcePath, (err, files) => {
+
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            const copyPromises = [] as Array<Promise<string|Array<string>>>;
+
+            files.forEach(file => {
+
+                const source = Path.join(sourcePath, file);
+                const target = Path.join(targetPath, file);
+                const stat = FS.statSync(source);
+
+                if (stat.isFile()) {
+                    copyPromises.push(copy(source, target));
+                } else if (recursive && stat.isDirectory()) {
+                    copyPromises.push(copyAll(source, target));
+                }
+
+            });
+
+            Promise.all(copyPromises).then(results => {
+
+                const copiedFiles = [] as Array<string>;
+
+                results.forEach(result => {
+                    if (result instanceof Array) {
+                        copiedFiles.push(...result);
+                    }
+                    else {
+                        copiedFiles.push(result);
+                    }
+                });
+
+                resolve(copiedFiles);
+
+            });
+
         });
     });
 }
@@ -356,8 +433,8 @@ export function json (
 
 export function load (filePath: string): Promise<any> {
     return new Promise((resolve, reject) => {
-        filePath = path.resolve(process.cwd(), filePath);
-        fs.readFile(filePath, (err, data) => {
+        filePath = Path.resolve(process.cwd(), filePath);
+        FS.readFile(filePath, (err, data) => {
             if (err) {
                 reject(err);
             } else {
@@ -374,6 +451,18 @@ export function log<T> (obj: T): Promise<T> {
         console.log(obj);
         resolve(obj);
     });
+}
+
+
+
+export function parent (childPath: string): string {
+    return Path.dirname(childPath);
+}
+
+
+
+export function path (...pathes: Array<string>): string {
+    return Path.join(...pathes);
 }
 
 
@@ -397,39 +486,39 @@ export function relative (
         isFromFile = false,
         isToFile = false;
 
-    if (moduleMode || path.extname(fromPath)) {
-        fromDirectory = path.dirname(fromDirectory);
+    if (moduleMode || Path.extname(fromPath)) {
+        fromDirectory = Path.dirname(fromDirectory);
         isFromFile = true;
     }
 
-    if (moduleMode || path.extname(toPath)) {
-        toDirectory = path.dirname(toDirectory);
+    if (moduleMode || Path.extname(toPath)) {
+        toDirectory = Path.dirname(toDirectory);
         isToFile = true;
     }
 
-    let relativePath = path.relative(
+    let relativePath = Path.relative(
         fromDirectory, toDirectory
     );
 
     if (moduleMode &&
        relativePath[0] !== '.'
     ) {
-        if (relativePath[0] !== path.sep) {
-            relativePath = path.sep + relativePath;
+        if (relativePath[0] !== Path.sep) {
+            relativePath = Path.sep + relativePath;
         }
         relativePath = '.' + relativePath;
     }
 
     if (isToFile) {
         if (relativePath &&
-            relativePath[relativePath.length-1] !== path.sep
+            relativePath[relativePath.length-1] !== Path.sep
         ) {
-            relativePath += path.sep;
+            relativePath += Path.sep;
         }
-        return relativePath + path.basename(toPath);
+        return relativePath + Path.basename(toPath);
     } else {
         if (relativePath &&
-            relativePath[relativePath.length-1] === path.sep
+            relativePath[relativePath.length-1] === Path.sep
         ) {
             relativePath = relativePath.substr(0, (relativePath.length - 1));
         }
@@ -483,14 +572,14 @@ export function removeLinks(
 export function save (filePath: string, str: string): Promise<string> {
     return new Promise((resolve, reject) => {
 
-        filePath = path.resolve(process.cwd(), filePath);
+        filePath = Path.resolve(process.cwd(), filePath);
 
-        mkdirp(path.dirname(filePath), err => {
+        MkDirP(Path.dirname(filePath), err => {
             if (err) {
                 reject(err);
                 return;
             }
-            fs.writeFile(filePath, str, err => {
+            FS.writeFile(filePath, str, err => {
                 if (err) {
                     reject(err);
                 } else {

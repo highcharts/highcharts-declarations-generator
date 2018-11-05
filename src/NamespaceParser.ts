@@ -4,19 +4,16 @@
  * 
  * */
 
-import * as config from './Config';
-import * as utils from './Utilities';
-import * as tsd from './TypeScriptDeclarations';
+import * as Config from './Config';
+import * as Utils from './Utilities';
+import * as TSD from './TypeScriptDeclarations';
 
 
 
-export function parseIntoFiles(json: any): Promise<utils.Dictionary<INode>> {
-
+export function parseIntoFiles(json: any): Promise<Utils.Dictionary<INode>> {
     return new Promise((resolve, reject) => {
-
-        let modules = new utils.Dictionary<INode>(),
+        let modules = new Utils.Dictionary<INode>(),
             parser = new NamespaceParser(json, modules);
-
         resolve(modules);
     });
 }
@@ -32,8 +29,8 @@ class NamespaceParser {
      * */
 
     /**
-     * Compares two light doclets for basic equality. Returns true, if the doclet is
-     * basically equal.
+     * Compares two light doclets for basic equality. Returns true, if the
+     * doclet is basically equal.
      *
      * @param docletA
      *        First doclet to analyze.
@@ -43,15 +40,15 @@ class NamespaceParser {
      */
     private static isEqualDoclet (docletA: IDoclet, docletB: IDoclet): boolean {
 
-        let nameA = tsd.IDeclaration.namespaces(docletA.name).join('.'),
-            nameB = tsd.IDeclaration.namespaces(docletB.name).join('.');
+        let nameA = TSD.IDeclaration.namespaces(docletA.name).join('.'),
+            nameB = TSD.IDeclaration.namespaces(docletB.name).join('.');
 
         return (
             nameA === nameB &&
             (
                 Object.keys(docletA).length == 1 ||
                 Object.keys(docletB).length == 1 ||
-                utils.isDeepEqual(docletA, docletB)
+                Utils.isDeepEqual(docletA, docletB)
             )
         );
     }
@@ -72,7 +69,7 @@ class NamespaceParser {
      *        The module dictionary to copy the node in.
      */
     public constructor (
-        sourceNode: INode, targetModules: utils.Dictionary<INode>
+        sourceNode: INode, targetModules: Utils.Dictionary<INode>
     ) {
 
         this._targetModules = targetModules;
@@ -86,10 +83,10 @@ class NamespaceParser {
      *
      * */
 
-    public get targetModules (): utils.Dictionary<INode> {
+    public get targetModules (): Utils.Dictionary<INode> {
         return this._targetModules;
     }
-    private _targetModules: utils.Dictionary<INode>;
+    private _targetModules: Utils.Dictionary<INode>;
 
     /* *
      *
@@ -115,7 +112,7 @@ class NamespaceParser {
 
         let found = false,
             node = rootNode,
-            spaceNames = tsd.IDeclaration.namespaces(nodeName, true),
+            spaceNames = TSD.IDeclaration.namespaces(nodeName, true),
             indexEnd = (spaceNames.length - 1);
 
         spaceNames.forEach((spaceName, index) => {
@@ -193,62 +190,51 @@ class NamespaceParser {
     private findNodeInMainModules (nodeName: string): (INode|undefined) {
 
         let found = false,
-            mainModules = config.mainModules,
-            node = undefined as (INode|undefined),
-            spaceNames = tsd.IDeclaration.namespaces(nodeName, true),
+            mainModule = this.targetModules[Config.mainModule],
+            node = mainModule as (INode|undefined),
+            spaceNames = TSD.IDeclaration.namespaces(nodeName, true),
             indexEnd = (spaceNames.length - 1);
 
-        Object
-            .keys(mainModules)
-            .map(key => this.targetModules[mainModules[key]])
-            .some(mainModule => {
+        spaceNames.every((spaceName, index) => {
 
-                node = mainModule;
+            if (!node ||
+                !node.children ||
+                node.children.length === 0
+            ) {
+                return false;
+            }
 
-                spaceNames
-                    .every((spaceName, index) => {
+            node.children
+                .some(child => {
+                    if (child.doclet.name === spaceName) {
+                        node = child;
+                        return true;
+                    }
+                    else {
+                        node = undefined;
+                        return false;
+                    }
+                });
 
-                        if (!node ||
-                            !node.children ||
-                            node.children.length === 0
-                        ) {
-                            return false;
-                        }
+            if (node &&
+                node !== mainModule &&
+                Object.keys(node.doclet).length > 1
+            ) {
+                found = (index === indexEnd);
+                return true;
+            }
+            else {
+                return false;
+            }
 
-                        node.children
-                            .some(child => {
-                                if (child.doclet.name === spaceName) {
-                                    node = child;
-                                    return true;
-                                }
-                                else {
-                                    node = undefined;
-                                    return false;
-                                }
-                            });
+        });
 
-                        if (node &&
-                            node !== mainModule &&
-                            Object.keys(node.doclet).length > 1
-                        ) {
-                            found = (index === indexEnd);
-                            return true;
-                        }
-                        else {
-                            return false;
-                        }
-                    });
-
-                if (found) {
-                    return true;
-                }
-                else {
-                    node = undefined;
-                    return false;
-                };
-            });
-
-        return node;
+        if (found) {
+            return node;
+        }
+        else {
+            return undefined;
+        };
     }
 
     /**
@@ -299,7 +285,7 @@ class NamespaceParser {
             sourceMeta = sourceNode.meta;
 
         (sourceMeta.files || [])
-            .map(file => utils.base(file.path))
+            .map(file => Utils.base(file.path))
             .forEach(modulePath => {
 
                 let moduleNode = this.prepareModule(modulePath),
@@ -365,14 +351,14 @@ export interface IDoclet {
     kind: IKind;
     name: string;
     defaultValue?: (boolean | number | string);
-    events?: utils.Dictionary<IEvent>;
+    events?: Utils.Dictionary<IEvent>;
     fires?: Array<string>;
     isDeprecated?: boolean;
     isGlobal?: boolean;
     isOptional?: boolean;
     isPrivate?: boolean;
     isStatic?: boolean;
-    parameters?: utils.Dictionary<IParameter>;
+    parameters?: Utils.Dictionary<IParameter>;
     products?: Array<string>
     return?: IReturn;
     see?: Array<string>;
