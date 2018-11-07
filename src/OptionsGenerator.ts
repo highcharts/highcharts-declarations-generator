@@ -22,7 +22,7 @@ export function generate (
 
 
 
-const GENERIC_ANY_TYPE = /([\<\(\|])any([\|\)\>])/;
+const ANY_TYPE = /^any$|([\<\(\|])any([\|\)\>])/;
 
 
 
@@ -226,15 +226,14 @@ class Generator {
             sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
                 .map(type => Config.mapType(type))
-                .filter(type => type !== 'any')
+                .filter(type => type.indexOf('any') > -1)
                 .map(type => {
-                    if (type.indexOf('any') > -1 &&
-                        GENERIC_ANY_TYPE.test(type) &&
+                    if (ANY_TYPE.test(type) &&
                         interfaceDeclaration
                     ) {
                         replacedAnyType = true;
                         return type.replace(
-                            new RegExp(GENERIC_ANY_TYPE, 'gm'),
+                            new RegExp(ANY_TYPE, 'gm'),
                             '$1' + interfaceDeclaration.name + '$2'
                         );
                     }
