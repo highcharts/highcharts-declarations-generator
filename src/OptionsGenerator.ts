@@ -226,7 +226,6 @@ class Generator {
             sourceNode.doclet.type = (sourceNode.doclet.type || { names: [] });
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
                 .map(type => Config.mapType(type))
-                .filter(type => type.indexOf('any') > -1)
                 .map(type => {
                     if (ANY_TYPE.test(type) &&
                         interfaceDeclaration
@@ -248,8 +247,8 @@ class Generator {
         }
 
         let declaration = new TSD.PropertyDeclaration(
-                sourceNode.meta.name || ''
-            );
+            sourceNode.meta.name || ''
+        );
 
         if (doclet.description) {
             declaration.description = doclet.description;
