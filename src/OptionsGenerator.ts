@@ -165,7 +165,8 @@ class Generator {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             name = Generator.getCamelCaseName(sourceNode),
-            declaration = new TSD.InterfaceDeclaration(name);
+            declaration = new TSD.InterfaceDeclaration(name),
+            children = Utils.Dictionary.values(sourceNode.children);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -177,25 +178,28 @@ class Generator {
 
         this.mainNamespace.addChildren(declaration);
 
-        Utils.Dictionary
-            .values(sourceNode.children)
-            .forEach(child => {
-                if (name === 'SeriesOptions' &&
-                    Object.keys(child.children).length > 0
-                ) {
+        if (name === 'SeriesOptions') {
+            children
+                .filter(child => Object.keys(child.children).length === 0)
+                .forEach(child => this.generatePropertyDeclaration(
+                    child, declaration
+                ));
+            children
+                .filter(child => Object.keys(child.children).length > 0)
+                .forEach(child => {
                     let seriesDeclaration = this.generateSeriesTypeDeclaration(
-                        child
+                        child, declaration
                     );
                     if (seriesDeclaration) {
-                        this._seriesTypes.push(
-                            seriesDeclaration.fullName
-                        );
+                        this._seriesTypes.push(seriesDeclaration.fullName);
                     }
-                }
-                else {
-                    this.generatePropertyDeclaration(child, declaration)
-                }
-            });
+                });
+        }
+        else {
+            children.forEach(child => this.generatePropertyDeclaration(
+                child, declaration
+            ));
+        }
 
         return declaration;
     }
@@ -290,7 +294,8 @@ class Generator {
     }
 
     private generateSeriesTypeDeclaration (
-        sourceNode: Parser.INode
+        sourceNode: Parser.INode,
+        targetDeclaration: TSD.IDeclaration
     ): (TSD.InterfaceDeclaration|undefined) {
 
         if (sourceNode.doclet.access === 'private' ||
@@ -333,10 +338,6 @@ class Generator {
 
         let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 
-        typePropertyDeclaration.description = (
-            Utils.capitalize(sourceNode.meta.name) + ' series type.'
-        );
-        typePropertyDeclaration.isOptional = true;
         typePropertyDeclaration.types.push('"' + sourceNode.meta.name + '"');
 
         declaration.addChildren(typePropertyDeclaration);
@@ -380,7 +381,7 @@ class Generator {
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
-            'Array<SeriesOptions>' // + seriesTypeDeclaration.fullName + '>'
+            'Array<SeriesOptions|SeriesType>'
         );
     }
  
