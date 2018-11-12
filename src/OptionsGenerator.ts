@@ -262,7 +262,9 @@ class Generator {
             declaration.see.push(...doclet.see);
         }
 
-        declaration.isOptional = true;
+        if (sourceNode.meta.fullname !== 'series.type') {
+            declaration.isOptional = true;
+        }
 
         let isValueType = false;
 
@@ -338,6 +340,11 @@ class Generator {
 
         let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 
+        typePropertyDeclaration.description = (
+            '(' + Config.products.map(Utils.capitalize).join (', ') + ') ' +
+            'This property is only in TypeScript non-optional and might be ' +
+            '`undefined` in series objects from unknown sources.'
+        );
         typePropertyDeclaration.types.push('"' + sourceNode.meta.name + '"');
 
         declaration.addChildren(typePropertyDeclaration);
