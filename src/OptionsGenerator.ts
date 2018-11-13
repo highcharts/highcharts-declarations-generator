@@ -388,7 +388,7 @@ class Generator {
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
-            'Array<SeriesOptions|SeriesType>'
+            'Array<SeriesType>'
         );
     }
  
