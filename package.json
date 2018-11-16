@@ -12,13 +12,9 @@
         "@types/mkdirp": "*",
         "@types/node": "*",
         "@types/request": "*",
-        "async": "*",
         "colors": "*",
-        "dts-dom": "*",
-        "handlebars": "*",
         "mkdirp": "*",
         "request": "*",
-        "striptags": "*",
         "typescript": "*"
     },
     "scripts": {

@@ -1,9 +1,2 @@
 .DS_Store
-.vscode/
-node_modules
-highcharts.d.ts
-temp*.json
-cache/
-dist/
-lib/
-*.cache.json
+/node_modules
