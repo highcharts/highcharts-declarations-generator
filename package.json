@@ -1,7 +1,7 @@
 {
     "name": "highcharts-typescript-generator",
     "version": "1.0.0",
-    "author": "Chris Vasseng <christer@highsoft.com>",
+    "author": "Highsoft AS",
     "private": true,
     "main": "lib/GulpTask.js",
     "bin": {
