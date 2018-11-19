@@ -1256,16 +1256,29 @@ class Generator {
             return false;
         }
 
-        return (
-            TSD.IDeclaration
-                .extractTypeNames(...baseDeclaration.types)
-                .filter(type => !Utils.isCoreType(type))
-                .some(type => (type === name)) ||
-            baseDeclaration
+        let isOptionType = TSD.IDeclaration
+            .extractTypeNames(...baseDeclaration.types)
+            .filter(type => !Utils.isCoreType(type))
+            .some(type => (type === name));
+        
+        if (!isOptionType &&
+            baseDeclaration instanceof TSD.IExtendedDeclaration
+        ) {
+            isOptionType = baseDeclaration
+                .getParameters()
+                .map(param => TSD.IDeclaration.extractTypeNames(
+                    ...param.types
+                ))
+                .some(types => types.indexOf(name) > -1);
+        }
+
+        if (!isOptionType) {
+            isOptionType = baseDeclaration
                 .getChildren()
-                .filter(child => !Generator.OPTION_TYPE.test(child.name))
                 .some(child => this.isOptionType(name, child))
-        );
+        };
+
+        return isOptionType;
     }
 
     public toString (): string {
