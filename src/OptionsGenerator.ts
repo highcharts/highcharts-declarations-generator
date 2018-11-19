@@ -349,9 +349,9 @@ class Generator {
 
         declaration.addChildren(typePropertyDeclaration);
 
-        (sourceNode.doclet.exclude || []).forEach(name => {
-            if (!declaration.getChildren(name)) {
-                let excludeDeclaration = new TSD.PropertyDeclaration(name);
+        (sourceNode.doclet.exclude || []).forEach(exclude => {
+            if (!declaration.getChildren(exclude)) {
+                let excludeDeclaration = new TSD.PropertyDeclaration(exclude);
                 excludeDeclaration.isOptional = true;
                 excludeDeclaration.types.push('undefined');
                 declaration.addChildren(excludeDeclaration);
