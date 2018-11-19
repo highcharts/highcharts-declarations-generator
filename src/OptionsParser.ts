@@ -103,6 +103,7 @@ class Parser extends Object {
         let sourceDoclet = sourceNode.doclet as any,
             sourceMeta = sourceNode.meta as any,
             targetDoclet = targetNode.doclet as any,
+            targetExclude = (targetNode.doclet.exclude || []),
             targetMeta = targetNode.meta as any,
             targetName = (targetMeta.fullname || targetMeta.name);
 
@@ -129,6 +130,7 @@ class Parser extends Object {
 
         Object
             .keys(sourceChildren)
+            .filter(key => targetExclude.indexOf(key) === -1)
             .forEach(key => {
 
                 if (!targetChildren[key]) {
@@ -158,7 +160,6 @@ class Parser extends Object {
     private completeNodeExtensions(node: INode) {
 
         let nodeChildren = node.children,
-            nodeExcludes = (node.doclet.exclude || []),
             nodeExtends = (node.doclet.extends || '');
 
         if (nodeExtends) {
