@@ -7,6 +7,7 @@
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },
     "products": [
+        "gantt",
         "highcharts",
         "highstock",
         "highmaps"
