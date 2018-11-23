@@ -22,7 +22,7 @@ export function generate (
 
 
 
-const ANY_TYPE = /^any$|([\<\(\|])any([\|\)\>])/;
+const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
 
 
 
@@ -38,15 +38,11 @@ class Generator {
 
         let name = (node.meta.fullname || node.meta.name || '');
 
-        if (name.indexOf('Highcharts.') > -1) {
-            name = name.substr(11);
-        }
-
         return (TSD.IDeclaration
             .namespaces(name)
             .map(Utils.capitalize)
             .join('')
-            .replace('Options', '') +
+            .replace(/Options/g, '') +
             'Options'
         );
     }
@@ -127,7 +123,7 @@ class Generator {
             },
             meta: {
                 filename: '',
-                fullname: 'Highcharts.Options',
+                fullname: 'options',
                 line: 0,
                 lineEnd: 0
             }
@@ -213,14 +209,16 @@ class Generator {
             return undefined;
         }
 
+        const debug = (sourceNode.meta.fullname === 'colorAxis.currentDateIndicator');
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (Object.keys(sourceNode.children).length > 0) {
 
-            let interfaceDeclaration = this.generateInterfaceDeclaration(
-                    sourceNode
-                ),
-                replacedAnyType = false;
+            const interfaceDeclaration = this.generateInterfaceDeclaration(
+                sourceNode
+            );
+
+            let replacedAnyType = false;
 
             if (!interfaceDeclaration) {
                 return;
@@ -330,7 +328,7 @@ class Generator {
         let dataNode = sourceNode.children['data'];
 
         if (!dataNode) {
-            console.error('No data description found!');
+            throw new Error(`No data description for series "${name}" found!`);
             return;
         }
 
@@ -366,7 +364,7 @@ class Generator {
         let optionsDeclaration = this.mainNamespace.getChildren('Options')[0];
 
         if (!optionsDeclaration) {
-            console.error('Highcharts.Options not declared!');
+            throw new Error('Highcharts.Options not declared!');
             return;
         }
 
@@ -375,7 +373,7 @@ class Generator {
         )[0];
 
         if (!seriesPropertyDeclaration) {
-            console.error('Highcharts.Options#series not declared');
+            throw new Error('Highcharts.Options#series not declared!');
             return;
         }
 

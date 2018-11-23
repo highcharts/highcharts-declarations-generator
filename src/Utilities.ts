@@ -133,7 +133,7 @@ export function clone<T> (
         }
 
         if (nextMaxDepth >= 0) {
-            duplicatedArray.map(item => clone(item, nextMaxDepth, filterFn));
+            duplicatedArray = duplicatedArray.map(item => clone(item, nextMaxDepth, filterFn));
         }
 
         return duplicatedArray as any;

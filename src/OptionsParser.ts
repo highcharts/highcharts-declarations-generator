@@ -88,7 +88,7 @@ class Parser extends Object {
      *  Functions
      *
      * */
-
+    private _cloneC = 0;
     /**
      * Transfers non existing properties and children to a node.
      *
@@ -112,11 +112,7 @@ class Parser extends Object {
 
         Object
             .keys(sourceDoclet)
-            .filter(key => (
-                key !== 'extends' &&
-                key !== 'exclude' &&
-                typeof targetDoclet[key] === 'undefined'
-            ))
+            .filter(key => typeof targetDoclet[key] === 'undefined')
             .forEach(key => targetDoclet[key] = Utils.clone(
                 sourceDoclet[key], Number.MAX_SAFE_INTEGER
             ));
@@ -159,47 +155,40 @@ class Parser extends Object {
      */
     private completeNodeExtensions(node: INode) {
 
-        let nodeChildren = node.children,
-            nodeExtends = (node.doclet.extends || '');
+        const nodeChildren = node.children;
+        const nodeExtends = (node.doclet.extends || '');
 
         if (nodeExtends) {
 
             delete node.doclet.extends;
 
             nodeExtends
-                .split(',')
+                .split(/[\s,]+/g)
                 .sort(xName => xName === 'series' ? 1 : 0)
                 .map(xName => xName === 'series' ? 'plotOptions.series' : xName)
                 .forEach(xName => {
 
-                    if (xName.indexOf('{') > -1) {
-                        console.error(
-                            'Extends: ' +
-                            'Curly brackets notation should be avoided.',
-                            xName
-                        );
-                        xName = xName.substr(1, xName.length - 2);
-                    }
-
                     let xNode = this.findNode(xName);
 
                     if (!xNode) {
-                        console.error(
-                            'Extends: Node ' + xName + ' not found.',
-                            node.meta.fullname || node.meta.name
+                        throw new Error(
+                            'Extends: Node ' + xName + ' not found! ' +
+                            'Referenced by ' + (
+                                node.meta.fullname || node.meta.name
+                            ) + '.'
                         );
                         return;
                     }
 
                     this.cloneNodeInto(xNode, node);
+
                 });
+
         }
 
         Object
             .keys(nodeChildren)
-            .forEach(key => this.completeNodeExtensions(
-                nodeChildren[key]
-            ));
+            .forEach(key => this.completeNodeExtensions(nodeChildren[key]));
     }
 
     /**
@@ -312,7 +301,7 @@ class Parser extends Object {
                     return;
                 case '0':
                 case '1':
-                    node.doclet.type = { names: [ 'number ' ] };
+                    node.doclet.type = { names: [ 'number' ] };
                     return;
                 case 'null':
                 case 'undefined':
