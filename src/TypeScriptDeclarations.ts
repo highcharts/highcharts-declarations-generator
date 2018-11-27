@@ -1317,7 +1317,10 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             name = declaration.name;
 
             if (parameters[name]) {
-                throw new Error('Parameter declaration with this name already added.');
+                throw new Error(
+                    'Parameter declaration with the name "' +
+                    name + '" already added to "' + this.fullName + '".'
+                );
             }
 
             parameters[name] = declaration;
