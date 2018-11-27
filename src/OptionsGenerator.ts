@@ -377,16 +377,20 @@ class Generator {
             return;
         }
 
-        let seriesTypeDeclaration = new TSD.TypeDeclaration('SeriesType');
+        let seriesTypeDeclaration = new TSD.TypeDeclaration(
+            'SeriesOptionsType'
+        );
 
-        seriesTypeDeclaration.description = 'The possible series types.';
+        seriesTypeDeclaration.description = (
+            'The possible types of series options.'
+        );
         seriesTypeDeclaration.types.push(...this._seriesTypes);
 
         this.mainNamespace.addChildren(seriesTypeDeclaration);
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
-            'Array<SeriesType>'
+            'Array<Highcharts.SeriesOptionsType>'
         );
     }
  
