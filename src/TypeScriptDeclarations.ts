@@ -15,7 +15,7 @@
 /**
  * Declaration kinds as a typed string.
  */
-type Kinds = (
+export type Kinds = (
     'global' |
     'type' |
     'interface' |

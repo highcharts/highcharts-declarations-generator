@@ -11,6 +11,10 @@ import * as Utils from './Utilities';
 
 
 
+type DeclarationDictionary = Utils.Dictionary<Array<TSD.Kinds>>;
+
+
+
 export function generate(
     modulesDictionary: Utils.Dictionary<Parser.INode>,
     optionsDeclarations: TSD.ModuleGlobalDeclaration
@@ -23,7 +27,8 @@ export function generate(
     );
 
     // no product specific options tree for convenience
-    let globalDtsFilePath = Config.mainModule.replace(
+    let globalDeclarationsDictionary = new Utils.Dictionary<Array<TSD.Kinds>>(),
+        globalDtsFilePath = Config.mainModule.replace(
             /highcharts$/, 'globals.d.ts'
         ),
         mainGlobalDeclarations = new TSD.ModuleGlobalDeclaration(),
@@ -37,7 +42,8 @@ export function generate(
                 modulePath,
                 modulesDictionary[modulePath],
                 mainGlobalDeclarations,
-                optionsDeclarations
+                optionsDeclarations,
+                globalDeclarationsDictionary
             );
 
             return {
@@ -273,9 +279,11 @@ class Generator {
         modulePath: string,
         node: Parser.INode,
         globalDeclarations: TSD.IDeclaration,
-        optionDeclarations: TSD.ModuleGlobalDeclaration
+        optionDeclarations: TSD.ModuleGlobalDeclaration,
+        globalDeclarationsDictionary: DeclarationDictionary
     ) {
 
+        this._globalDeclarationsDictionary = globalDeclarationsDictionary;
         this._globalNamespace = globalDeclarations;
         this._mainNamespace = optionDeclarations;
         this._modulePath = modulePath;
@@ -343,6 +351,8 @@ class Generator {
      *  Properties
      *
      * */
+
+    private _globalDeclarationsDictionary: DeclarationDictionary;
 
     public get globalNamespace (): TSD.IDeclaration {
         return this._globalNamespace;
@@ -457,7 +467,7 @@ class Generator {
     private generateClass (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration
-    ): TSD.ClassDeclaration {
+    ): (TSD.ClassDeclaration|undefined) {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = new TSD.ClassDeclaration(doclet.name);
@@ -473,11 +483,13 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'class'
-        ) {
-            declaration = existingChild as TSD.ClassDeclaration;
+        if (existingChild instanceof TSD.ClassDeclaration) {
+            declaration = existingChild;
         }
+        else if (this.isDeclaredSomewhere(targetDeclaration, declaration)) {
+            return;
+        }
+
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -498,6 +510,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -522,7 +535,7 @@ class Generator {
             (targetDeclaration.getChildren(declaration.name) || []).some(
                 existingChild => {
                     if (existingChild.description &&
-                        existingChild.kind === 'constructor'
+                        existingChild instanceof TSD.ConstructorDeclaration
                     ) {
                         declaration.description = existingChild.description;
                         return true;
@@ -620,12 +633,14 @@ class Generator {
                 new TSD.NamespaceDeclaration('external:')
             );
 
+        if (!globalDeclaration.parent) {
+            this._moduleGlobal.addChildren(globalDeclaration);
+        }
+
         let existingChild = globalDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'interface'
-        ) {
-            declaration = existingChild as TSD.InterfaceDeclaration;
+        if (existingChild instanceof TSD.InterfaceDeclaration) {
+            declaration = existingChild;
         }
 
         if (doclet.description) {
@@ -638,10 +653,6 @@ class Generator {
 
         if (!declaration.parent) {
             globalDeclaration.addChildren(declaration);
-        }
-
-        if (!globalDeclaration.parent) {
-            this._moduleGlobal.addChildren(globalDeclaration);
         }
 
         if (sourceNode.children) {
@@ -756,10 +767,99 @@ class Generator {
         return declaration;
     }
 
+    private generateFunctionInterface (
+        sourceNode: Parser.INode,
+        targetDeclaration: TSD.IDeclaration
+    ): (TSD.InterfaceDeclaration|undefined) {
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode),
+            declaration = new TSD.InterfaceDeclaration(doclet.name);
+
+        if (doclet.isGlobal) {
+            targetDeclaration = this.globalNamespace;
+        }
+        else if ((this.isMainModule ||
+            this.isMainMember(doclet.name)) &&
+            targetDeclaration.kind !== this.mainNamespace.kind
+        ) {
+            targetDeclaration = this.mainNamespace;
+        }
+
+        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
+
+        if (existingChild instanceof TSD.InterfaceDeclaration) {
+            declaration = existingChild;
+        }
+
+        if (doclet.description &&
+            !this.isDeclaredSomewhere(targetDeclaration, declaration)
+        ) {
+            declaration.description = doclet.description;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        if (!declaration.parent) {
+            targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
+        }
+
+        let functionDeclaration = new TSD.FunctionDeclaration('');
+
+        existingChild = targetDeclaration.getChildren(
+            functionDeclaration.name
+        )[0];
+
+        if (existingChild instanceof TSD.FunctionDeclaration) {
+            functionDeclaration = existingChild;
+        }
+
+        if (doclet.description) {
+            functionDeclaration.description = doclet.description;
+        }
+
+        if (doclet.parameters &&
+            !functionDeclaration.hasParameters
+        ) {
+            functionDeclaration.setParameters(
+                ...this.generateParameters(doclet.parameters)
+            );
+        }
+
+        if (doclet.return) {
+            if (doclet.return.description) {
+                functionDeclaration.typesDescription = (
+                    doclet.return.description
+                );
+            }
+            if (doclet.return.types) {
+                let mergedTypes = Utils.uniqueArray(
+                    functionDeclaration.types,
+                    doclet.return.types
+                );
+                functionDeclaration.types.length = 0;
+                functionDeclaration.types.push(...mergedTypes);
+            }
+        }
+
+        if (!functionDeclaration.parent) {
+            declaration.addChildren(functionDeclaration);
+            this.setDeclared(functionDeclaration);
+        }
+
+        if (sourceNode.children) {
+            this.generateChildren(sourceNode.children, declaration);
+        }
+
+        return declaration;
+    }
+
     private generateFunctionType (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration
-    ): TSD.FunctionTypeDeclaration {
+    ): (TSD.FunctionTypeDeclaration|undefined) {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = new TSD.FunctionTypeDeclaration(doclet.name);
@@ -768,7 +868,7 @@ class Generator {
             targetDeclaration = this.globalNamespace;
         }
         else if ((this.isMainModule ||
-            this.isOptionType(doclet.name)) &&
+            this.isMainMember(doclet.name)) &&
             targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
@@ -776,17 +876,20 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'type'
-        ) {
-            declaration = existingChild as TSD.FunctionTypeDeclaration;
+        if (existingChild instanceof TSD.FunctionTypeDeclaration) {
+            declaration = existingChild;
+        }
+        else if (this.isDeclaredSomewhere(targetDeclaration, declaration)) {
+            return;
         }
 
         if (doclet.description) {
             declaration.description = doclet.description;
         }
 
-        if (doclet.parameters) {
+        if (doclet.parameters &&
+            !declaration.hasParameters
+        ) {
             declaration.setParameters(
                 ...this.generateParameters(doclet.parameters)
             );
@@ -812,93 +915,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
-        }
-
-        return declaration;
-    }
-
-    private generateFunctionInterface (
-        sourceNode: Parser.INode,
-        targetDeclaration: TSD.IDeclaration
-    ): TSD.InterfaceDeclaration {
-
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            declaration = new TSD.InterfaceDeclaration(doclet.name);
-
-        if (doclet.isGlobal) {
-            targetDeclaration = this.globalNamespace;
-        }
-        else if ((this.isMainModule ||
-            this.isOptionType(doclet.name)) &&
-            targetDeclaration.kind !== this.mainNamespace.kind
-        ) {
-            targetDeclaration = this.mainNamespace;
-        }
-
-        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
-
-        if (existingChild &&
-            existingChild.kind === 'interface'
-        ) {
-            declaration = existingChild as TSD.InterfaceDeclaration;
-        }
-
-        if (doclet.description) {
-            declaration.description = doclet.description;
-        }
-
-        if (doclet.see) {
-            declaration.see.push(...doclet.see);
-        }
-
-        let functionDeclaration = new TSD.FunctionDeclaration('');
-
-        existingChild = targetDeclaration.getChildren(
-            functionDeclaration.name
-        )[0];
-
-        if (existingChild &&
-            existingChild.kind === 'function'
-        ) {
-            functionDeclaration = existingChild as TSD.FunctionDeclaration;
-        }
-
-        if (doclet.description) {
-            functionDeclaration.description = doclet.description;
-        }
-
-        if (doclet.parameters) {
-            functionDeclaration.setParameters(
-                ...this.generateParameters(doclet.parameters)
-            );
-        }
-
-        if (doclet.return) {
-            if (doclet.return.description) {
-                functionDeclaration.typesDescription = (
-                    doclet.return.description
-                );
-            }
-            if (doclet.return.types) {
-                let mergedTypes = Utils.uniqueArray(
-                    functionDeclaration.types,
-                    doclet.return.types
-                );
-                functionDeclaration.types.length = 0;
-                functionDeclaration.types.push(...mergedTypes);
-            }
-        }
-
-        if (!declaration.parent) {
-            targetDeclaration.addChildren(declaration);
-        }
-
-        if (!functionDeclaration.parent) {
-            declaration.addChildren(functionDeclaration);
-        }
-
-        if (sourceNode.children) {
-            this.generateChildren(sourceNode.children, declaration);
+            this.setDeclared(declaration);
         }
 
         return declaration;
@@ -916,7 +933,7 @@ class Generator {
             targetDeclaration = this.globalNamespace;
         }
         else if ((this.isMainModule ||
-            this.isOptionType(doclet.name)) &&
+            this.isMainMember(doclet.name)) &&
             targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
@@ -924,13 +941,13 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'interface'
-        ) {
-            declaration = existingChild as TSD.InterfaceDeclaration;
+        if (existingChild instanceof TSD.InterfaceDeclaration) {
+            declaration = existingChild;
         }
 
-        if (doclet.description) {
+        if (doclet.description &&
+            !this.isDeclaredSomewhere(targetDeclaration, declaration)
+        ) {
             declaration.description = doclet.description;
         }
 
@@ -949,6 +966,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -976,10 +994,13 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(Config.mainModule)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'module'
+        if (existingChild instanceof TSD.ModuleDeclaration) {
+            declaration = existingChild;
+        }
+        if (doclet.description &&
+            !this.isDeclaredSomewhere(targetDeclaration, declaration)
         ) {
-            declaration = existingChild as TSD.ModuleDeclaration;
+            declaration.description = doclet.description;
         }
 
         if (doclet.see) {
@@ -988,6 +1009,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -1065,10 +1087,8 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'namespace'
-        ) {
-            declaration = existingChild as TSD.NamespaceDeclaration;
+        if (existingChild instanceof TSD.NamespaceDeclaration) {
+            declaration = existingChild;
         }
 
         if (doclet.description) {
@@ -1081,6 +1101,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -1130,7 +1151,7 @@ class Generator {
     private generateProperty (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration
-    ): TSD.PropertyDeclaration {
+    ): (TSD.PropertyDeclaration|undefined) {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = new TSD.PropertyDeclaration(doclet.name);
@@ -1142,15 +1163,15 @@ class Generator {
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
         if (existingChild &&
-            ((!doclet.isStatic &&
-            existingChild.kind === 'property') ||
-            (doclet.isStatic &&
-            existingChild.kind === 'static property'))
+            existingChild instanceof TSD.PropertyDeclaration &&
+            doclet.isStatic === existingChild.isStatic
         ) {
-            declaration = existingChild as TSD.PropertyDeclaration;
+            declaration = existingChild;
         }
 
-        if (doclet.description) {
+        if (doclet.description &&
+            !this.isDeclaredSomewhere(targetDeclaration, declaration)
+        ) {
             declaration.description = doclet.description;
         }
 
@@ -1181,6 +1202,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         return declaration;
@@ -1189,17 +1211,17 @@ class Generator {
     private generateType (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration
-    ): TSD.TypeDeclaration {
+    ): (TSD.TypeDeclaration|undefined) {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = new TSD.TypeDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            // global helper types are always limited to the module scope
+            // global helper types are always limited to the main module scope
             targetDeclaration = this.globalNamespace;
         }
         else if ((this.isMainModule ||
-            this.isOptionType(doclet.name)) &&
+            this.isMainMember(doclet.name)) &&
             targetDeclaration.kind !== this.mainNamespace.kind
         ) {
             targetDeclaration = this.mainNamespace;
@@ -1207,10 +1229,11 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild.kind === 'type'
-        ) {
-            declaration = existingChild as TSD.TypeDeclaration;
+        if (existingChild instanceof TSD.TypeDeclaration) {
+            declaration = existingChild;
+        }
+        else if (this.isDeclaredSomewhere(targetDeclaration, declaration)) {
+            return;
         }
 
         if (doclet.description) {
@@ -1235,6 +1258,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -1244,7 +1268,28 @@ class Generator {
         return declaration;
     }
 
-    private isOptionType (
+    private isDeclaredSomewhere (
+        targetDeclaration: TSD.IDeclaration,
+        declaration: TSD.IDeclaration,
+        ...declarationKind: Array<TSD.Kinds>
+    ): boolean {
+
+        const dictionary = this._globalDeclarationsDictionary;
+        const fullName = (
+            targetDeclaration.fullName + '.' + declaration.fullName
+        );
+
+        if (declarationKind.length === 0) {
+            return !!dictionary[fullName];
+        }
+        else {
+            return declarationKind.some(
+                kind => dictionary[fullName].indexOf(kind) > -1
+            );
+        }
+    }
+
+    private isMainMember (
         name: string, baseDeclaration: TSD.IDeclaration = this.mainNamespace
     ): boolean {
 
@@ -1256,15 +1301,15 @@ class Generator {
             return false;
         }
 
-        let isOptionType = TSD.IDeclaration
+        let isMainType = TSD.IDeclaration
             .extractTypeNames(...baseDeclaration.types)
             .filter(type => !Utils.isCoreType(type))
             .some(type => (type === name));
         
-        if (!isOptionType &&
+        if (!isMainType &&
             baseDeclaration instanceof TSD.IExtendedDeclaration
         ) {
-            isOptionType = baseDeclaration
+            isMainType = baseDeclaration
                 .getParameters()
                 .map(param => TSD.IDeclaration.extractTypeNames(
                     ...param.types
@@ -1272,13 +1317,27 @@ class Generator {
                 .some(types => types.indexOf(name) > -1);
         }
 
-        if (!isOptionType) {
-            isOptionType = baseDeclaration
+        if (!isMainType) {
+            isMainType = baseDeclaration
                 .getChildren()
-                .some(child => this.isOptionType(name, child))
+                .some(child => this.isMainMember(name, child))
         };
 
-        return isOptionType;
+        return isMainType;
+    }
+
+    private setDeclared (declaration: TSD.IDeclaration) {
+
+        const dictionary = this._globalDeclarationsDictionary;
+        const fullName = declaration.fullName;
+        const kind = declaration.kind;
+
+        if (!dictionary[fullName]) {
+            dictionary[fullName] = [kind];
+        }
+        else if (dictionary[fullName].indexOf(kind) === -1) {
+            dictionary[fullName].push(kind);
+        }
     }
 
     public toString (): string {
