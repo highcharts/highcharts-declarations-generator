@@ -997,11 +997,6 @@ class Generator {
         if (existingChild instanceof TSD.ModuleDeclaration) {
             declaration = existingChild;
         }
-        if (doclet.description &&
-            !this.isDeclaredSomewhere(targetDeclaration, declaration)
-        ) {
-            declaration.description = doclet.description;
-        }
 
         if (doclet.see) {
             declaration.see.push(...doclet.see);
@@ -1009,7 +1004,6 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
-            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -1101,7 +1095,6 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
-            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
