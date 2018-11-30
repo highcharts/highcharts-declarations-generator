@@ -4,9 +4,6 @@
     "author": "Highsoft AS",
     "private": true,
     "main": "lib/GulpTask.js",
-    "bin": {
-        "highcharts-typescript-generator": "bin/generator.js"
-    },
     "dependencies": {
         "@types/colors": "*",
         "@types/mkdirp": "*",
