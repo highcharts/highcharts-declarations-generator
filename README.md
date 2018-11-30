@@ -1,3 +1,4 @@
-# Highcharts TypeScript Declaration Generator
+# Highcharts Declarations Generator
 
-Takes recent meta dumps for options and namespace, and generates `.d.ts` files.
+Takes recent meta dumps for options and namespaces, and generates declaration
+files (`*.d.ts`) for TypeScript.
