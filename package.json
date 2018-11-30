@@ -5,13 +5,14 @@
     "private": true,
     "main": "lib/GulpTask.js",
     "dependencies": {
-        "@types/colors": "*",
+        "colors": "*",
+        "mkdirp": "*",
+        "request": "*"
+    },
+    "devDependencies": {
         "@types/mkdirp": "*",
         "@types/node": "*",
         "@types/request": "*",
-        "colors": "*",
-        "mkdirp": "*",
-        "request": "*",
         "typescript": "*"
     },
     "scripts": {
