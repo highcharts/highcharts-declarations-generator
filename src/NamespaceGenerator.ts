@@ -680,11 +680,9 @@ class Generator {
         else {
             (targetDeclaration.getChildren(declaration.name) || []).some(
                 existingChild => {
-                    if (existingChild.description &&
-                        ((!doclet.isStatic &&
-                        existingChild.kind === 'function') ||
-                        (doclet.isStatic &&
-                        existingChild.kind === 'static function'))
+                    if (existingChild instanceof TSD.FunctionDeclaration &&
+                        existingChild.description &&
+                        existingChild.isStatic === doclet.isStatic
                     ) {
                         declaration.description = existingChild.description;
                         return true;
@@ -816,7 +814,9 @@ class Generator {
             functionDeclaration = existingChild;
         }
 
-        if (doclet.description) {
+        if (doclet.description &&
+            !this.isDeclaredSomewhere(targetDeclaration, declaration)
+        ) {
             functionDeclaration.description = doclet.description;
         }
 
@@ -1155,10 +1155,7 @@ class Generator {
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
-        if (existingChild &&
-            existingChild instanceof TSD.PropertyDeclaration &&
-            doclet.isStatic === existingChild.isStatic
-        ) {
+        if (existingChild instanceof TSD.PropertyDeclaration) {
             declaration = existingChild;
         }
 
