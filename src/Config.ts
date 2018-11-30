@@ -16,9 +16,9 @@ const config = (function () {
     let config: any;
 
     try {
-        config = require(process.cwd() + '/tsgconfig.json');
+        config = require(process.cwd() + '/dtsconfig.json');
     } catch {
-        config = require('../tsgconfig.json');
+        config = require('../dtsconfig.json');
     }
 
     let sortedTypeMapping = {} as any;
