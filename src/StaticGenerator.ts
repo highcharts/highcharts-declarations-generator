@@ -7,14 +7,14 @@
 import * as Config from './Config';
 import * as Utils from './Utilities';
 
-export function generate(): Promise<void> {
+export function generate(cliFeedback: Function): Promise<void> {
 
     return Utils
         .copyAll(
             Utils.path(Config.cgd, 'static'),
             Utils.path(Config.cwd, Utils.parent(Config.mainModule))
         )
-        .then(files => files.forEach(
-            file => console.info('Saved', file.substr(Config.cwd.length + 1))
-        ));
+        .then(files => files.forEach(file => cliFeedback(
+            'green', 'Generated ' + file.substr(Config.cwd.length + 1)
+        )));
 };
