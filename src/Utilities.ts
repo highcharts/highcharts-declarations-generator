@@ -172,11 +172,11 @@ export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
 
-    if (sourceFilePath[0] !== '/') {
+    if (sourceFilePath[0] !== Path.sep) {
         sourceFilePath = Path.resolve(process.cwd(), sourceFilePath);
     }
 
-    if (targetFilePath[0] !== '/') {
+    if (targetFilePath[0] !== Path.sep) {
         targetFilePath = Path.resolve(process.cwd(), targetFilePath);
     }
 
@@ -206,11 +206,11 @@ export function copyAll (
     sourcePath: string, targetPath: string, recursive: boolean = false
 ): Promise<Array<string>> {
 
-    if (sourcePath[0] !== '/') {
+    if (sourcePath[0] !== Path.sep) {
         sourcePath = Path.resolve(process.cwd(), sourcePath);
     }
 
-    if (targetPath[0] !== '/') {
+    if (targetPath[0] !== Path.sep) {
         targetPath = Path.resolve(process.cwd(), targetPath);
     }
 
