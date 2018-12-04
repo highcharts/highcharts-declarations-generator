@@ -141,13 +141,6 @@ export abstract class IDeclaration extends Object {
     private static readonly PAD_SPACE: RegExp = /\s/;
 
     /**
-     * Finds path and match into four groups: scope, path, name, and extension.
-     */
-    private static readonly PATH_ELEMENTS: RegExp = (
-        /^([\.\/\\]*)([\w\.\/\\]*)(\w*)([\w\.]*)$/
-    );
-
-    /**
      * Finds path separator
      */
     private static readonly PATH_SEPARATOR: RegExp = /\/\\/;
@@ -325,27 +318,6 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
-     * Returns a dictionary of path elements (directories, extension, file,
-     * name, path, and scope).
-     *
-     * @param  path
-     *         The path to parse.
-     */
-    protected static pathElements (path: string): PathElements {
-
-        let match = (path.match(new RegExp(IDeclaration.PATH_ELEMENTS, 'gm')) || [])[0];
-
-        return {
-            directories: match[2].split(new RegExp(IDeclaration.PATH_SEPARATOR, 'gm')),
-            extension: match[4],
-            file: match[3] + match[4],
-            name: match[3],
-            path: match[1] + match[2],
-            scope: match[1]
-        };
-    }
-
-    /**
      * Returns a simplified name of a provided full qualified name.
      *
      * @param name
@@ -369,7 +341,9 @@ export abstract class IDeclaration extends Object {
      */
     public static simplifyType (rootName: string, ...types: Array<string>): Array<string> {
 
-        let scopeLength = rootName.length;
+        rootName = rootName + '.';
+
+        const scopeLength = rootName.length;
 
         return types.map(type => type.replace(
             new RegExp(IDeclaration.TYPE_NAME, 'gm'),
@@ -1012,7 +986,7 @@ export abstract class IDeclaration extends Object {
             types = this.types.slice();
 
         if (rootName) {
-            types = IDeclaration.simplifyType((rootName + '.'), ...types);
+            types = IDeclaration.simplifyType(rootName, ...types);
         }
 
         if (filterUndefined &&
@@ -1886,9 +1860,9 @@ export class ModuleDeclaration extends IDeclaration {
      *
      * */
 
-    public constructor (relativePath: string) {
+    public constructor (name: string, relativePath: string) {
 
-        super(IDeclaration.pathElements(relativePath).name);
+        super(name);
 
         this._path = relativePath;
 
@@ -1924,14 +1898,13 @@ export class ModuleDeclaration extends IDeclaration {
      */
     public clone (): ModuleDeclaration {
 
-        let clone = new ModuleDeclaration(this.name);
+        let clone = new ModuleDeclaration(this.name, this.path);
 
         clone.defaultValue = this.defaultValue;
         clone.description = this.description;
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.path = this.path;
         clone.see.push(...this.see.slice());
         clone.types.push(...this.types.slice());
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -2435,7 +2408,7 @@ export class PropertyDeclaration extends IDeclaration {
                     type = renderedMember.substr(typePosition);
 
                 renderedMember = renderedMember.substr(0, typePosition);
-                renderedMember += IDeclaration.simplifyType((rootName + '.'), type)[0];
+                renderedMember += IDeclaration.simplifyType(rootName, type)[0];
             }
         }
 
