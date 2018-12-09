@@ -325,16 +325,13 @@ class Generator {
             'Highcharts.SeriesOptions'
         );
 
-        let dataNode = sourceNode.children['data'];
-
-        if (!dataNode) {
-            throw new Error(`No data description for series "${name}" found!`);
-            return;
-        }
-
         this.mainNamespace.addChildren(declaration);
 
-        this.generatePropertyDeclaration(dataNode, declaration);
+        let dataNode = sourceNode.children['data'];
+
+        if (dataNode) {
+            this.generatePropertyDeclaration(dataNode, declaration);
+        }
 
         let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 

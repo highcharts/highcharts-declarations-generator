@@ -14,8 +14,8 @@ import * as Utils from './Utilities';
 type DeclarationDictionary = Utils.Dictionary<Array<TSD.Kinds>>;
 
 
-
-export function generate(
+export function generate (
+    cliFeedback: Function,
     modulesDictionary: Utils.Dictionary<Parser.INode>,
     optionsDeclarations: TSD.ModuleGlobalDeclaration
 ): Promise<void> {
@@ -59,7 +59,9 @@ export function generate(
             promises.push(
                 Utils
                     .save(dtsFilePath, dtsFileContent)
-                    .then(() => console.info('Saved', dtsFilePath))
+                    .then(() => cliFeedback(
+                        'green', 'Generated ' + dtsFilePath
+                    ))
             );
 
             let dtsSourceFileContent = dtsFileContent
@@ -76,14 +78,16 @@ export function generate(
             promises.push(
                 Utils
                     .save(dtsSourceFilePath, dtsSourceFileContent)
-                    .then(() => console.info('Saved', dtsSourceFilePath))
+                    .then(() => cliFeedback(
+                        'green', 'Generated ' + dtsSourceFilePath
+                    ))
             );
         })
 
     promises.push(
         Utils
             .save(globalDtsFilePath , mainGlobalDeclarations.toString())
-            .then(() => console.info('Saved', globalDtsFilePath))
+            .then(() => cliFeedback('green', 'Generated ' + globalDtsFilePath))
     );
 
     return Promise
@@ -983,9 +987,10 @@ class Generator {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             // reference namespace of highcharts.js with module path
-            declaration = new TSD.ModuleDeclaration(Utils.relative(
-                this.modulePath, Config.mainModule, true
-            ));
+            declaration = new TSD.ModuleDeclaration(
+                this._mainNamespace.name,
+                Utils.relative(this.modulePath, Config.mainModule, true)
+            );
 
         if (doclet.isGlobal) {
             // add global declaration in the current module file scope

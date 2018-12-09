@@ -9,7 +9,8 @@
     "products": [
         "highcharts",
         "highstock",
-        "highmaps"
+        "highmaps",
+        "gantt"
     ],
     "typeMapping": {
         "array": "any[]",

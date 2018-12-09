@@ -4,6 +4,7 @@
  * 
  * */
 
+import * as Path from 'path';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
@@ -66,8 +67,8 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         );
     }
 
-    if (!withoutConfig
-        && config.typeMapping[type]
+    if (!withoutConfig &&
+       config.typeMapping[type]
     ) {
         type = config.typeMapping[type];
     }
@@ -133,6 +134,14 @@ config.seeLink = function (name: string, kind: string, product?: string) {
             return config.seeBaseUrl + product + '/' + name;
     }
 };
+
+config.treeNamespaceJsonFile = (config.treeNamespaceJsonFile || '').replace(
+    /\//g, Path.sep
+);
+
+config.treeOptionsJsonFile = (config.treeOptionsJsonFile || '').replace(
+    /\//g, Path.sep
+);
 
 export = config;
 
