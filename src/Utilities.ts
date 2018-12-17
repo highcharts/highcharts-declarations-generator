@@ -569,7 +569,7 @@ export function removeLinks(
 
 
 
-export function save (filePath: string, str: string): Promise<string> {
+export function save (filePath: string, fileContent: string): Promise<string> {
     return new Promise((resolve, reject) => {
 
         filePath = Path.resolve(process.cwd(), filePath);
@@ -579,7 +579,7 @@ export function save (filePath: string, str: string): Promise<string> {
                 reject(err);
                 return;
             }
-            FS.writeFile(filePath, str, err => {
+            FS.writeFile(filePath, fileContent, err => {
                 if (err) {
                     reject(err);
                 } else {
