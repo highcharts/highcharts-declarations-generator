@@ -8,7 +8,7 @@ import * as Path from 'path';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
-const MAP_TYPE_MINIARRAY: RegExp = /Array<((?:[^<>]+|<[^<>]+>),(?:[^<>]+|<[^<>]+>)+)>/;
+const MAP_TYPE_MINIARRAY: RegExp = /Array<((?:[^<>\[\]]+|<[^<>\[\]]+>),(?:[^<>\[\]]+|<[^<>\[\]]+>)+)>/;
 
 const SEE_LINK_NAME_LAST = /\.(\w+)$/;
 
