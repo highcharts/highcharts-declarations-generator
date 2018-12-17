@@ -22,12 +22,13 @@ export function parse(optionsJSON: Utils.Dictionary<INode>): Promise<Utils.Dicti
 
         resolve(parsedOptions.options);
 /*
-        utils
-            .save('tree-extended.json', JSON.stringify(optionsJSON, (key, value) => (
-                key === 'doclet' ? undefined : value
+        Utils
+            .save('tree-extended.json', JSON.stringify(parsedOptions.options,
+            (key, value) => (
+                key === 'doclet' || key === 'meta' ? undefined : value
             ), '\t'))
             .then(() => resolve(parsedOptions.options));
- */
+// */
     });
 }
 

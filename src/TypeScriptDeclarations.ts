@@ -67,7 +67,7 @@ interface PathElements {
 
 /**
  * Base class for TypeScript declarations.
- * 
+ *
  * @extends Object
  */
 export abstract class IDeclaration extends Object {
@@ -165,6 +165,53 @@ export abstract class IDeclaration extends Object {
      * */
 
     /**
+     * Returns source code with shorter lines, if possible.
+     *
+     * @param sourceCode
+     *        The source code in which to break long lines in shorter ones.
+     *
+     * @param maxLength
+     *        The maximum length a source line should have.
+     */
+    public static breakLongLines(
+        sourceCode: string, maxLength: number = 200
+    ): string {
+
+        return sourceCode
+            .split('\n')
+            .map(line => {
+
+                let breakPosition = -1,
+                    currentLine = '',
+                    extraLines = '';
+
+                while (line.length > maxLength) {
+
+                    currentLine = line.substr(0, maxLength)
+                    
+                    breakPosition = currentLine.lastIndexOf(',') + 1;
+
+                    if (breakPosition <= 0) {
+                        breakPosition = currentLine.lastIndexOf('|') + 1;
+                    }
+
+                    if (breakPosition <= 0) {
+                        break;
+                    }
+
+                    extraLines += currentLine.substr(0, breakPosition) + '\n';
+
+                    line = line.substr(breakPosition).trim();
+                }
+
+                return extraLines + line;
+
+            })
+            .join('\n');
+
+    }
+
+    /**
      * Extract all types in given type strings.
      *
      * @param types
@@ -187,13 +234,13 @@ export abstract class IDeclaration extends Object {
     /**
      * Returns a indented string, that fits into a specific width and spans over
      * several lines.
-     * 
+     *
      * @param text
      *        The string to pad.
-     * 
+     *
      * @param linePrefix 
      *        The prefix for each line.
-     * 
+     *
      * @param wrap 
      *        The maximum width of the padded string.
      */
@@ -235,7 +282,7 @@ export abstract class IDeclaration extends Object {
 
     /**
      * Splits a name into the namespace components.
-     * 
+     *
      * @param name
      *        The name to split into spaces.
      *
@@ -1442,7 +1489,9 @@ export class ClassDeclaration extends IExtendedDeclaration {
 
         return (
             renderedDescription +
-            indent + renderedClass + ' ' + renderedChildren + '\n'
+            IDeclaration.breakLongLines(
+                indent + renderedClass + ' ' + renderedChildren + '\n'
+            )
         );
     }
 }
@@ -1529,7 +1578,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
 
         return (
             renderedDescription +
-            indent + renderedConstructor + ';\n'
+            IDeclaration.breakLongLines(indent + renderedConstructor + ';\n')
         );
     }
 }
@@ -1670,7 +1719,7 @@ export class FunctionDeclaration extends IExtendedDeclaration {
 
         return (
             renderedDescription +
-            indent + renderedFunction + ';\n'
+            IDeclaration.breakLongLines(indent + renderedFunction + ';\n')
         );
     }
 }
@@ -1751,7 +1800,7 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
 
         return (
             renderedDescription +
-            indent + renderedType + '\n'
+            IDeclaration.breakLongLines(indent + renderedType + '\n')
         );
     }
 }
@@ -1840,7 +1889,9 @@ export class InterfaceDeclaration extends IDeclaration {
 
         return (
             renderedDescription +
-            indent + renderedInterface + ' ' + renderedChildren + '\n'
+            IDeclaration.breakLongLines(
+                indent + renderedInterface + ' ' + renderedChildren + '\n'
+            )
         );
     }
 }
@@ -2438,11 +2489,11 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember += ': any;';
         }
 
-        renderedMember = this.renderScopePrefix() + renderedMember;
+        renderedMember = this.renderScopePrefix() + renderedMember + '\n';
 
         return (
             this.renderDescription(indent, true) +
-            indent + renderedMember + '\n'
+            IDeclaration.breakLongLines(indent + renderedMember)
         );
     }
 }
@@ -2522,7 +2573,7 @@ export class TypeDeclaration extends IDeclaration {
 
         return (
             this.renderDescription(indent) +
-            indent + renderedType
+            IDeclaration.breakLongLines(indent + renderedType)
         );
     }
 }
