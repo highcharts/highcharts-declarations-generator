@@ -214,56 +214,64 @@ export function copyAll (
         targetPath = Path.resolve(process.cwd(), targetPath);
     }
 
-    return new Promise((resolve, reject) => {
-        FS.readdir(sourcePath, (err, files) => {
+    return files(sourcePath)
+        .then(files => {
+            
+            const copyPromises = files.map(file => copy(file, targetPath));
 
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            const copyPromises = [] as Array<Promise<string|Array<string>>>;
-
-            files.forEach(file => {
-
-                const source = Path.join(sourcePath, file);
-                const target = Path.join(targetPath, file);
-                const stat = FS.statSync(source);
-
-                if (stat.isFile()) {
-                    copyPromises.push(copy(source, target));
-                } else if (recursive && stat.isDirectory()) {
-                    copyPromises.push(copyAll(source, target));
-                }
-
-            });
-
-            Promise.all(copyPromises).then(results => {
-
-                const copiedFiles = [] as Array<string>;
-
-                results.forEach(result => {
-                    if (result instanceof Array) {
-                        copiedFiles.push(...result);
-                    }
-                    else {
-                        copiedFiles.push(result);
-                    }
-                });
-
-                resolve(copiedFiles);
-
-            });
-
+            return Promise.all(copyPromises);
         });
+}
+
+/**
+ * Return of all files in a given folder and subfolders.
+ *
+ * @param folder
+ *        Folder name
+ */
+export function files (folder: string): Promise<Array<string>> {
+
+    return new Promise((resolve, reject) => {
+
+        try {
+            FS
+                .readdir(folder, { withFileTypes: true }, (error, items) => {
+
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    const filesPromises = items
+                        .filter(item => item.isDirectory())
+                        .map(item => files(item.name));
+
+                    const promisedFiles = items
+                        .filter(item => item.isFile())
+                        .map(item => item.name);
+
+                    Promise
+                        .all(filesPromises)
+                        .then(results => {
+                            
+                            results.forEach(
+                                result => promisedFiles.push(...result)
+                            );
+
+                            return promisedFiles
+                                .map(file => path(folder, file));
+                        })
+                        .then(resolve);
+                });
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
+export function isBasicType (name: string): boolean {
 
-
-export function isBasicType (typeName: string): boolean {
-
-    switch (typeName) {
+    switch (name) {
         case 'any':
         case 'boolean':
         case 'function':
@@ -281,19 +289,19 @@ export function isBasicType (typeName: string): boolean {
 
 
 
-export function isCoreType (typeName: string): boolean {
+export function isCoreType (name: string): boolean {
 
-    if (isBasicType(typeName)) {
+    if (isBasicType(name)) {
         return true;
     }
 
-    if (typeName.startsWith('global.') ||
-        typeName.startsWith('window.')
+    if (name.startsWith('global.') ||
+        name.startsWith('window.')
     ) {
-        typeName = typeName.substr(7);
+        name = name.substr(7);
     }
 
-    switch (typeName) {
+    switch (name) {
         case 'Array':
         case 'Boolean':
         case 'false':
@@ -315,14 +323,14 @@ export function isCoreType (typeName: string): boolean {
             return true;
     }
 
-    if (typeName.startsWith('Array<')) {
+    if (name.startsWith('Array<')) {
         return true;
     }
 
-    if (typeName.length > 1) {
+    if (name.length > 1) {
 
-        let firstCharacter = typeName[0],
-            lastCharacter = typeName[typeName.length-1];
+        let firstCharacter = name[0],
+            lastCharacter = name[name.length-1];
 
         switch (firstCharacter + lastCharacter) {
             case '[]':
@@ -332,8 +340,8 @@ export function isCoreType (typeName: string): boolean {
         }
     }
 
-    if (!isNaN(parseFloat(typeName)) ||
-        !isNaN(parseInt(typeName))
+    if (!isNaN(parseFloat(name)) ||
+        !isNaN(parseInt(name))
     ) {
         return true;
     }
@@ -401,9 +409,9 @@ export function isDeepEqual (objectA: any, objectB: any): boolean {
 
 
 export function json (
-    json: (object | string | Array<any>),
+    json: (object | string | Array<any> | Dictionary<any>),
     allowQuirks: boolean = false
-): (object | string | Array<any>) {
+): (string | Array<any> | Dictionary<any>) {
 
     if (typeof json !== 'string') {
         return JSON.stringify(json);
@@ -431,14 +439,18 @@ export function json (
 
 
 
-export function load (filePath: string): Promise<any> {
+export function load (
+    filePath: string
+): Promise<(Array<any> | Dictionary<any>)> {
     return new Promise((resolve, reject) => {
         filePath = Path.resolve(process.cwd(), filePath);
         FS.readFile(filePath, (err, data) => {
             if (err) {
                 reject(err);
             } else {
-                resolve(json(data.toString()));
+                resolve(
+                    json(data.toString()) as (Array<any> | Dictionary<any>)
+                );
             }
         });
     });
