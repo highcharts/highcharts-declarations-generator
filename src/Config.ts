@@ -150,7 +150,7 @@ interface IConfig {
     cwd: string;
     mainModule: string;
     optionTypeMapping: { [option: string]: string };
-    products: Array<string>;
+    products: Utils.Dictionary<string>;
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;

@@ -8,6 +8,7 @@ import * as Config from './Config';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
+const PRODUCTS = Object.keys(Config.products);
 
 /**
  * Parse options JSON and returns a dictionary of options nodes.
@@ -63,9 +64,7 @@ class Parser extends Object {
                     this.completeNodeNames(optionsJSON[key], key);
                     this.completeNodeExtensions(optionsJSON[key]);
                     this.completeNodeNames(optionsJSON[key], key);
-                    this.completeNodeProducts(
-                        optionsJSON[key], Config.products
-                    );
+                    this.completeNodeProducts(optionsJSON[key], PRODUCTS);
                     this.completeNodeTypes(optionsJSON[key]);
                 }
             });
@@ -359,6 +358,7 @@ class Parser extends Object {
             });
 
         return currentNode;
+
     }
 
 }
@@ -403,12 +403,12 @@ export interface IDoclet {
 }
 
 export interface IMeta {
-    filename: string;
-    line: number;
-    lineEnd: number;
     column?: number;
     default?: (boolean|number|string);
+    filename?: string;
     fullname?: string;
+    line?: number;
+    lineEnd?: number;
     name?: string;
 }
 

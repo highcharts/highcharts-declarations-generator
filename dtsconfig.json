@@ -6,12 +6,12 @@
     "optionTypeMapping": {
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },
-    "products": [
-        "highcharts",
-        "highstock",
-        "highmaps",
-        "gantt"
-    ],
+    "products": {
+        "highcharts": "code/highcharts.src.js",
+        "highstock": "code/highstock.src.js",
+        "highmaps": "code/highmaps.src.js",
+        "gantt": "code/gantt.src.js"
+    },
     "typeMapping": {
         "array": "any[]",
         "function": "Function",
