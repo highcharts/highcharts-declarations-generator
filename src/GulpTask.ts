@@ -35,27 +35,43 @@ export function task (done: Function) {
         'Start creating TypeScript declarations...'
     ));
 
-    return Utils
-        .load(Config.treeOptionsJsonFile)
-        .then(OptionsParser.parse)
-        .then(OptionsGenerator.generate)
-        .then(optionsDeclarations => Utils
-            .load(Config.treeNamespaceJsonFile)
-            .then(NamespaceParser.parseIntoFiles)
-            .then(filesDictionary => Promise.all([
+    return Promise
+        .all([
+            Utils
+                .load(Config.treeNamespaceJsonFile)
+                .then(json => NamespaceParser.parse(json as any))
+                .then(NamespaceGenerator.declare),
+            Utils
+                .load(Config.treeOptionsJsonFile)
+                .then(json => OptionsParser.parse(json as any))
+                .then(OptionsGenerator.declare),
+            
+        ])
+        .then(declarationFiles => {
+
+            const namespaceDeclarationFiles = declarationFiles[0];
+            const optionsDeclarationFiles = declarationFiles[1];
+
+            console.log(
+                Object.keys(namespaceDeclarationFiles),
+                Object.keys(optionsDeclarationFiles)
+            );
+
+            return Promise.all([
                 NamespaceGenerator.generate(
-                    cliFeedback, filesDictionary, optionsDeclarations
+                    cliFeedback,
+                    namespaceDeclarationFiles,
+                    optionsDeclarationFiles
                 ),
-                StaticGenerator.generate(
-                    cliFeedback
-                )
-            ]))
-        )
-        .then(() => console.info(Colors.green(
+                StaticGenerator.generate(cliFeedback)
+            ]);
+        })
+        .then(() => cliFeedback(
+            'green',
             'Finished creating TypeScript declarations.'
-        )))
+        ))
         .catch(err => {
-            console.info(Colors.red(err.toString()));
+            cliFeedback('red', err.toString());
             throw err;
         });
 }
