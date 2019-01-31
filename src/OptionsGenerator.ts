@@ -11,6 +11,21 @@ import * as Utils from './Utilities';
 
 
 
+export function declare (
+    parsedOptions: Utils.Dictionary<Parser.INode>
+): Promise<Utils.Dictionary<TSD.IDeclaration>> {
+
+    return new Promise(resolve => 
+        Object
+            .keys(Config.products)
+            .map(product => (
+                new Generator(product, parsedOptions[product])
+            ).namespace)
+    );
+}
+/*
+
+
 export function generate (
     optionsJSON: Utils.Dictionary<Parser.INode>
 ): Promise<TSD.ModuleGlobalDeclaration> {
@@ -19,7 +34,7 @@ export function generate (
         resolve(generator.mainNamespace);
     });
 }
-
+*/
 
 
 const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
@@ -109,26 +124,13 @@ class Generator {
      *
      * */
 
-    public constructor (
-        optionsJSON: Utils.Dictionary<Parser.INode>
-    ) {
+    public constructor (product: string, parsedOptions: Parser.INode) {
 
-        this._mainNamespace = new TSD.ModuleGlobalDeclaration('Highcharts');
-        this._seriesTypes = [];
+        this._namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
+        this._product = product;
+        this._series = [];
 
-        this.generateInterfaceDeclaration({
-            children: optionsJSON,
-            doclet: {
-                description: 'The option tree for every chart.'
-            },
-            meta: {
-                filename: '',
-                fullname: 'options',
-                line: 0,
-                lineEnd: 0
-            }
-        });
-
+        this.generateInterfaceDeclaration(parsedOptions);
         this.generateSeriesDeclaration();
     }
 
@@ -138,12 +140,14 @@ class Generator {
      *
      * */
 
-    public get mainNamespace(): TSD.ModuleGlobalDeclaration {
-        return this._mainNamespace;
-    }
-    private _mainNamespace: TSD.ModuleGlobalDeclaration;
+    private _product: string;
 
-    private _seriesTypes: Array<string>;
+    public get namespace(): TSD.ModuleGlobalDeclaration {
+        return this._namespace;
+    }
+    private _namespace: TSD.ModuleGlobalDeclaration;
+
+    private _series: Array<string>;
 
     /* *
      *
@@ -155,7 +159,9 @@ class Generator {
         sourceNode: Parser.INode
     ): (TSD.InterfaceDeclaration|undefined) {
 
-        if (sourceNode.doclet.access === 'private') {
+        if (sourceNode.doclet.access === 'private' ||
+            (sourceNode.doclet.products || []).indexOf(this._product) === -1
+        ) {
             return undefined;
         }
 
@@ -172,7 +178,7 @@ class Generator {
             declaration.see.push(...doclet.see);
         }
 
-        this.mainNamespace.addChildren(declaration);
+        this.namespace.addChildren(declaration);
 
         if (name === 'SeriesOptions') {
             children
@@ -187,7 +193,7 @@ class Generator {
                         child, declaration
                     );
                     if (seriesDeclaration) {
-                        this._seriesTypes.push(seriesDeclaration.fullName);
+                        this._series.push(seriesDeclaration.fullName);
                     }
                 });
         }
@@ -205,7 +211,9 @@ class Generator {
         targetDeclaration: TSD.IDeclaration
     ): (TSD.PropertyDeclaration|undefined) {
 
-        if (sourceNode.doclet.access === 'private') {
+        if (sourceNode.doclet.access === 'private' ||
+            (sourceNode.doclet.products || []).indexOf(this._product) === -1
+        ) {
             return undefined;
         }
 
@@ -325,7 +333,7 @@ class Generator {
             'Highcharts.SeriesOptions'
         );
 
-        this.mainNamespace.addChildren(declaration);
+        this.namespace.addChildren(declaration);
 
         let dataNode = sourceNode.children['data'];
 
@@ -336,7 +344,7 @@ class Generator {
         let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 
         typePropertyDeclaration.description = (
-            '(' + Config.products.map(Utils.capitalize).join (', ') + ') ' +
+            '(' + Object.keys(Config.products).map(Utils.capitalize).join (', ') + ') ' +
             'This property is only in TypeScript non-optional and might be ' +
             '`undefined` in series objects from unknown sources.'
         );
@@ -358,7 +366,7 @@ class Generator {
 
     private generateSeriesDeclaration () {
 
-        let optionsDeclaration = this.mainNamespace.getChildren('Options')[0];
+        let optionsDeclaration = this.namespace.getChildren('Options')[0];
 
         if (!optionsDeclaration) {
             throw new Error('Highcharts.Options not declared!');
@@ -381,9 +389,9 @@ class Generator {
         seriesTypeDeclaration.description = (
             'The possible types of series options.'
         );
-        seriesTypeDeclaration.types.push(...this._seriesTypes);
+        seriesTypeDeclaration.types.push(...this._series);
 
-        this.mainNamespace.addChildren(seriesTypeDeclaration);
+        this.namespace.addChildren(seriesTypeDeclaration);
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
@@ -393,6 +401,6 @@ class Generator {
  
     public toString(): string {
 
-        return this.mainNamespace.toString();
+        return this.namespace.toString();
     }
 }

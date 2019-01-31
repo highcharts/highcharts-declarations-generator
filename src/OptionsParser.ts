@@ -47,9 +47,14 @@ class Parser extends Object {
 
                 const productNode = {
                     children: {},
-                    doclet: {},
-                    meta: {}
-                };
+                    doclet: {
+                        description: 'The option tree for every chart.',
+                        products: [ product ]
+                    } as IDoclet,
+                    meta: {
+                        fullname: 'options'
+                    } as IMeta
+                } as INode;
 
                 this._files[Config.products[product]] = productNode;
 
