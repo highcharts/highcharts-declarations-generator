@@ -31,9 +31,7 @@ function cliFeedback (colorOrMessage: string, message?: string) {
 
 export function task (done: Function) {
 
-    console.info(Colors.green(
-        'Start creating TypeScript declarations...'
-    ));
+    cliFeedback('green', 'Start creating TypeScript declarations...');
 
     return Promise
         .all([
@@ -44,10 +42,11 @@ export function task (done: Function) {
             Utils
                 .load(Config.treeOptionsJsonFile)
                 .then(json => OptionsParser.parse(json as any))
-                .then(OptionsGenerator.declare),
-            
+                .then(OptionsGenerator.declare)
         ])
         .then(declarationFiles => {
+
+            cliFeedback('green', 'JSON processed.');
 
             const namespaceDeclarationFiles = declarationFiles[0];
             const optionsDeclarationFiles = declarationFiles[1];
@@ -65,8 +64,13 @@ export function task (done: Function) {
             'green',
             'Finished creating TypeScript declarations.'
         ))
-        .catch(err => {
-            cliFeedback('red', err.toString());
-            throw err;
+        .catch(error => {
+            if (error) {
+                cliFeedback('red', error.toString());
+                throw error;
+            }
+            else {
+                throw new Error('Unknown error');
+            }
         });
 }
