@@ -52,11 +52,6 @@ export function task (done: Function) {
             const namespaceDeclarationFiles = declarationFiles[0];
             const optionsDeclarationFiles = declarationFiles[1];
 
-            console.log(
-                Object.keys(namespaceDeclarationFiles),
-                Object.keys(optionsDeclarationFiles)
-            );
-
             return Promise.all([
                 NamespaceGenerator.generate(
                     cliFeedback,
