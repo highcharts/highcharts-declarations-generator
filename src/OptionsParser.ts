@@ -377,9 +377,7 @@ class Parser extends Object {
             });
 
         return currentNode;
-
     }
-
 }
 
 
