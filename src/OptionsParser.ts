@@ -5,6 +5,7 @@
  * */
 
 import * as Config from './Config';
+import * as FS from 'fs';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
@@ -17,7 +18,7 @@ const PRODUCTS = Object.keys(Config.products);
  *        The JSON dictionary to parse.
  */
 export function parse(json: any): Promise<Utils.Dictionary<INode>> {
-    return new Promise(resolv => (new Parser(json)).files);
+    return new Promise(resolve => resolve((new Parser(json)).files));
 }
 
 
@@ -40,38 +41,51 @@ class Parser extends Object {
 
         super();
 
+        Object
+            .keys(json)
+            .forEach(key => {
+                if (!json[key].doclet) {
+                    delete json[key];
+                }
+            });
+
+        this._root = {
+            doclet: {
+                products: PRODUCTS.slice()
+            },
+            meta: {},
+            children: json
+        };
+
+        this.completeNodeNames(this._root, '');
+        this.completeNodeExtensions(this._root);
+        this.completeNodeNames(this._root, '');
+        this.completeNodeProducts(this._root, PRODUCTS);
+        this.completeNodeTypes(this._root);
+
         this._files = {} as Utils.Dictionary<INode>;
 
         PRODUCTS.forEach(
             product => {
 
                 const productNode = {
-                    children: {},
                     doclet: {
                         description: 'The option tree for every chart.',
-                        products: [ product ]
-                    } as IDoclet,
+                        products: PRODUCTS.slice()
+                    },
                     meta: {
                         fullname: 'options'
-                    } as IMeta
+                    },
+                    children: {}
                 } as INode;
 
-                this._files[Config.products[product]] = productNode;
+                this.cloneNodeInto(
+                    this._root, 
+                    productNode,
+                    product
+                );
 
-                Object
-                    .keys(json)
-                    .forEach(key => {
-                        if (!json[key].doclet) {
-                            delete json[key];
-                        } else {
-                            this.completeNodeNames(json[key], key);
-                            this.completeNodeExtensions(json[key]);
-                            this.completeNodeNames(json[key], key);
-                            this.completeNodeProducts(json[key], PRODUCTS);
-                            this.completeNodeTypes(json[key])
-                            this.cloneNodeInto(json[key], productNode, product);
-                        }
-                    });
+                this._files[Config.products[product]] = productNode;
             }
         );
     }
@@ -87,12 +101,14 @@ class Parser extends Object {
     }
     private _files: Utils.Dictionary<INode>;
 
+    private _root: INode;
+
     /* *
      *
      *  Functions
      *
      * */
-    private _cloneC = 0;
+
     /**
      * Transfers non existing properties and children to a node.
      *
@@ -121,8 +137,8 @@ class Parser extends Object {
         let sourceChildren = sourceNode.children,
             targetChildren = targetNode.children;
 
-        if (product && 
-            (sourceDoclet.product || []).indexOf(product) === -1
+        if (product &&
+            sourceDoclet.products.indexOf(product) === -1
         ) {
             return;
         }
@@ -190,12 +206,27 @@ class Parser extends Object {
                     let xNode = this.findNode(xName);
 
                     if (!xNode) {
+
+                        FS.writeFileSync(
+                            'tree-error.json',
+                            JSON.stringify(
+                                this._root,
+                                (key, value) => (
+                                    key === 'doclet' || key === 'meta' ?
+                                        undefined :
+                                        value
+                                ),
+                                '\t'
+                            )
+                        );
+
                         throw new Error(
                             'Extends: Node ' + xName + ' not found! ' +
                             'Referenced by ' + (
                                 node.meta.fullname || node.meta.name
                             ) + '.'
                         );
+
                         return;
                     }
 
@@ -236,7 +267,8 @@ class Parser extends Object {
         Object
             .keys(children)
             .forEach(childName => this.completeNodeNames(
-                children[childName], nodeName + '.' + childName
+                children[childName],
+                (nodeName ? nodeName + '.' + childName : childName)
             ));
     }
 
@@ -256,7 +288,7 @@ class Parser extends Object {
             parentProducts = node.doclet.products;
         }
         else {
-            node.doclet.products = parentProducts;
+            node.doclet.products = parentProducts.slice();
         }
 
         let children = node.children;
@@ -357,11 +389,7 @@ class Parser extends Object {
             throw new Error('No node name has been provided.');
         }
 
-        let currentNode = {
-            children: this.files,
-            doclet: {},
-            meta: {}
-        } as INode;
+        let currentNode = this._root;
 
         TSD.IDeclaration
             .namespaces(nodeName)

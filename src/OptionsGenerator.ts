@@ -12,16 +12,29 @@ import * as Utils from './Utilities';
 
 
 export function declare (
-    parsedOptions: Utils.Dictionary<Parser.INode>
+    optionsFiles: Utils.Dictionary<Parser.INode>
 ): Promise<Utils.Dictionary<TSD.IDeclaration>> {
 
-    return new Promise(resolve => 
+    return new Promise(resolve => {
+
+        const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
+        const products = Config.products;
+        const productsFiles = Object.keys(products).map(p => products[p]);
+
         Object
-            .keys(Config.products)
-            .map(product => (
-                new Generator(product, parsedOptions[product])
-            ).namespace)
-    );
+            .keys(optionsFiles)
+            .forEach(
+                file => {
+                    if (productsFiles.indexOf(file) > -1) {
+                        declarations[file] = new Generator(
+                            optionsFiles[file]
+                        ).namespace;
+                    }
+                }
+            );
+
+        resolve(declarations);
+    });
 }
 /*
 
@@ -124,10 +137,9 @@ class Generator {
      *
      * */
 
-    public constructor (product: string, parsedOptions: Parser.INode) {
+    public constructor (parsedOptions: Parser.INode) {
 
         this._namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
-        this._product = product;
         this._series = [];
 
         this.generateInterfaceDeclaration(parsedOptions);
@@ -139,8 +151,6 @@ class Generator {
      *  Properties
      *
      * */
-
-    private _product: string;
 
     public get namespace(): TSD.ModuleGlobalDeclaration {
         return this._namespace;
@@ -159,9 +169,7 @@ class Generator {
         sourceNode: Parser.INode
     ): (TSD.InterfaceDeclaration|undefined) {
 
-        if (sourceNode.doclet.access === 'private' ||
-            (sourceNode.doclet.products || []).indexOf(this._product) === -1
-        ) {
+        if (sourceNode.doclet.access === 'private') {
             return undefined;
         }
 
@@ -211,9 +219,7 @@ class Generator {
         targetDeclaration: TSD.IDeclaration
     ): (TSD.PropertyDeclaration|undefined) {
 
-        if (sourceNode.doclet.access === 'private' ||
-            (sourceNode.doclet.products || []).indexOf(this._product) === -1
-        ) {
+        if (sourceNode.doclet.access === 'private') {
             return undefined;
         }
 

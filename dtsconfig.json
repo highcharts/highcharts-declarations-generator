@@ -7,10 +7,10 @@
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },
     "products": {
-        "highcharts": "code/highcharts.src.js",
-        "highstock": "code/highstock.src.js",
-        "highmaps": "code/highmaps.src.js",
-        "gantt": "code/gantt.src.js"
+        "highcharts": "code/highcharts",
+        "highstock": "code/highstock",
+        "highmaps": "code/highmaps",
+        "gantt": "code/gantt"
     },
     "typeMapping": {
         "array": "any[]",
