@@ -18,7 +18,7 @@ const PRODUCTS = Object.keys(Config.products);
  *        The JSON dictionary to parse.
  */
 export function parse(json: any): Promise<Utils.Dictionary<INode>> {
-    return new Promise(resolve => resolve((new Parser(json)).files));
+    return new Promise(resolve => resolve((new Parser(json)).modules));
 }
 
 
@@ -63,7 +63,7 @@ class Parser extends Object {
         this.completeNodeProducts(this._root, PRODUCTS);
         this.completeNodeTypes(this._root);
 
-        this._files = {} as Utils.Dictionary<INode>;
+        this._modules = {} as Utils.Dictionary<INode>;
 
         PRODUCTS.forEach(
             product => {
@@ -85,7 +85,7 @@ class Parser extends Object {
                     product
                 );
 
-                this._files[Config.products[product]] = productNode;
+                this._modules[Config.products[product]] = productNode;
             }
         );
     }
@@ -96,10 +96,10 @@ class Parser extends Object {
      *
      * */
 
-    public get files(): Utils.Dictionary<INode> {
-        return this._files;
+    public get modules(): Utils.Dictionary<INode> {
+        return this._modules;
     }
-    private _files: Utils.Dictionary<INode>;
+    private _modules: Utils.Dictionary<INode>;
 
     private _root: INode;
 

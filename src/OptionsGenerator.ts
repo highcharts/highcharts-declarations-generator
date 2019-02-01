@@ -12,22 +12,24 @@ import * as Utils from './Utilities';
 
 
 export function declare (
-    optionsFiles: Utils.Dictionary<Parser.INode>
+    optionsModules: Utils.Dictionary<Parser.INode>
 ): Promise<Utils.Dictionary<TSD.IDeclaration>> {
 
     return new Promise(resolve => {
 
         const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
         const products = Config.products;
-        const productsFiles = Object.keys(products).map(p => products[p]);
+        const productsModules = Object
+            .keys(products)
+            .map(module => products[module]);
 
         Object
-            .keys(optionsFiles)
+            .keys(optionsModules)
             .forEach(
-                file => {
-                    if (productsFiles.indexOf(file) > -1) {
-                        declarations[file] = new Generator(
-                            optionsFiles[file]
+                module => {
+                    if (productsModules.indexOf(module) > -1) {
+                        declarations[module] = new Generator(
+                            optionsModules[module]
                         ).namespace;
                     }
                 }
