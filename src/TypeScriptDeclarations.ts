@@ -1028,12 +1028,13 @@ export abstract class IDeclaration extends Object {
         filterFunctions: boolean = false
     ): string {
 
-        let root = this.root,
-            rootName = root && root.name,
-            types = this.types.slice();
+        const root = this.root;
 
-        if (rootName) {
-            types = IDeclaration.simplifyType(rootName, ...types);
+        let types = this.types.slice();
+
+        if (root) {
+            console.log(root.kind, root.name);
+            types = IDeclaration.simplifyType(root.name, ...types);
         }
 
         if (filterUndefined &&
@@ -1319,6 +1320,9 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     /**
      * Adds parameter declarations to this TypeScriot declaration.
      *
+     * @param merge
+     *        Merge parameters with existing ones.
+     *
      * @param declarations
      *        The parameter declarations to add.
      */
@@ -1338,10 +1342,13 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             name = declaration.name;
 
             if (parameters[name]) {
+                return;
+                /*
                 throw new Error(
                     'Parameter declaration with the name "' +
                     name + '" already added to "' + this.fullName + '".'
                 );
+                 */
             }
 
             parameters[name] = declaration;
@@ -2060,7 +2067,7 @@ export class ModuleGlobalDeclaration extends IDeclaration {
      */
     public clone(): ModuleGlobalDeclaration {
 
-        let clone = new ModuleGlobalDeclaration();
+        let clone = new ModuleGlobalDeclaration(this.name);
 
         clone.defaultValue = this.defaultValue;
         clone.description = this.description;
@@ -2449,17 +2456,16 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember.indexOf(' ') > -1
         ) {
 
-            let root = this.root,
-                rootName = root && root.name;
+            const root = this.root;
 
-            if (rootName) {
-
+            if (root) {
+                console.log(root.kind, root.name);
                 // type is part of the member name
                 let typePosition = (renderedMember.lastIndexOf(' ') + 1),
                     type = renderedMember.substr(typePosition);
 
                 renderedMember = renderedMember.substr(0, typePosition);
-                renderedMember += IDeclaration.simplifyType(rootName, type)[0];
+                renderedMember += IDeclaration.simplifyType(root.name, type)[0];
             }
         }
 
