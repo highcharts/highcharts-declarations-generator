@@ -2448,6 +2448,7 @@ export class PropertyDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
+            childOfSpace = this.childOfSpace(),
             renderedMember = this.name.replace(':', ': ');
 
         // special treatment for indexers
@@ -2472,12 +2473,17 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember = 'readonly ' + renderedMember;
         }
 
-        if (this.childOfSpace()) {
+        if (childOfSpace) {
             renderedMember = 'let ' + renderedMember;
         }
 
-        if (this.isOptional) {
-            renderedMember += '?';
+        if (this.isOptional ) {
+            if (!childOfSpace) {
+                renderedMember += '?';
+            }
+            else if (this.types.indexOf('undefined') === -1) {
+                this.types.push('undefined');
+            }
         }
 
         if (this.hasChildren) {
@@ -2488,7 +2494,9 @@ export class PropertyDeclaration extends IDeclaration {
             );
         } else if (this.hasTypes) {
             renderedMember += (
-                ': ' + this.renderTypes(true, this.isIndexer, true) + ';'
+                ': ' +
+                this.renderTypes(true, this.isIndexer, !childOfSpace) +
+                ';'
             );
         } else {
             renderedMember += ': any;';
