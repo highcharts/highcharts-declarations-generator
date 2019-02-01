@@ -15,6 +15,6 @@ export function generate(cliFeedback: Function): Promise<void> {
             Utils.path(Utils.parent(Config.mainModule))
         )
         .then(files => files.forEach(file => cliFeedback(
-            'green', 'Copied ' + file.substr(Config.cwd.length + 1)
+            'green', 'Copied ' + file
         )));
 };

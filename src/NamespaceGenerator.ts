@@ -11,39 +11,48 @@ import * as Utils from './Utilities';
 
 
 
-type DeclarationDictionary = Utils.Dictionary<Array<TSD.Kinds>>;
+const COPYRIGHT: string = 'Copyright (c) Highsoft AS. All rights reserved.';
 
 
 
 export function declare (
-    namespaceFiles: Utils.Dictionary<Parser.INode>
+    namespaceModules: Utils.Dictionary<Parser.INode>
 ): Promise<Utils.Dictionary<TSD.IDeclaration>> {
+
+    Utils.save('tree-debug.json', JSON.stringify(namespaceModules, undefined, '\t'));
 
     return new Promise(resolve => {
 
         const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
-        const globalFile = new TSD.ModuleGlobalDeclaration(
-            'code/globals'
-        );
         const products = Config.products;
-        const productsFiles = Object.keys(products).map(p => products[p]);
+        const productsModules = Object.keys(products).map(p => products[p]);
 
-        declarations[globalFile.name] = globalFile;
+        const globals = new TSD.ModuleGlobalDeclaration('globals');
+        globals.description = COPYRIGHT;
+        declarations['code/globals'] = globals;
 
+        const namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
+        namespace.imports.push('import * as globals from "./globals";');
+        namespace.exports.push('export as namespace Highcharts;');
+
+        const generator = new Generator(globals, namespace);
         Object
-            .keys(namespaceFiles)
+            .keys(namespaceModules)
             .forEach(
-                file => {
-                    if (productsFiles.indexOf(file) > -1) {
-                        declarations[file] = new Generator(
-                            file, namespaceFiles[file], globalFile
-                        ).namespace;
-                    }
-                    else {
-                        declarations[file] = declareModule(file);
+                module => {
+
+                    generator.generate(namespaceModules[module]);
+
+                    if (productsModules.indexOf(module) === -1) {
+                        declarations[module] = declareModule(module);
                     }
                 }
             );
+        productsModules.forEach(
+            module => {
+                declarations[module] = namespace.clone();
+            }
+        );
 
         resolve(declarations);
     });
@@ -54,52 +63,77 @@ export function declare (
 function declareModule (modulePath: string): TSD.IDeclaration {
 
     const moduleGlobal = new TSD.ModuleGlobalDeclaration(modulePath);
+    moduleGlobal.description = COPYRIGHT;
+    moduleGlobal.imports.push(
+        ('import * as Highcharts from "' + Utils.relative(
+            modulePath, Config.mainModule, true
+        ) + '";')
+    );
+    moduleGlobal.exports.push('export default factory;');
 
-    let factoryDeclaration = new TSD.FunctionDeclaration(
+    const factoryDeclaration = new TSD.FunctionDeclaration(
         'factory'
     );
     factoryDeclaration.description = (
         'Adds the module to the imported Highcharts namespace.'
     );
 
-    let factoryParameterDeclaration = new TSD.ParameterDeclaration(
+    const factoryParameterDeclaration = new TSD.ParameterDeclaration(
         'highcharts'
     );
     factoryParameterDeclaration.description = (
         'The imported Highcharts namespace to extend.'
     );
     factoryParameterDeclaration.types.push('typeof Highcharts');
+
     factoryDeclaration.setParameters(factoryParameterDeclaration);
 
-    moduleGlobal.imports.push(
-        ('import * as globals from "' + Utils.relative(
-            modulePath,
-            Config.mainModule.replace(/highcharts$/, 'globals'),
-            true
-        ) + '";'),
-        ('import * as Highcharts from "' + Utils.relative(
-            modulePath, Config.mainModule, true
-        ) + '";')
-    );
-
     moduleGlobal.addChildren(factoryDeclaration);
-    moduleGlobal.exports.push('export default factory;');
 
     return moduleGlobal;
 }
 
 export function generate (
     cliFeedback: Function,
-    namespaceFiles: Utils.Dictionary<TSD.IDeclaration>,
-    optionsFiles: Utils.Dictionary<TSD.IDeclaration>
+    namespaceModules: Utils.Dictionary<TSD.IDeclaration>,
+    optionsModules: Utils.Dictionary<TSD.IDeclaration>
 ): Promise<void> {
 
-    console.log(
-        Object.keys(namespaceFiles),
-        Object.keys(optionsFiles)
-    );
+    const filePromises = [] as Array<Promise<string>>;
 
-    return Promise.reject();
+    let declarations: TSD.IDeclaration;
+
+    Object
+        .keys(namespaceModules)
+        .forEach(
+            module => {
+
+                declarations = namespaceModules[module];
+
+                if (optionsModules[module]) {
+                    declarations.addChildren(
+                        ...optionsModules[module].removeChildren()
+                    );
+                }
+
+                filePromises.push(
+                    Utils
+                        .save(module + '.d.ts', declarations.toString())
+                        .then(file => cliFeedback(
+                            'green', 'Saved ' + file
+                        )),
+                    Utils
+                        .save(module + '.src.d.ts', declarations.toString())
+                        .then(file => cliFeedback(
+                            'green', 'Saved ' + file
+                        )),
+                );
+            }
+        );
+
+    return Promise
+        .all(filePromises)
+        .then(() => undefined);
 
 /*
     const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/;
@@ -283,7 +317,7 @@ class Generator {
 
         if (doclet.values) {
             try {
-                values = Utils.json((doclet.values || ''), true);
+                values = Utils.json(doclet.values, true);
             } catch (error) {
                 console.error(error);
             }
@@ -361,20 +395,13 @@ class Generator {
      *
      * */
 
-    public constructor (file: string,
-        parsedNamespace: Parser.INode,
-        global: TSD.IDeclaration
+    public constructor (
+        globals: TSD.IDeclaration,
+        namespace: TSD.ModuleGlobalDeclaration
     ) {
 
-        this._file = file;
-        this._global = global;
-        this._namespace = new TSD.ModuleGlobalDeclaration();
-        this._namespace.imports.push(
-            'import * as globals from "./globals";'
-        );
-        this._namespace.exports.push('export as namespace Highcharts;');
-
-        this.generate(parsedNamespace);
+        this._globals = globals;
+        this._namespace = namespace;
     }
 
     /* *
@@ -383,13 +410,8 @@ class Generator {
      *
      * */
 
-    private _file: string;
+    private _globals: TSD.IDeclaration;
 
-    private _global: TSD.IDeclaration;
-
-    public get namespace(): TSD.IDeclaration {
-        return this._namespace;
-    }
     private _namespace: TSD.ModuleGlobalDeclaration;
 
     /* *
@@ -398,7 +420,7 @@ class Generator {
      *
      * */
 
-    private generate (
+    public generate (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration = this._namespace
     ) {
@@ -483,9 +505,9 @@ class Generator {
             declaration = new TSD.ClassDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
-        else if (targetDeclaration.kind !== this.namespace.kind) {
+        else if (targetDeclaration.kind !== this._namespace.kind) {
             targetDeclaration = this._namespace;
         }
 
@@ -674,7 +696,7 @@ class Generator {
             declaration = new TSD.FunctionDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
 
         if (doclet.description) {
@@ -777,7 +799,7 @@ class Generator {
             declaration = new TSD.InterfaceDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
         else if (targetDeclaration.kind !== this._namespace.kind) {
             targetDeclaration = this._namespace;
@@ -859,7 +881,7 @@ class Generator {
             declaration = new TSD.FunctionTypeDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
         else if (targetDeclaration.kind !== this._namespace.kind) {
             targetDeclaration = this._namespace;
@@ -917,7 +939,7 @@ class Generator {
             declaration = new TSD.InterfaceDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
         else if (targetDeclaration.kind !== this._namespace.kind) {
             targetDeclaration = this._namespace;
@@ -1047,7 +1069,7 @@ class Generator {
 
         if (doclet.isGlobal) {
             // add global declaration in the current module file scope
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -1121,7 +1143,7 @@ class Generator {
             declaration = new TSD.PropertyDeclaration(doclet.name);
 
         if (doclet.isGlobal) {
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -1176,7 +1198,7 @@ class Generator {
 
         if (doclet.isGlobal) {
             // global helper types are always limited to the main module scope
-            targetDeclaration = this._global;
+            targetDeclaration = this._globals;
         }
         else if (targetDeclaration.kind !== this._namespace.kind) {
             targetDeclaration = this._namespace;
@@ -1220,7 +1242,7 @@ class Generator {
     }
 
     private isMainMember (
-        name: string, baseDeclaration: TSD.IDeclaration = this.namespace
+        name: string, baseDeclaration: TSD.IDeclaration = this._namespace
     ): boolean {
 
         if (!name.startsWith('Highcharts.')) {

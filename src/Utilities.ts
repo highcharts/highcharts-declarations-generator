@@ -195,10 +195,10 @@ export function copy (
 
 
 export function copyAll (
-    sourcePath: string, targetPath: string, recursive: boolean = false
+    sourceFolderPath: string, targetPath: string
 ): Promise<Array<string>> {
 
-    return files(sourcePath)
+    return files(sourceFolderPath)
         .then(files => Promise.all(
             files.map(
                 file => copy(file, path(targetPath, file))
