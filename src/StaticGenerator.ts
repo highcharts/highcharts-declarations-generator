@@ -12,9 +12,9 @@ export function generate(cliFeedback: Function): Promise<void> {
     return Utils
         .copyAll(
             Utils.path(Config.cgd, 'static'),
-            Utils.path(Config.cwd, Utils.parent(Config.mainModule))
+            Utils.path(Utils.parent(Config.mainModule))
         )
         .then(files => files.forEach(file => cliFeedback(
-            'green', 'Generated ' + file.substr(Config.cwd.length + 1)
+            'green', 'Copied ' + file.substr(Config.cwd.length + 1)
         )));
 };
