@@ -11,7 +11,7 @@ import * as TSD from './TypeScriptDeclarations';
 
 
 export function parse(json: any): Promise<Utils.Dictionary<INode>> {
-    return new Promise(resolve => resolve((new NamespaceParser(json)).files));
+    return new Promise(resolve => resolve((new NamespaceParser(json)).modules));
 }
 
 
@@ -66,7 +66,7 @@ class NamespaceParser {
      */
     public constructor (sourceNode: INode) {
 
-        this._files = {};
+        this._modules = {};
 
         this.transferNodes(sourceNode);
     }
@@ -77,10 +77,10 @@ class NamespaceParser {
      *
      * */
 
-    public get files (): Utils.Dictionary<INode> {
-        return this._files;
+    public get modules (): Utils.Dictionary<INode> {
+        return this._modules;
     }
-    private _files: Utils.Dictionary<INode>;
+    private _modules: Utils.Dictionary<INode>;
 
     /* *
      *
@@ -184,7 +184,7 @@ class NamespaceParser {
     private findNodeInMainModules (nodeName: string): (INode|undefined) {
 
         let found = false,
-            mainModule = this.files[Config.mainModule],
+            mainModule = this.modules[Config.mainModule],
             node = mainModule as (INode|undefined),
             spaceNames = TSD.IDeclaration.namespaces(nodeName, true),
             indexEnd = (spaceNames.length - 1);
@@ -242,7 +242,7 @@ class NamespaceParser {
      */
     private prepareModule (modulePath: string): INode {
 
-        let modules = this._files;
+        let modules = this._modules;
 
         modules[modulePath] = (modules[modulePath] || {
             children: [],

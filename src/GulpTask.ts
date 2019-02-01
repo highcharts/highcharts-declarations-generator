@@ -44,18 +44,18 @@ export function task (done: Function) {
                 .then(json => OptionsParser.parse(json as any))
                 .then(OptionsGenerator.declare)
         ])
-        .then(declarationFiles => {
+        .then(declarationsModules => {
 
             cliFeedback('green', 'JSON processed.');
 
-            const namespaceDeclarationFiles = declarationFiles[0];
-            const optionsDeclarationFiles = declarationFiles[1];
+            const namespaceModules = declarationsModules[0];
+            const optionsModules = declarationsModules[1];
 
             return Promise.all([
                 NamespaceGenerator.generate(
                     cliFeedback,
-                    namespaceDeclarationFiles,
-                    optionsDeclarationFiles
+                    namespaceModules,
+                    optionsModules
                 ),
                 StaticGenerator.generate(cliFeedback)
             ]);
