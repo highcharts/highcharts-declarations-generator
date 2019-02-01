@@ -172,25 +172,17 @@ export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
 
-    if (sourceFilePath[0] !== Path.sep) {
-        sourceFilePath = Path.resolve(process.cwd(), sourceFilePath);
-    }
-
-    if (targetFilePath[0] !== Path.sep) {
-        targetFilePath = Path.resolve(process.cwd(), targetFilePath);
-    }
-
     return new Promise((resolve, reject) => {
-        MkDirP(Path.dirname(targetFilePath), err => {
+        MkDirP(Path.dirname(targetFilePath), error => {
 
-            if (err) {
-                reject(err);
+            if (error) {
+                reject(error);
                 return;
             }
 
-            FS.copyFile(sourceFilePath, targetFilePath, (err) => {
-                if (err) {
-                    reject(err);
+            FS.copyFile(sourceFilePath, targetFilePath, error => {
+                if (error) {
+                    reject(error);
                 } else {
                     resolve(targetFilePath);
                 }
@@ -206,21 +198,12 @@ export function copyAll (
     sourcePath: string, targetPath: string, recursive: boolean = false
 ): Promise<Array<string>> {
 
-    if (sourcePath[0] !== Path.sep) {
-        sourcePath = Path.resolve(process.cwd(), sourcePath);
-    }
-
-    if (targetPath[0] !== Path.sep) {
-        targetPath = Path.resolve(process.cwd(), targetPath);
-    }
-
     return files(sourcePath)
-        .then(files => {
-            
-            const copyPromises = files.map(file => copy(file, targetPath));
-
-            return Promise.all(copyPromises);
-        });
+        .then(files => Promise.all(
+            files.map(
+                file => copy(file, path(targetPath, file))
+            )
+        ));
 }
 
 /**
@@ -409,13 +392,9 @@ export function isDeepEqual (objectA: any, objectB: any): boolean {
 
 
 export function json (
-    json: (object | string | Array<any> | Dictionary<any>),
+    json: string,
     allowQuirks: boolean = false
-): (string | Array<any> | Dictionary<any>) {
-
-    if (typeof json !== 'string') {
-        return JSON.stringify(json);
-    }
+): (Array<any> | Dictionary<any>) {
 
     if (!allowQuirks) {
         return JSON.parse(json);
@@ -449,7 +428,7 @@ export function load (
                 reject(err);
             } else {
                 resolve(
-                    json(data.toString()) as (Array<any> | Dictionary<any>)
+                    json(data.toString())
                 );
             }
         });
