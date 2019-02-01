@@ -1032,8 +1032,7 @@ export abstract class IDeclaration extends Object {
 
         let types = this.types.slice();
 
-        if (root) {
-            console.log(root.kind, root.name);
+        if (root && root.name) {
             types = IDeclaration.simplifyType(root.name, ...types);
         }
 
@@ -2458,8 +2457,8 @@ export class PropertyDeclaration extends IDeclaration {
 
             const root = this.root;
 
-            if (root) {
-                console.log(root.kind, root.name);
+            if (root && root.name) {
+
                 // type is part of the member name
                 let typePosition = (renderedMember.lastIndexOf(' ') + 1),
                     type = renderedMember.substr(typePosition);
