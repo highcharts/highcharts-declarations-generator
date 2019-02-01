@@ -225,16 +225,14 @@ class Generator {
             return undefined;
         }
 
-        const debug = (sourceNode.meta.fullname === 'colorAxis.currentDateIndicator');
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (Object.keys(sourceNode.children).length > 0) {
 
-            const interfaceDeclaration = this.generateInterfaceDeclaration(
-                sourceNode
-            );
-
-            let replacedAnyType = false;
+            let interfaceDeclaration = this.generateInterfaceDeclaration(
+                    sourceNode
+                ),
+                replacedAnyType = false;
 
             if (!interfaceDeclaration) {
                 return;

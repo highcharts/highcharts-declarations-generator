@@ -88,6 +88,8 @@ class Parser extends Object {
                 this._modules[Config.products[product]] = productNode;
             }
         );
+
+        Utils.save('tree-parser', JSON.stringify(this._root, undefined, '\t'));
     }
 
     /* *
@@ -134,14 +136,14 @@ class Parser extends Object {
             targetMeta = targetNode.meta as any,
             targetName = (targetMeta.fullname || targetMeta.name);
 
-        let sourceChildren = sourceNode.children,
-            targetChildren = targetNode.children;
-
         if (product &&
             sourceDoclet.products.indexOf(product) === -1
         ) {
             return;
         }
+
+        let sourceChildren = sourceNode.children,
+            targetChildren = targetNode.children;
 
         Object
             .keys(sourceDoclet)
@@ -161,6 +163,14 @@ class Parser extends Object {
             .keys(sourceChildren)
             .filter(key => targetExclude.indexOf(key) === -1)
             .forEach(key => {
+
+                if (product &&
+                    (sourceChildren[key].doclet.products || []).indexOf(
+                        product
+                    ) === -1
+                ) {
+                    return;
+                }
 
                 if (!targetChildren[key]) {
                     targetChildren[key] = {
