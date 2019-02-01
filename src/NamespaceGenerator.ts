@@ -98,6 +98,9 @@ export function generate (
 ): Promise<void> {
 
     const filePromises = [] as Array<Promise<string>>;
+    const importStatement = (
+        /(import \* as Highcharts from ".*highcharts)(";)/g
+    );
 
     let declarations: TSD.IDeclaration;
 
@@ -121,7 +124,12 @@ export function generate (
                             'green', 'Saved ' + file
                         )),
                     Utils
-                        .save(module + '.src.d.ts', declarations.toString())
+                        .save(
+                            module + '.src.d.ts',
+                            declarations
+                                .toString()
+                                .replace(importStatement, '$1.src$2')
+                        )
                         .then(file => cliFeedback(
                             'green', 'Saved ' + file
                         )),
