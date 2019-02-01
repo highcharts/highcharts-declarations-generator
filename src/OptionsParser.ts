@@ -88,8 +88,6 @@ class Parser extends Object {
                 this._modules[Config.products[product]] = productNode;
             }
         );
-
-        Utils.save('tree-parser', JSON.stringify(this._root, undefined, '\t'));
     }
 
     /* *
