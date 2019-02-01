@@ -19,8 +19,6 @@ export function declare (
     namespaceModules: Utils.Dictionary<Parser.INode>
 ): Promise<Utils.Dictionary<TSD.IDeclaration>> {
 
-    Utils.save('tree-debug.json', JSON.stringify(namespaceModules, undefined, '\t'));
-
     return new Promise(resolve => {
 
         const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
