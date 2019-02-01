@@ -167,10 +167,11 @@ class Parser extends Object {
                         children: {},
                         doclet: {},
                         meta: {
-                            filename: sourceMeta.filename,
-                            fullname: (targetName && targetName + key),
-                            line: sourceMeta.line,
-                            lineEnd: sourceMeta.lineEnd,
+                            fullname: (
+                                targetName ?
+                                    targetName + '.' + key :
+                                    key
+                            ),
                             name: key
                         }
                     }
