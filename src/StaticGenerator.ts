@@ -7,7 +7,7 @@
 import * as Config from './Config';
 import * as Utils from './Utilities';
 
-export function generate(cliFeedback: Function): Promise<void> {
+export function save (cliFeedback: Function): Promise<void> {
 
     return Utils
         .copyAll(

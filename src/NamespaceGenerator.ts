@@ -15,7 +15,7 @@ const COPYRIGHT: string = 'Copyright (c) Highsoft AS. All rights reserved.';
 
 
 
-export function declare (
+export function generate (
     namespaceModules: Utils.Dictionary<Parser.INode>
 ): Promise<Utils.Dictionary<TSD.IDeclaration>> {
 
@@ -23,34 +23,57 @@ export function declare (
 
         const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
         const products = Config.products;
-        const productsModules = Object.keys(products).map(p => products[p]);
+
+        const productsModules = {} as Utils.Dictionary<string>;        
+        Object
+            .keys(products)
+            .forEach(product => productsModules[products[product]] = product);
 
         const globals = new TSD.ModuleGlobalDeclaration('globals');
         globals.description = COPYRIGHT;
         declarations['code/globals'] = globals;
 
-        const namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
-        namespace.imports.push('import * as globals from "./globals";');
-        namespace.exports.push('export as namespace Highcharts;');
+        const declarationsGenerators = {} as Utils.Dictionary<Generator>;
+        Object
+            .keys(productsModules)
+            .forEach(module => {
 
-        const generator = new Generator(globals, namespace);
+                const namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
+                namespace.imports.push('import * as globals from "./globals";');
+                namespace.exports.push('export as namespace Highcharts;');
+
+                declarationsGenerators[module] = new Generator(
+                    globals, namespace, productsModules[module]
+                );
+
+                declarationsGenerators[module]
+                    .generate(namespaceModules[Config.mainModule]);
+            });
+
         Object
             .keys(namespaceModules)
             .forEach(
                 module => {
 
-                    generator.generate(namespaceModules[module]);
-
-                    if (productsModules.indexOf(module) === -1) {
-                        declarations[module] = declareModule(module);
+                    if (declarations[module] || productsModules[module]) {
+                        return;
                     }
+
+                    Object
+                        .keys(declarationsGenerators)
+                        .forEach(key => declarationsGenerators[key]
+                            .generate(namespaceModules[module])
+                        );
+
+                    declarations[module] = generateModule(module);
                 }
             );
-        productsModules.forEach(
-            module => {
-                declarations[module] = namespace.clone();
-            }
-        );
+
+        Object
+            .keys(productsModules)
+            .forEach(module => declarations[module] = (
+                declarationsGenerators[module].namespace
+            ));
 
         resolve(declarations);
     });
@@ -58,7 +81,7 @@ export function declare (
 
 
 
-function declareModule (modulePath: string): TSD.IDeclaration {
+function generateModule (modulePath: string): TSD.IDeclaration {
 
     const moduleGlobal = new TSD.ModuleGlobalDeclaration(modulePath);
     moduleGlobal.description = COPYRIGHT;
@@ -91,7 +114,7 @@ function declareModule (modulePath: string): TSD.IDeclaration {
     return moduleGlobal;
 }
 
-export function generate (
+export function save (
     cliFeedback: Function,
     namespaceModules: Utils.Dictionary<TSD.IDeclaration>,
     optionsModules: Utils.Dictionary<TSD.IDeclaration>
@@ -140,81 +163,6 @@ export function generate (
     return Promise
         .all(filePromises)
         .then(() => undefined);
-
-/*
-    const DECLARE_HIGHCHARTS_MODULE = /(declare module ")(.*highcharts)(" \{)/;
-
-    const IMPORT_HIGHCHARTS_MODULE = (
-        /(import \* as Highcharts from ")(.*highcharts)(";)/
-    );
-
-    // no product specific options tree for convenience
-    let globalDeclarationsDictionary = new Utils.Dictionary<Array<TSD.Kinds>>(),
-        globalDtsFilePath = Config.mainModule.replace(
-            /highcharts$/, 'globals.d.ts'
-        ),
-        mainGlobalDeclarations = new TSD.ModuleGlobalDeclaration(),
-        promises = [] as Array<Promise<void>>;
-
-    Object
-        .keys(namespaceDeclarations)
-        .map(modulePath => {
-
-            let generator = new Generator(
-                modulePath,
-                namespaceDeclarations[modulePath],
-                mainGlobalDeclarations,
-                optionsDeclarations,
-                globalDeclarationsDictionary
-            );
-
-            return {
-                generator: generator,
-                modulePath: modulePath
-            };
-        })
-        .forEach(dts => {
-
-            let dtsFileContent = dts.generator.toString(),
-                dtsFilePath = dts.modulePath + '.d.ts';
-
-            promises.push(
-                Utils
-                    .save(dtsFilePath, dtsFileContent)
-                    .then(() => cliFeedback(
-                        'green', 'Generated ' + dtsFilePath
-                    ))
-            );
-
-            let dtsSourceFileContent = dtsFileContent
-                    .replace(
-                        new RegExp(IMPORT_HIGHCHARTS_MODULE, 'gm'),
-                        '$1$2.src$3'
-                    )
-                    .replace(
-                        new RegExp(DECLARE_HIGHCHARTS_MODULE, 'gm'),
-                        '$1$2.src$3'
-                    ),
-                dtsSourceFilePath = dts.modulePath + '.src.d.ts';
-
-            promises.push(
-                Utils
-                    .save(dtsSourceFilePath, dtsSourceFileContent)
-                    .then(() => cliFeedback(
-                        'green', 'Generated ' + dtsSourceFilePath
-                    ))
-            );
-        })
-
-    promises.push(
-        Utils
-            .save(globalDtsFilePath , mainGlobalDeclarations.toString())
-            .then(() => cliFeedback('green', 'Generated ' + globalDtsFilePath))
-    );
-
-    return Promise
-        .all(promises)
-        .then(() => undefined);*/
 }
 
 
@@ -402,12 +350,14 @@ class Generator {
      * */
 
     public constructor (
-        globals: TSD.IDeclaration,
-        namespace: TSD.ModuleGlobalDeclaration
+        globals: TSD.ModuleGlobalDeclaration,
+        namespace: TSD.ModuleGlobalDeclaration,
+        product?: string
     ) {
 
         this._globals = globals;
         this._namespace = namespace;
+        this._product = (product || '');
     }
 
     /* *
@@ -416,8 +366,19 @@ class Generator {
      *
      * */
 
-    private _globals: TSD.IDeclaration;
+    public get globals(): TSD.ModuleGlobalDeclaration {
+        return this._globals;
+    }
+    private _globals: TSD.ModuleGlobalDeclaration;
 
+    public get product(): string {
+        return this._product;
+    }
+    private _product: string;
+
+    public get namespace(): TSD.ModuleGlobalDeclaration {
+        return this._namespace;
+    }
     private _namespace: TSD.ModuleGlobalDeclaration;
 
     /* *
@@ -428,10 +389,18 @@ class Generator {
 
     public generate (
         sourceNode: Parser.INode,
-        targetDeclaration: TSD.IDeclaration = this._namespace
+        targetDeclaration: TSD.IDeclaration = this._namespace,
+        product: string = this._product
     ) {
 
         let kind = (sourceNode.doclet && sourceNode.doclet.kind || '');
+
+        if (product &&
+            sourceNode.doclet.products &&
+            sourceNode.doclet.products.indexOf(product) === -1
+        ) {
+            return;
+        }
 
         switch (kind) {
             default:

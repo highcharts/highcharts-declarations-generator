@@ -38,11 +38,11 @@ export function task (done: Function) {
             Utils
                 .load(Config.treeNamespaceJsonFile)
                 .then(json => NamespaceParser.parse(json as any))
-                .then(NamespaceGenerator.declare),
+                .then(NamespaceGenerator.generate),
             Utils
                 .load(Config.treeOptionsJsonFile)
                 .then(json => OptionsParser.parse(json as any))
-                .then(OptionsGenerator.declare)
+                .then(OptionsGenerator.generate)
         ])
         .then(declarationsModules => {
 
@@ -52,12 +52,12 @@ export function task (done: Function) {
             const optionsModules = declarationsModules[1];
 
             return Promise.all([
-                NamespaceGenerator.generate(
+                NamespaceGenerator.save(
                     cliFeedback,
                     namespaceModules,
                     optionsModules
                 ),
-                StaticGenerator.generate(cliFeedback)
+                StaticGenerator.save(cliFeedback)
             ]);
         })
         .then(() => cliFeedback(

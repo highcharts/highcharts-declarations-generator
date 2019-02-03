@@ -11,7 +11,7 @@ import * as Utils from './Utilities';
 
 
 
-export function declare (
+export function generate (
     optionsModules: Utils.Dictionary<Parser.INode>
 ): Promise<Utils.Dictionary<TSD.IDeclaration>> {
 
