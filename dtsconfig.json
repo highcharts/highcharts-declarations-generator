@@ -5,7 +5,7 @@
     "mainModule": "code/highcharts",
     "modularProducts": {
         "highstock": "code/modules/stock",
-        "highmaps": "code/modules/maps",
+        "highmaps": "code/modules/map",
         "gantt": "code/modules/gantt"
     },
     "optionTypeMapping": {
@@ -15,7 +15,7 @@
         "highcharts": "code/highcharts",
         "highstock": "code/highstock",
         "highmaps": "code/highmaps",
-        "gantt": "code/gantt"
+        "gantt": "code/highcharts-gantt"
     },
     "typeMapping": {
         "array": "any[]",
