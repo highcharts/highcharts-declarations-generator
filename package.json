@@ -15,6 +15,9 @@
         "@types/request": "*",
         "typescript": "*"
     },
+    "engines": {
+        "node": ">=10"
+    },
     "scripts": {
         "build": "tsc -w"
     }

@@ -171,7 +171,7 @@ export function clone<T> (
 export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
-
+    console.log('Copy (to)', targetFilePath);
     return new Promise((resolve, reject) => {
         MkDirP(Path.dirname(targetFilePath), error => {
 
@@ -197,11 +197,14 @@ export function copy (
 export function copyAll (
     sourceFolderPath: string, targetPath: string
 ): Promise<Array<string>> {
-
+    console.log('Copy all (from)', sourceFolderPath, targetPath);
     return files(sourceFolderPath)
         .then(files => Promise.all(
             files.map(
-                file => copy(file, path(targetPath, file))
+                file => copy(
+                    file,
+                    path(targetPath, relative(sourceFolderPath, file))
+                )
             )
         ));
 }
@@ -213,36 +216,34 @@ export function copyAll (
  *        Folder name
  */
 export function files (folder: string): Promise<Array<string>> {
-
+    console.log('Files (of)', folder);
     return new Promise((resolve, reject) => {
 
         try {
             FS
-                .readdir(folder, { withFileTypes: true }, (error, items) => {
-
+                .readdir(folder, { withFileTypes: true }, (error, entries) => {
                     if (error) {
                         reject(error);
                         return;
                     }
 
-                    const filesPromises = items
-                        .filter(item => item.isDirectory())
-                        .map(item => files(item.name));
+                    const filesPromises = entries
+                        .filter(entry => entry.isDirectory())
+                        .map(entry => files(path(folder, entry.name)));
 
-                    const promisedFiles = items
-                        .filter(item => item.isFile())
-                        .map(item => item.name);
+                    const promisedFiles = entries
+                        .filter(entry => entry.isFile())
+                        .map(entry => path(folder, entry.name));
 
                     Promise
                         .all(filesPromises)
                         .then(results => {
-                            
+
                             results.forEach(
                                 result => promisedFiles.push(...result)
                             );
 
-                            return promisedFiles
-                                .map(file => path(folder, file));
+                            return promisedFiles;
                         })
                         .then(resolve);
                 });
