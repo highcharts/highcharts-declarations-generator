@@ -51,6 +51,8 @@ export function task (done: Function) {
             const namespaceModules = declarationsModules[0];
             const optionsModules = declarationsModules[1];
 
+            cliFeedback('green', 'Completing declarations...');
+
             return NamespaceGenerator
                 .save(cliFeedback, namespaceModules, optionsModules)
                 .then(() => StaticGenerator.save(cliFeedback));

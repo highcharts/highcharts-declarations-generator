@@ -13,11 +13,13 @@ import * as Utils from './Utilities';
 
 export function generate (
     optionsModules: Utils.Dictionary<Parser.INode>
-): Promise<Utils.Dictionary<TSD.IDeclaration>> {
+): Promise<Utils.Dictionary<TSD.ModuleDeclaration>> {
 
     return new Promise(resolve => {
 
-        const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
+        const declarations = {} as (
+            Utils.Dictionary<TSD.ModuleDeclaration>
+        );
         const products = Config.products;
         const productsModules = Object
             .keys(products)
@@ -141,7 +143,7 @@ class Generator {
 
     public constructor (parsedOptions: Parser.INode) {
 
-        this._namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
+        this._namespace = new TSD.ModuleDeclaration('Highcharts');
         this._series = [];
 
         this.generateInterfaceDeclaration(parsedOptions);
@@ -154,10 +156,10 @@ class Generator {
      *
      * */
 
-    public get namespace(): TSD.ModuleGlobalDeclaration {
+    public get namespace(): TSD.ModuleDeclaration {
         return this._namespace;
     }
-    private _namespace: TSD.ModuleGlobalDeclaration;
+    private _namespace: TSD.ModuleDeclaration;
 
     private _series: Array<string>;
 
