@@ -171,7 +171,7 @@ export function clone<T> (
 export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
-    console.log('Copy (to)', targetFilePath);
+
     return new Promise((resolve, reject) => {
         MkDirP(Path.dirname(targetFilePath), error => {
 
@@ -197,7 +197,7 @@ export function copy (
 export function copyAll (
     sourceFolderPath: string, targetPath: string
 ): Promise<Array<string>> {
-    console.log('Copy all (from)', sourceFolderPath, targetPath);
+
     return files(sourceFolderPath)
         .then(files => Promise.all(
             files.map(
@@ -216,7 +216,7 @@ export function copyAll (
  *        Folder name
  */
 export function files (folder: string): Promise<Array<string>> {
-    console.log('Files (of)', folder);
+
     return new Promise((resolve, reject) => {
 
         try {
