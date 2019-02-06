@@ -34,29 +34,32 @@ export function task (done: Function) {
     cliFeedback('green', 'Start creating TypeScript declarations...');
 
     return Promise
-        .all([
-            Utils
-                .load(Config.treeNamespaceJsonFile)
-                .then(json => NamespaceParser.parse(json as any))
-                .then(NamespaceGenerator.generate),
-            Utils
-                .load(Config.treeOptionsJsonFile)
-                .then(json => OptionsParser.parse(json as any))
-                .then(OptionsGenerator.generate)
-        ])
+        .all([])
+        .then(() => Utils
+            .load(Config.treeOptionsJsonFile)
+            .then(OptionsParser.parse)
+            .then(OptionsGenerator.generate)
+        )
+        .then(optionsNamespace => Utils
+            .load(Config.treeNamespaceJsonFile)
+            .then(NamespaceParser.parse)
+            .then(moduleNodes => {
+
+                cliFeedback('green', 'Creating declarations...');
+
+                return NamespaceGenerator.generate(
+                    moduleNodes, optionsNamespace
+                );
+            })
+        )
         .then(declarationsModules => {
 
-            cliFeedback('green', 'JSON processed.');
+            cliFeedback('green', 'Saving declarations...');
 
-            const namespaceModules = declarationsModules[0];
-            const optionsModules = declarationsModules[1];
-
-            cliFeedback('green', 'Completing declarations...');
-
-            return NamespaceGenerator
-                .save(cliFeedback, namespaceModules, optionsModules)
-                .then(() => StaticGenerator.save(cliFeedback));
+            return declarationsModules;
         })
+        .then(NamespaceGenerator.save)
+        .then(StaticGenerator.save)
         .then(() => cliFeedback(
             'green',
             'Finished creating TypeScript declarations.'
