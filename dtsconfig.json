@@ -3,11 +3,6 @@
     "treeNamespaceJsonFile": "tree-namespace.json",
     "treeOptionsJsonFile": "tree.json",
     "mainModule": "code/highcharts",
-    "modularProducts": {
-        "highstock": "code/modules/stock",
-        "highmaps": "code/modules/map",
-        "gantt": "code/modules/gantt"
-    },
     "optionTypeMapping": {
         "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
     },

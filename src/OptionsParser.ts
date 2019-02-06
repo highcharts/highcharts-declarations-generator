@@ -17,8 +17,8 @@ const PRODUCTS = Object.keys(Config.products);
  * @param optionsJSON
  *        The JSON dictionary to parse.
  */
-export function parse(json: any): Promise<Utils.Dictionary<INode>> {
-    return new Promise(resolve => resolve((new Parser(json)).modules));
+export function parse(json: any): Promise<INode> {
+    return new Promise(resolve => resolve((new Parser(json)).root));
 }
 
 
@@ -101,6 +101,9 @@ class Parser extends Object {
     }
     private _modules: Utils.Dictionary<INode>;
 
+    public get root(): INode {
+        return this._root;
+    }
     private _root: INode;
 
     /* *
@@ -284,11 +287,11 @@ class Parser extends Object {
      * Update the products information of the node, or determines the products,
      * if not set.
      *
-     * @param  node
-     *         Node to update.
+     * @param node
+     *        Node to update.
      * 
-     * @param  parentProducts
-     *         Products array of the parent node.
+     * @param parentProducts
+     *        Products array of the parent node.
      */
     private completeNodeProducts (node: INode, parentProducts: Array<string>) {
 

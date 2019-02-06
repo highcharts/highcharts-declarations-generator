@@ -12,46 +12,12 @@ import * as Utils from './Utilities';
 
 
 export function generate (
-    optionsModules: Utils.Dictionary<Parser.INode>
-): Promise<Utils.Dictionary<TSD.ModuleDeclaration>> {
+    optionsNode: Parser.INode
+): Promise<TSD.ModuleDeclaration> {
 
-    return new Promise(resolve => {
-
-        const declarations = {} as (
-            Utils.Dictionary<TSD.ModuleDeclaration>
-        );
-        const generators = {} as (
-            Utils.Dictionary<Generator>
-        );
-        const products = Config.products;
-        const productsModules = Object
-            .keys(products)
-            .map(module => products[module]);
-
-        Object
-            .keys(optionsModules)
-            .forEach(
-                module => {
-                    if (productsModules.indexOf(module) > -1) {
-                        generators[module] = new Generator(
-                            optionsModules[module]
-                        );
-                    }
-                }
-            );
-
-        Object
-            .keys(optionsModules)
-            .forEach(
-                module => {
-                    if (productsModules.indexOf(module) > -1) {
-                        declarations[module] = generators[module].namespace;
-                    }
-                }
-            );
-
-        resolve(declarations);
-    });
+    return new Promise(
+        resolve => resolve((new Generator(optionsNode)).namespace)
+    );
 }
 
 

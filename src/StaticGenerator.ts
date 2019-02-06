@@ -7,14 +7,10 @@
 import * as Config from './Config';
 import * as Utils from './Utilities';
 
-export function save (cliFeedback: Function): Promise<void> {
+export function save (): Promise<string[]> {
 
-    return Utils
-        .copyAll(
-            Utils.path(Config.cgd, 'static'),
-            Utils.path(Utils.parent(Config.mainModule))
-        )
-        .then(files => files.forEach(file => cliFeedback(
-            'green', 'Copied ' + file
-        )));
+    return Utils.copyAll(
+        Utils.path(Config.cgd, 'static'),
+        Utils.path(Utils.parent(Config.mainModule))
+    );
 };
