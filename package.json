@@ -1,8 +1,11 @@
 {
+    "private": true,
     "name": "highcharts-declarations-generator",
     "version": "1.0.9",
     "author": "Highsoft AS",
-    "private": true,
+    "files":[
+        "lib"
+    ],
     "main": "lib/GulpTask.js",
     "dependencies": {
         "colors": "*",

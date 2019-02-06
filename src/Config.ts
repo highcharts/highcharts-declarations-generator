@@ -149,7 +149,6 @@ interface IConfig {
     cgd: string;
     cwd: string;
     mainModule: string;
-    modularProducts: Utils.Dictionary<string>;
     optionTypeMapping: { [option: string]: string };
     products: Utils.Dictionary<string>;
     seeBaseUrl: string;
