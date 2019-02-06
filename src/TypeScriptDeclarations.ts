@@ -1238,6 +1238,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         
         renderedExtendedDescription += parameters
             .map(parameter => parameter.renderParameterDescription(indent))
+            .filter(parameter => !!parameter)
             .join(indent + ' *\n');
 
         if (this.typesDescription) {
@@ -1275,7 +1276,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
                 renderedExtendedDescription
             );
         }
-        else if (!renderedExtendedDescription) {
+
+        if (!renderedExtendedDescription) {
             return '';
         }
 
