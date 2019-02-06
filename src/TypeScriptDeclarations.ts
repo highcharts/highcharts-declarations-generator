@@ -1690,8 +1690,8 @@ export class ExternalModuleDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -1838,7 +1838,7 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
     /**
      * Returns a clone of this type declaration.
      */
-    public clone (): TypeDeclaration {
+    public clone (): FunctionTypeDeclaration {
 
         let clone = new FunctionTypeDeclaration(this.name);
 
@@ -1848,9 +1848,9 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
-        clone.events.push(...this.events.slice());
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.events.push(...this.events);
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
         clone.setParameters(...this.getParameters().map(
             parameter => parameter.clone()
@@ -1926,8 +1926,8 @@ export class InterfaceDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -2146,8 +2146,8 @@ export class NamespaceDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -2400,8 +2400,8 @@ export class PropertyDeclaration extends IDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isReadOnly = this.isReadOnly;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -2516,8 +2516,8 @@ export class TypeDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;

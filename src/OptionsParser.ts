@@ -135,7 +135,7 @@ class Parser extends Object {
             targetName = (targetMeta.fullname || targetMeta.name);
 
         if (product &&
-            sourceDoclet.products.indexOf(product) === -1
+            (sourceDoclet.products || []).indexOf(product) === -1
         ) {
             return;
         }
@@ -163,9 +163,8 @@ class Parser extends Object {
             .forEach(key => {
 
                 if (product &&
-                    (sourceChildren[key].doclet.products || []).indexOf(
-                        product
-                    ) === -1
+                    (sourceChildren[key].doclet.products || [])
+                        .indexOf(product) === -1
                 ) {
                     return;
                 }

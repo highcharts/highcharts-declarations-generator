@@ -17,19 +17,21 @@ const COPYRIGHT: string = 'Copyright (c) Highsoft AS. All rights reserved.';
 
 export function generate (
     namespaceModules: Utils.Dictionary<Parser.INode>
-): Promise<Utils.Dictionary<TSD.IDeclaration>> {
+): Promise<Utils.Dictionary<TSD.ModuleDeclaration>> {
 
     return new Promise(resolve => {
 
-        const declarations = {} as Utils.Dictionary<TSD.IDeclaration>;
-        const products = Config.products;
+        const declarations = {} as (
+            Utils.Dictionary<TSD.ModuleDeclaration>
+        );
 
-        const productsModules = {} as Utils.Dictionary<string>;        
+        const products = Config.products;
+        const productsModules = {} as Utils.Dictionary<string>;
         Object
             .keys(products)
             .forEach(product => productsModules[products[product]] = product);
 
-        const globals = new TSD.ModuleGlobalDeclaration('globals');
+        const globals = new TSD.ModuleDeclaration('globals');
         globals.description = COPYRIGHT;
         declarations['code/globals'] = globals;
 
@@ -38,7 +40,7 @@ export function generate (
             .keys(productsModules)
             .forEach(module => {
 
-                const namespace = new TSD.ModuleGlobalDeclaration('Highcharts');
+                const namespace = new TSD.ModuleDeclaration('Highcharts');
                 namespace.imports.push('import * as globals from "./globals";');
                 namespace.exports.push('export as namespace Highcharts;');
 
@@ -52,28 +54,28 @@ export function generate (
 
         Object
             .keys(namespaceModules)
-            .forEach(
-                module => {
+            .forEach(module => {
 
-                    if (declarations[module] || productsModules[module]) {
-                        return;
-                    }
-
-                    Object
-                        .keys(declarationsGenerators)
-                        .forEach(key => declarationsGenerators[key]
-                            .generate(namespaceModules[module])
-                        );
-
-                    declarations[module] = generateModule(module);
+                if (declarations[module] || productsModules[module]) {
+                    return;
                 }
-            );
+
+                Object
+                    .keys(declarationsGenerators)
+                    .forEach(key => declarationsGenerators[key]
+                        .generate(namespaceModules[module])
+                    );
+
+                declarations[module] = generateModule(module);
+            });
 
         Object
             .keys(productsModules)
-            .forEach(module => declarations[module] = (
-                declarationsGenerators[module].namespace
-            ));
+            .forEach(module =>
+                declarations[module] = (
+                    declarationsGenerators[module].namespace
+                )
+            );
 
         resolve(declarations);
     });
@@ -81,9 +83,9 @@ export function generate (
 
 
 
-function generateModule (modulePath: string): TSD.IDeclaration {
+function generateModule (modulePath: string): TSD.ModuleDeclaration {
 
-    const moduleGlobal = new TSD.ModuleGlobalDeclaration(modulePath);
+    const moduleGlobal = new TSD.ModuleDeclaration();
     moduleGlobal.description = COPYRIGHT;
     moduleGlobal.imports.push(
         ('import * as Highcharts from "' + Utils.relative(
@@ -114,55 +116,385 @@ function generateModule (modulePath: string): TSD.IDeclaration {
     return moduleGlobal;
 }
 
+
+
 export function save (
     cliFeedback: Function,
-    namespaceModules: Utils.Dictionary<TSD.IDeclaration>,
-    optionsModules: Utils.Dictionary<TSD.IDeclaration>
+    namespaceModules: Utils.Dictionary<TSD.ModuleDeclaration>,
+    optionsModules: Utils.Dictionary<TSD.ModuleDeclaration>
 ): Promise<void> {
 
-    const filePromises = [] as Array<Promise<string>>;
-    const importStatement = (
-        /(import \* as Highcharts from ".*highcharts)(";)/g
-    );
+    const moduleStatement = /(".*\/(?:highcharts|globals)+)(";|" {)/g;
+    const mainModule = namespaceModules[Config.mainModule];
 
-    let declarations: TSD.IDeclaration;
+    const modularProducts = Config.modularProducts;
+    const modularProductsModules = {} as Utils.Dictionary<string>;
+    Object
+        .keys(modularProducts)
+        .forEach(product =>
+            modularProductsModules[modularProducts[product]] = product
+        );
 
+    const products = Config.products;
+    const productsModules = {} as Utils.Dictionary<string>;        
+    Object
+        .keys(products)
+        .forEach(product => productsModules[products[product]] = product);
+
+    let declarations: TSD.ModuleDeclaration;
     Object
         .keys(namespaceModules)
-        .forEach(
-            module => {
+        .forEach(module => {
 
-                declarations = namespaceModules[module];
+            declarations = namespaceModules[module];
 
-                if (optionsModules[module]) {
-                    declarations.addChildren(
-                        ...optionsModules[module].removeChildren()
-                    );
-                }
-
-                filePromises.push(
-                    Utils
-                        .save(module + '.d.ts', declarations.toString())
-                        .then(file => cliFeedback(
-                            'green', 'Saved ' + file
-                        )),
-                    Utils
-                        .save(
-                            module + '.src.d.ts',
-                            declarations
-                                .toString()
-                                .replace(importStatement, '$1.src$2')
-                        )
-                        .then(file => cliFeedback(
-                            'green', 'Saved ' + file
-                        )),
+            if (optionsModules[module]) {
+                declarations.addChildren(
+                    ...
+                    optionsModules[module].removeChildren()
                 );
             }
-        );
+        });
+
+    const filePromises = [] as Array<Promise<string>>;
+    Object
+        .keys(namespaceModules)
+        .forEach(module => {
+
+            declarations = namespaceModules[module];
+
+            if (modularProductsModules[module]) {
+                const externalNamespace = new TSD.ExternalModuleDeclaration(
+                    mainModule.name,
+                    '../highcharts'
+                );
+                externalNamespace.addChildren(
+                    ...
+                    filterChildDeclarations(
+                        namespaceModules[products[modularProductsModules[
+                            module
+                        ]]].getChildren(),
+                        mainModule.getChildren(),
+                        modularProductsModules[module]
+                    )
+                    .map(child => child.clone())
+                );
+                declarations.addChildren(externalNamespace);
+/*                    filterModularProductModule(
+                    mainModule,
+                    namespaceModules[
+                        products[modularProductsModules[module]]
+                    ],
+                    declarations
+                );*/
+            }
+
+            if (productsModules[module]) {
+                filterInvalidTypes(declarations);
+            }
+
+            filePromises.push(
+                Utils.save(module + '.d.ts', declarations.toString()),
+                Utils.save(
+                    module + '.src.d.ts',
+                    declarations
+                        .toString()
+                        .replace(moduleStatement, '$1.src$2')
+                )
+            );
+        });
 
     return Promise
         .all(filePromises)
         .then(() => undefined);
+}
+
+
+
+function filterChildDeclarations (
+    declarationsToFilter: Array<TSD.IDeclaration>,
+    referenceDeclarations: Array<TSD.IDeclaration>,
+    product: string
+): Array<TSD.IDeclaration> {
+
+    const filteredChildDeclarations = [] as Array<TSD.IDeclaration>;
+
+    declarationsToFilter.forEach(declaration => {
+
+        const foundReference = referenceDeclarations.find(reference => {
+            if (reference.name === declaration.name) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        });
+
+        if (foundReference instanceof TSD.ClassDeclaration ||
+            foundReference instanceof TSD.InterfaceDeclaration
+        ) {
+            const newDeclaration = new TSD.InterfaceDeclaration(
+                declaration.name
+            );
+            newDeclaration.addChildren(
+                ...
+                filterChildDeclarations(
+                    declaration.getChildren(),
+                    foundReference.getChildren(),
+                    product
+                )
+                .map(filteredChild => filteredChild.clone())
+            );
+            if (newDeclaration.hasChildren) {
+                filteredChildDeclarations.push(newDeclaration);
+            }
+        }
+
+        if (foundReference instanceof TSD.TypeDeclaration &&
+            foundReference.name === 'SeriesOptionsType'
+        ) {
+            const newDeclaration = new TSD.TypeDeclaration(
+                Utils.capitalize(product) + 'SeriesOptionsType'
+            );
+            newDeclaration.description = foundReference.description;
+            newDeclaration.types.push(...foundReference.types);
+            filteredChildDeclarations.push(newDeclaration);
+        }
+/*
+        if (foundReference instanceof TSD.PropertyDeclaration &&
+            foundReference.name === 'series' &&
+            foundReference.parent instanceof TSD.InterfaceDeclaration &&
+            foundReference.parent.name === 'Options'
+        ) {
+            const newDeclaration = new TSD.PropertyDeclaration('series');
+            newDeclaration.isOptional = foundReference.isOptional;
+            newDeclaration.types.push(
+                'Array<Highcharts.SeriesOptionsType|Highcharts.' +
+                Utils.capitalize(product) + 'SeriesOptionsType>'
+            );
+            filteredChildDeclarations.push(newDeclaration);
+        }
+*/
+        if (foundReference ||
+            declaration instanceof TSD.ConstructorDeclaration
+        ) {
+            return;
+        }
+
+        filteredChildDeclarations.push(declaration);
+    });
+
+    return filteredChildDeclarations;
+}
+
+function filterInvalidTypes (namespace: TSD.ModuleDeclaration) {
+
+    const namespaceTypes = namespace.getChildrenNames(true);
+
+    const removedTypes = [] as Array<string>;
+
+    function filterTypes (declaration: TSD.IDeclaration) {
+
+        const typeNames = TSD.IDeclaration
+            .extractTypeNames(...declaration.types);
+
+        let validTypes = [] as Array<string>;
+
+        typeNames
+            .filter(name => name.startsWith('Highcharts.'))
+            .forEach(name => {
+
+                if (namespaceTypes.some(type => type.startsWith(name))) {
+                    return;
+                }
+
+                removedTypes.push(name);
+
+                validTypes = Utils.uniqueArray(
+                    declaration.types.map(type => 
+                        type.replace(
+                            new RegExp(
+                                (
+                                    name.replace('.', '\\.') +
+                                    '(?=' +
+                                    TSD.IDeclaration.TYPE_SEPARATOR +
+                                    '|$)'
+                                ),
+                                'g'
+                            ),
+                            'any'
+                        )
+                    )
+                );
+
+                declaration.types.length = 0;
+                declaration.types.push(...validTypes);
+            });
+
+        declaration.getChildren().forEach(filterTypes);
+
+        if (declaration instanceof TSD.ConstructorDeclaration ||
+            declaration instanceof TSD.FunctionDeclaration ||
+            declaration instanceof TSD.FunctionTypeDeclaration
+        ) {
+            declaration.getParameters().forEach(filterTypes);
+        }
+    }
+
+    filterTypes(namespace);
+
+    console.log('Removed', removedTypes.join(', '));
+}
+
+
+
+function filterModularProductModule (
+    mainNamespace: TSD.ModuleDeclaration,
+    productNamespace: TSD.ModuleDeclaration,
+    modularProductNamespace: TSD.ModuleDeclaration
+): TSD.ModuleDeclaration {
+
+    const mainName = mainNamespace.fullName;
+    const mainTypes = mainNamespace.getChildrenNames();
+
+    const modularNamespace = new TSD.ExternalModuleDeclaration(
+        'Highcharts',
+        '../highcharts'
+    );
+    modularProductNamespace.addChildren(modularNamespace);
+
+    console.log(
+        mainNamespace.getChildren().length,
+        productNamespace.getChildren().length
+    );
+
+    modularNamespace.addChildren(
+        ...filterUnknownChildDeclarations(
+            productNamespace,
+            mainNamespace
+        )
+    );
+
+    console.log('Cloned', modularNamespace.getChildrenNames().join(', '));
+
+    return modularProductNamespace;
+}
+
+
+
+function filterUnknownChildDeclarations (
+    declarationToFilter: TSD.IDeclaration,
+    referenceDeclaration: TSD.IDeclaration
+): Array<TSD.IDeclaration> {
+
+    let referenceChildNames: Array<string>;
+    let childrenToFilter: Array<TSD.IDeclaration>;
+
+    if (referenceDeclaration instanceof TSD.FunctionDeclaration &&
+        declarationToFilter instanceof TSD.FunctionDeclaration
+    ) {
+        referenceChildNames = referenceDeclaration.getParameterNames();
+        childrenToFilter = declarationToFilter.getParameters();
+    }
+    else {
+        referenceChildNames = referenceDeclaration.getChildrenNames();
+        childrenToFilter = declarationToFilter.getChildren();
+    }
+
+    const unknownChildren = [] as Array<TSD.IDeclaration>;
+    childrenToFilter
+        .forEach(childToFilter => {
+
+            if (referenceChildNames.indexOf(childToFilter.name) === -1) {
+                unknownChildren.push(childToFilter.clone());
+                return;
+            }
+
+            switch (childToFilter.kind) {
+                default:
+                    return;
+                case 'class':
+                case 'function':
+                case 'interface':
+                case 'static function':
+                    break;
+            }
+
+            const differences = [] as Array<TSD.IDeclaration>;
+            const different = referenceDeclaration
+                .getChildren(childToFilter.name)
+                .every(referenceChild => {
+
+                    const unknownChildChildren = filterUnknownChildDeclarations(
+                        childToFilter,
+                        referenceChild
+                    );
+
+                    differences.push(...unknownChildChildren);
+                        
+                    return unknownChildChildren.length > 0;
+                });
+
+            if (!different) {
+                return;
+            }
+
+            if (childToFilter instanceof TSD.FunctionDeclaration) {
+                const unknownChild = new TSD.FunctionDeclaration(
+                    childToFilter.name
+                );
+                unknownChild.setParameters(
+                    ...childToFilter
+                        .getParameters()
+                        .map(parameter => parameter.clone())
+                );
+                unknownChildren.push(unknownChild);
+            }
+            else {
+                const unknownChild = new TSD.InterfaceDeclaration(
+                    childToFilter.name
+                );
+                unknownChild.addChildren(
+                    ...differences
+                        .map(childChild => childChild.clone())
+                );
+                unknownChildren.push(unknownChild);
+            }
+
+        });
+
+    return unknownChildren;
+}
+
+
+
+function mergeDeclarations(
+    targetDeclaration: TSD.IDeclaration,
+    sourceDeclaration: TSD.IDeclaration
+) {
+
+    if (!targetDeclaration.description) {
+        targetDeclaration.description = sourceDeclaration.description;
+    }
+
+    targetDeclaration.types.push(...Utils.uniqueArray(
+        targetDeclaration.types, sourceDeclaration.types
+    ));
+
+    let existingChild = undefined as (TSD.IDeclaration|undefined),
+        sourceChildren = sourceDeclaration.getChildren(),
+        targetChildrenNames = targetDeclaration.getChildrenNames();
+
+    sourceChildren.forEach(sourceChild => {
+
+        existingChild = targetDeclaration.getChildren(sourceChild.name)[0];
+
+        if (existingChild) {
+            mergeDeclarations(existingChild, sourceChild);
+        } else {
+            targetDeclaration.addChildren(sourceChild.clone());
+        }
+    });
 }
 
 
@@ -313,36 +645,7 @@ class Generator {
 
         return doclet;
     }
-/*
-    public static mergeDeclarations(
-        targetDeclaration: tsd.IDeclaration,
-        sourceDeclaration: tsd.IDeclaration
-    ) {
 
-        if (!targetDeclaration.description) {
-            targetDeclaration.description = sourceDeclaration.description;
-        }
-
-        targetDeclaration.types.push(...utils.mergeArrays(
-            targetDeclaration.types, sourceDeclaration.types
-        ));
-
-        let existingChild = undefined as (tsd.IDeclaration|undefined),
-            sourceChildren = sourceDeclaration.getChildren(),
-            targetChildrenNames = targetDeclaration.getChildrenNames();
-
-        sourceChildren.forEach(sourceChild => {
-
-            existingChild = targetDeclaration.getChildren(sourceChild.name)[0];
-
-            if (existingChild) {
-                Generator.mergeDeclarations(existingChild, sourceChild);
-            } else {
-                targetDeclaration.addChildren(sourceChild.clone());
-            }
-        });
-    }
- */
     /* *
      *
      *  Constructor
@@ -350,8 +653,8 @@ class Generator {
      * */
 
     public constructor (
-        globals: TSD.ModuleGlobalDeclaration,
-        namespace: TSD.ModuleGlobalDeclaration,
+        globals: TSD.ModuleDeclaration,
+        namespace: TSD.ModuleDeclaration,
         product?: string
     ) {
 
@@ -366,20 +669,20 @@ class Generator {
      *
      * */
 
-    public get globals(): TSD.ModuleGlobalDeclaration {
+    public get globals(): TSD.ModuleDeclaration {
         return this._globals;
     }
-    private _globals: TSD.ModuleGlobalDeclaration;
+    private _globals: TSD.ModuleDeclaration;
 
     public get product(): string {
         return this._product;
     }
     private _product: string;
 
-    public get namespace(): TSD.ModuleGlobalDeclaration {
+    public get namespace(): TSD.ModuleDeclaration {
         return this._namespace;
     }
-    private _namespace: TSD.ModuleGlobalDeclaration;
+    private _namespace: TSD.ModuleDeclaration;
 
     /* *
      *
@@ -994,7 +1297,7 @@ class Generator {
 */
     private generateModuleGlobal (
         sourceNode: Parser.INode
-    ): TSD.ModuleGlobalDeclaration {
+    ): TSD.ModuleDeclaration {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = this._namespace;

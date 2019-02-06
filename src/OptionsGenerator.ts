@@ -20,6 +20,9 @@ export function generate (
         const declarations = {} as (
             Utils.Dictionary<TSD.ModuleDeclaration>
         );
+        const generators = {} as (
+            Utils.Dictionary<Generator>
+        );
         const products = Config.products;
         const productsModules = Object
             .keys(products)
@@ -30,9 +33,19 @@ export function generate (
             .forEach(
                 module => {
                     if (productsModules.indexOf(module) > -1) {
-                        declarations[module] = new Generator(
+                        generators[module] = new Generator(
                             optionsModules[module]
-                        ).namespace;
+                        );
+                    }
+                }
+            );
+
+        Object
+            .keys(optionsModules)
+            .forEach(
+                module => {
+                    if (productsModules.indexOf(module) > -1) {
+                        declarations[module] = generators[module].namespace;
                     }
                 }
             );
@@ -40,18 +53,7 @@ export function generate (
         resolve(declarations);
     });
 }
-/*
 
-
-export function generate (
-    optionsJSON: Utils.Dictionary<Parser.INode>
-): Promise<TSD.ModuleGlobalDeclaration> {
-    return new Promise((resolve, reject) => {
-        const generator = new Generator(optionsJSON);
-        resolve(generator.mainNamespace);
-    });
-}
-*/
 
 
 const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
@@ -59,6 +61,14 @@ const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
 
 
 class Generator {
+
+    /* *
+     *
+     *  Static Properties
+     *
+     * */
+
+    private static _series: Array<string> = [];
 
     /* *
      *
@@ -144,7 +154,6 @@ class Generator {
     public constructor (parsedOptions: Parser.INode) {
 
         this._namespace = new TSD.ModuleDeclaration('Highcharts');
-        this._series = [];
 
         this.generateInterfaceDeclaration(parsedOptions);
         this.generateSeriesDeclaration();
@@ -160,8 +169,6 @@ class Generator {
         return this._namespace;
     }
     private _namespace: TSD.ModuleDeclaration;
-
-    private _series: Array<string>;
 
     /* *
      *
@@ -205,7 +212,7 @@ class Generator {
                         child, declaration
                     );
                     if (seriesDeclaration) {
-                        this._series.push(seriesDeclaration.fullName);
+                        Generator._series.push(seriesDeclaration.fullName);
                     }
                 });
         }
@@ -397,7 +404,7 @@ class Generator {
         seriesTypeDeclaration.description = (
             'The possible types of series options.'
         );
-        seriesTypeDeclaration.types.push(...this._series);
+        seriesTypeDeclaration.types.push(...Generator._series);
 
         this.namespace.addChildren(seriesTypeDeclaration);
 
