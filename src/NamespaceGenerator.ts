@@ -25,7 +25,9 @@ export function generate (
             {} as Utils.Dictionary<TSD.ModuleDeclaration>
         );
         const globalsNamespace = new TSD.ModuleDeclaration('globals');
-        const globalsModule = Utils.parent(Config.mainModule) + 'globals.d.ts';
+        const globalsModule = Utils.path(
+            Utils.parent(Config.mainModule), 'globals.d.ts'
+        );
 
         Object
             .keys(moduleNodes)
