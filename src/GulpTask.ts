@@ -31,31 +31,43 @@ function cliFeedback (colorOrMessage: string, message?: string) {
 
 export function task (done: Function) {
 
-    console.info(Colors.green(
-        'Start creating TypeScript declarations...'
-    ));
+    cliFeedback('green', 'Start creating TypeScript declarations...');
 
-    return Utils
-        .load(Config.treeOptionsJsonFile)
-        .then(OptionsParser.parse)
-        .then(OptionsGenerator.generate)
-        .then(optionsDeclarations => Utils
-            .load(Config.treeNamespaceJsonFile)
-            .then(NamespaceParser.parseIntoFiles)
-            .then(filesDictionary => Promise.all([
-                NamespaceGenerator.generate(
-                    cliFeedback, filesDictionary, optionsDeclarations
-                ),
-                StaticGenerator.generate(
-                    cliFeedback
-                )
-            ]))
-        )
-        .then(() => console.info(Colors.green(
+    return Promise
+        .all([
+            Utils
+                .load(Config.treeNamespaceJsonFile)
+                .then(json => NamespaceParser.parse(json as any))
+                .then(NamespaceGenerator.generate),
+            Utils
+                .load(Config.treeOptionsJsonFile)
+                .then(json => OptionsParser.parse(json as any))
+                .then(OptionsGenerator.generate)
+        ])
+        .then(declarationsModules => {
+
+            cliFeedback('green', 'JSON processed.');
+
+            const namespaceModules = declarationsModules[0];
+            const optionsModules = declarationsModules[1];
+
+            cliFeedback('green', 'Completing declarations...');
+
+            return NamespaceGenerator
+                .save(cliFeedback, namespaceModules, optionsModules)
+                .then(() => StaticGenerator.save(cliFeedback));
+        })
+        .then(() => cliFeedback(
+            'green',
             'Finished creating TypeScript declarations.'
-        )))
-        .catch(err => {
-            console.info(Colors.red(err.toString()));
-            throw err;
+        ))
+        .catch(error => {
+            if (error) {
+                cliFeedback('red', error.toString());
+                throw error;
+            }
+            else {
+                throw new Error('Unknown error');
+            }
         });
 }

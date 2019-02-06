@@ -172,25 +172,17 @@ export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
 
-    if (sourceFilePath[0] !== Path.sep) {
-        sourceFilePath = Path.resolve(process.cwd(), sourceFilePath);
-    }
-
-    if (targetFilePath[0] !== Path.sep) {
-        targetFilePath = Path.resolve(process.cwd(), targetFilePath);
-    }
-
     return new Promise((resolve, reject) => {
-        MkDirP(Path.dirname(targetFilePath), err => {
+        MkDirP(Path.dirname(targetFilePath), error => {
 
-            if (err) {
-                reject(err);
+            if (error) {
+                reject(error);
                 return;
             }
 
-            FS.copyFile(sourceFilePath, targetFilePath, (err) => {
-                if (err) {
-                    reject(err);
+            FS.copyFile(sourceFilePath, targetFilePath, error => {
+                if (error) {
+                    reject(error);
                 } else {
                     resolve(targetFilePath);
                 }
@@ -203,67 +195,67 @@ export function copy (
 
 
 export function copyAll (
-    sourcePath: string, targetPath: string, recursive: boolean = false
+    sourceFolderPath: string, targetPath: string
 ): Promise<Array<string>> {
 
-    if (sourcePath[0] !== Path.sep) {
-        sourcePath = Path.resolve(process.cwd(), sourcePath);
-    }
+    return files(sourceFolderPath)
+        .then(files => Promise.all(
+            files.map(
+                file => copy(
+                    file,
+                    path(targetPath, relative(sourceFolderPath, file))
+                )
+            )
+        ));
+}
 
-    if (targetPath[0] !== Path.sep) {
-        targetPath = Path.resolve(process.cwd(), targetPath);
-    }
+/**
+ * Return of all files in a given folder and subfolders.
+ *
+ * @param folder
+ *        Folder name
+ */
+export function files (folder: string): Promise<Array<string>> {
 
     return new Promise((resolve, reject) => {
-        FS.readdir(sourcePath, (err, files) => {
 
-            if (err) {
-                reject(err);
-                return;
-            }
-
-            const copyPromises = [] as Array<Promise<string|Array<string>>>;
-
-            files.forEach(file => {
-
-                const source = Path.join(sourcePath, file);
-                const target = Path.join(targetPath, file);
-                const stat = FS.statSync(source);
-
-                if (stat.isFile()) {
-                    copyPromises.push(copy(source, target));
-                } else if (recursive && stat.isDirectory()) {
-                    copyPromises.push(copyAll(source, target));
-                }
-
-            });
-
-            Promise.all(copyPromises).then(results => {
-
-                const copiedFiles = [] as Array<string>;
-
-                results.forEach(result => {
-                    if (result instanceof Array) {
-                        copiedFiles.push(...result);
+        try {
+            FS
+                .readdir(folder, { withFileTypes: true }, (error, entries) => {
+                    if (error) {
+                        reject(error);
+                        return;
                     }
-                    else {
-                        copiedFiles.push(result);
-                    }
+
+                    const filesPromises = entries
+                        .filter(entry => entry.isDirectory())
+                        .map(entry => files(path(folder, entry.name)));
+
+                    const promisedFiles = entries
+                        .filter(entry => entry.isFile())
+                        .map(entry => path(folder, entry.name));
+
+                    Promise
+                        .all(filesPromises)
+                        .then(results => {
+
+                            results.forEach(
+                                result => promisedFiles.push(...result)
+                            );
+
+                            return promisedFiles;
+                        })
+                        .then(resolve);
                 });
-
-                resolve(copiedFiles);
-
-            });
-
-        });
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
+export function isBasicType (name: string): boolean {
 
-
-export function isBasicType (typeName: string): boolean {
-
-    switch (typeName) {
+    switch (name) {
         case 'any':
         case 'boolean':
         case 'function':
@@ -281,19 +273,19 @@ export function isBasicType (typeName: string): boolean {
 
 
 
-export function isCoreType (typeName: string): boolean {
+export function isCoreType (name: string): boolean {
 
-    if (isBasicType(typeName)) {
+    if (isBasicType(name)) {
         return true;
     }
 
-    if (typeName.startsWith('global.') ||
-        typeName.startsWith('window.')
+    if (name.startsWith('global.') ||
+        name.startsWith('window.')
     ) {
-        typeName = typeName.substr(7);
+        name = name.substr(7);
     }
 
-    switch (typeName) {
+    switch (name) {
         case 'Array':
         case 'Boolean':
         case 'false':
@@ -315,14 +307,14 @@ export function isCoreType (typeName: string): boolean {
             return true;
     }
 
-    if (typeName.startsWith('Array<')) {
+    if (name.startsWith('Array<')) {
         return true;
     }
 
-    if (typeName.length > 1) {
+    if (name.length > 1) {
 
-        let firstCharacter = typeName[0],
-            lastCharacter = typeName[typeName.length-1];
+        let firstCharacter = name[0],
+            lastCharacter = name[name.length-1];
 
         switch (firstCharacter + lastCharacter) {
             case '[]':
@@ -332,8 +324,8 @@ export function isCoreType (typeName: string): boolean {
         }
     }
 
-    if (!isNaN(parseFloat(typeName)) ||
-        !isNaN(parseInt(typeName))
+    if (!isNaN(parseFloat(name)) ||
+        !isNaN(parseInt(name))
     ) {
         return true;
     }
@@ -401,13 +393,9 @@ export function isDeepEqual (objectA: any, objectB: any): boolean {
 
 
 export function json (
-    json: (object | string | Array<any>),
+    json: string,
     allowQuirks: boolean = false
-): (object | string | Array<any>) {
-
-    if (typeof json !== 'string') {
-        return JSON.stringify(json);
-    }
+): (Array<any> | Dictionary<any>) {
 
     if (!allowQuirks) {
         return JSON.parse(json);
@@ -431,14 +419,18 @@ export function json (
 
 
 
-export function load (filePath: string): Promise<any> {
+export function load (
+    filePath: string
+): Promise<(Array<any> | Dictionary<any>)> {
     return new Promise((resolve, reject) => {
         filePath = Path.resolve(process.cwd(), filePath);
         FS.readFile(filePath, (err, data) => {
             if (err) {
                 reject(err);
             } else {
-                resolve(json(data.toString()));
+                resolve(
+                    json(data.toString())
+                );
             }
         });
     });

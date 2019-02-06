@@ -12,11 +12,45 @@ import * as Utils from './Utilities';
 
 
 export function generate (
-    optionsJSON: Utils.Dictionary<Parser.INode>
-): Promise<TSD.ModuleGlobalDeclaration> {
-    return new Promise((resolve, reject) => {
-        const generator = new Generator(optionsJSON);
-        resolve(generator.mainNamespace);
+    optionsModules: Utils.Dictionary<Parser.INode>
+): Promise<Utils.Dictionary<TSD.ModuleDeclaration>> {
+
+    return new Promise(resolve => {
+
+        const declarations = {} as (
+            Utils.Dictionary<TSD.ModuleDeclaration>
+        );
+        const generators = {} as (
+            Utils.Dictionary<Generator>
+        );
+        const products = Config.products;
+        const productsModules = Object
+            .keys(products)
+            .map(module => products[module]);
+
+        Object
+            .keys(optionsModules)
+            .forEach(
+                module => {
+                    if (productsModules.indexOf(module) > -1) {
+                        generators[module] = new Generator(
+                            optionsModules[module]
+                        );
+                    }
+                }
+            );
+
+        Object
+            .keys(optionsModules)
+            .forEach(
+                module => {
+                    if (productsModules.indexOf(module) > -1) {
+                        declarations[module] = generators[module].namespace;
+                    }
+                }
+            );
+
+        resolve(declarations);
     });
 }
 
@@ -27,6 +61,14 @@ const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
 
 
 class Generator {
+
+    /* *
+     *
+     *  Static Properties
+     *
+     * */
+
+    private static _series: Array<string> = [];
 
     /* *
      *
@@ -109,26 +151,11 @@ class Generator {
      *
      * */
 
-    public constructor (
-        optionsJSON: Utils.Dictionary<Parser.INode>
-    ) {
+    public constructor (parsedOptions: Parser.INode) {
 
-        this._mainNamespace = new TSD.ModuleGlobalDeclaration('Highcharts');
-        this._seriesTypes = [];
+        this._namespace = new TSD.ModuleDeclaration('Highcharts');
 
-        this.generateInterfaceDeclaration({
-            children: optionsJSON,
-            doclet: {
-                description: 'The option tree for every chart.'
-            },
-            meta: {
-                filename: '',
-                fullname: 'options',
-                line: 0,
-                lineEnd: 0
-            }
-        });
-
+        this.generateInterfaceDeclaration(parsedOptions);
         this.generateSeriesDeclaration();
     }
 
@@ -138,12 +165,10 @@ class Generator {
      *
      * */
 
-    public get mainNamespace(): TSD.ModuleGlobalDeclaration {
-        return this._mainNamespace;
+    public get namespace(): TSD.ModuleDeclaration {
+        return this._namespace;
     }
-    private _mainNamespace: TSD.ModuleGlobalDeclaration;
-
-    private _seriesTypes: Array<string>;
+    private _namespace: TSD.ModuleDeclaration;
 
     /* *
      *
@@ -172,7 +197,7 @@ class Generator {
             declaration.see.push(...doclet.see);
         }
 
-        this.mainNamespace.addChildren(declaration);
+        this.namespace.addChildren(declaration);
 
         if (name === 'SeriesOptions') {
             children
@@ -187,7 +212,7 @@ class Generator {
                         child, declaration
                     );
                     if (seriesDeclaration) {
-                        this._seriesTypes.push(seriesDeclaration.fullName);
+                        Generator._series.push(seriesDeclaration.fullName);
                     }
                 });
         }
@@ -209,16 +234,14 @@ class Generator {
             return undefined;
         }
 
-        const debug = (sourceNode.meta.fullname === 'colorAxis.currentDateIndicator');
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
         if (Object.keys(sourceNode.children).length > 0) {
 
-            const interfaceDeclaration = this.generateInterfaceDeclaration(
-                sourceNode
-            );
-
-            let replacedAnyType = false;
+            let interfaceDeclaration = this.generateInterfaceDeclaration(
+                    sourceNode
+                ),
+                replacedAnyType = false;
 
             if (!interfaceDeclaration) {
                 return;
@@ -325,7 +348,7 @@ class Generator {
             'Highcharts.SeriesOptions'
         );
 
-        this.mainNamespace.addChildren(declaration);
+        this.namespace.addChildren(declaration);
 
         let dataNode = sourceNode.children['data'];
 
@@ -336,7 +359,7 @@ class Generator {
         let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 
         typePropertyDeclaration.description = (
-            '(' + Config.products.map(Utils.capitalize).join (', ') + ') ' +
+            '(' + Object.keys(Config.products).map(Utils.capitalize).join (', ') + ') ' +
             'This property is only in TypeScript non-optional and might be ' +
             '`undefined` in series objects from unknown sources.'
         );
@@ -358,7 +381,7 @@ class Generator {
 
     private generateSeriesDeclaration () {
 
-        let optionsDeclaration = this.mainNamespace.getChildren('Options')[0];
+        let optionsDeclaration = this.namespace.getChildren('Options')[0];
 
         if (!optionsDeclaration) {
             throw new Error('Highcharts.Options not declared!');
@@ -381,9 +404,9 @@ class Generator {
         seriesTypeDeclaration.description = (
             'The possible types of series options.'
         );
-        seriesTypeDeclaration.types.push(...this._seriesTypes);
+        seriesTypeDeclaration.types.push(...Generator._series);
 
-        this.mainNamespace.addChildren(seriesTypeDeclaration);
+        this.namespace.addChildren(seriesTypeDeclaration);
 
         seriesPropertyDeclaration.types.length = 0;
         seriesPropertyDeclaration.types.push(
@@ -393,6 +416,6 @@ class Generator {
  
     public toString(): string {
 
-        return this.mainNamespace.toString();
+        return this.namespace.toString();
     }
 }

@@ -149,8 +149,9 @@ interface IConfig {
     cgd: string;
     cwd: string;
     mainModule: string;
+    modularProducts: Utils.Dictionary<string>;
     optionTypeMapping: { [option: string]: string };
-    products: Array<string>;
+    products: Utils.Dictionary<string>;
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;

@@ -1,6 +1,6 @@
 {
     "name": "highcharts-declarations-generator",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "author": "Highsoft AS",
     "private": true,
     "main": "lib/GulpTask.js",
@@ -14,6 +14,9 @@
         "@types/node": "*",
         "@types/request": "*",
         "typescript": "*"
+    },
+    "engines": {
+        "node": ">=10"
     },
     "scripts": {
         "build": "tsc -w"

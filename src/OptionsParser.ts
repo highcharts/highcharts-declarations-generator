@@ -5,9 +5,11 @@
  * */
 
 import * as Config from './Config';
+import * as FS from 'fs';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
+const PRODUCTS = Object.keys(Config.products);
 
 /**
  * Parse options JSON and returns a dictionary of options nodes.
@@ -15,21 +17,8 @@ import * as Utils from './Utilities';
  * @param optionsJSON
  *        The JSON dictionary to parse.
  */
-export function parse(optionsJSON: Utils.Dictionary<INode>): Promise<Utils.Dictionary<INode>> {
-    return new Promise((resolve, reject) => {
-
-        let parsedOptions = new Parser(optionsJSON);
-
-        resolve(parsedOptions.options);
-/*
-        Utils
-            .save('tree-extended.json', JSON.stringify(parsedOptions.options,
-            (key, value) => (
-                key === 'doclet' || key === 'meta' ? undefined : value
-            ), '\t'))
-            .then(() => resolve(parsedOptions.options));
-// */
-    });
+export function parse(json: any): Promise<Utils.Dictionary<INode>> {
+    return new Promise(resolve => resolve((new Parser(json)).modules));
 }
 
 
@@ -45,30 +34,60 @@ class Parser extends Object {
     /**
      * Complete nodes in the JSON dictionary with inherited children.
      *
-     * @param optionsJSON
+     * @param json
      *        The JSON dictionary to complete.
      */
-    public constructor (optionsJSON: Utils.Dictionary<INode>) {
+    public constructor (json: Utils.Dictionary<INode>) {
 
         super();
 
-        this._options = optionsJSON;
-
         Object
-            .keys(optionsJSON)
+            .keys(json)
             .forEach(key => {
-                if (!optionsJSON[key].doclet) {
-                    delete optionsJSON[key];
-                } else {
-                    this.completeNodeNames(optionsJSON[key], key);
-                    this.completeNodeExtensions(optionsJSON[key]);
-                    this.completeNodeNames(optionsJSON[key], key);
-                    this.completeNodeProducts(
-                        optionsJSON[key], Config.products
-                    );
-                    this.completeNodeTypes(optionsJSON[key]);
+                if (!json[key].doclet) {
+                    delete json[key];
                 }
             });
+
+        this._root = {
+            doclet: {
+                products: PRODUCTS.slice()
+            },
+            meta: {},
+            children: json
+        };
+
+        this.completeNodeNames(this._root, '');
+        this.completeNodeExtensions(this._root);
+        this.completeNodeNames(this._root, '');
+        this.completeNodeProducts(this._root, PRODUCTS);
+        this.completeNodeTypes(this._root);
+
+        this._modules = {} as Utils.Dictionary<INode>;
+
+        PRODUCTS.forEach(
+            product => {
+
+                const productNode = {
+                    doclet: {
+                        description: 'The option tree for every chart.',
+                        products: PRODUCTS.slice()
+                    },
+                    meta: {
+                        fullname: 'options'
+                    },
+                    children: {}
+                } as INode;
+
+                this.cloneNodeInto(
+                    this._root, 
+                    productNode,
+                    product
+                );
+
+                this._modules[Config.products[product]] = productNode;
+            }
+        );
     }
 
     /* *
@@ -77,19 +96,19 @@ class Parser extends Object {
      *
      * */
 
-    private _clone?: INode;
-
-    public get options(): Utils.Dictionary<INode> {
-        return this._options;
+    public get modules(): Utils.Dictionary<INode> {
+        return this._modules;
     }
-    private _options: Utils.Dictionary<INode>;
+    private _modules: Utils.Dictionary<INode>;
+
+    private _root: INode;
 
     /* *
      *
      *  Functions
      *
      * */
-    private _cloneC = 0;
+
     /**
      * Transfers non existing properties and children to a node.
      *
@@ -98,8 +117,15 @@ class Parser extends Object {
      *
      * @param targetNode
      *        Node to clone into.
+     *
+     * @param product
+     *        Product to clone.
      */
-    private cloneNodeInto (sourceNode: INode, targetNode: INode) {
+    private cloneNodeInto (
+        sourceNode: INode,
+        targetNode: INode,
+        product?: string
+    ) {
 
         let sourceDoclet = sourceNode.doclet as any,
             sourceMeta = sourceNode.meta as any,
@@ -107,6 +133,12 @@ class Parser extends Object {
             targetExclude = (targetNode.doclet.exclude || []),
             targetMeta = targetNode.meta as any,
             targetName = (targetMeta.fullname || targetMeta.name);
+
+        if (product &&
+            (sourceDoclet.products || []).indexOf(product) === -1
+        ) {
+            return;
+        }
 
         let sourceChildren = sourceNode.children,
             targetChildren = targetNode.children;
@@ -130,21 +162,31 @@ class Parser extends Object {
             .filter(key => targetExclude.indexOf(key) === -1)
             .forEach(key => {
 
+                if (product &&
+                    (sourceChildren[key].doclet.products || [])
+                        .indexOf(product) === -1
+                ) {
+                    return;
+                }
+
                 if (!targetChildren[key]) {
                     targetChildren[key] = {
                         children: {},
                         doclet: {},
                         meta: {
-                            filename: sourceMeta.filename,
-                            fullname: (targetName && targetName + key),
-                            line: sourceMeta.line,
-                            lineEnd: sourceMeta.lineEnd,
+                            fullname: (
+                                targetName ?
+                                    targetName + '.' + key :
+                                    key
+                            ),
                             name: key
                         }
                     }
                 }
 
-                this.cloneNodeInto(sourceChildren[key], targetChildren[key]);
+                this.cloneNodeInto(
+                    sourceChildren[key], targetChildren[key], product
+                );
             });
     }
 
@@ -172,12 +214,27 @@ class Parser extends Object {
                     let xNode = this.findNode(xName);
 
                     if (!xNode) {
+
+                        FS.writeFileSync(
+                            'tree-error.json',
+                            JSON.stringify(
+                                this._root,
+                                (key, value) => (
+                                    key === 'doclet' || key === 'meta' ?
+                                        undefined :
+                                        value
+                                ),
+                                '\t'
+                            )
+                        );
+
                         throw new Error(
                             'Extends: Node ' + xName + ' not found! ' +
                             'Referenced by ' + (
                                 node.meta.fullname || node.meta.name
                             ) + '.'
                         );
+
                         return;
                     }
 
@@ -218,7 +275,8 @@ class Parser extends Object {
         Object
             .keys(children)
             .forEach(childName => this.completeNodeNames(
-                children[childName], nodeName + '.' + childName
+                children[childName],
+                (nodeName ? nodeName + '.' + childName : childName)
             ));
     }
 
@@ -238,7 +296,7 @@ class Parser extends Object {
             parentProducts = node.doclet.products;
         }
         else {
-            node.doclet.products = parentProducts;
+            node.doclet.products = parentProducts.slice();
         }
 
         let children = node.children;
@@ -339,11 +397,7 @@ class Parser extends Object {
             throw new Error('No node name has been provided.');
         }
 
-        let currentNode = {
-            children: this.options,
-            doclet: {},
-            meta: {}
-        } as INode;
+        let currentNode = this._root;
 
         TSD.IDeclaration
             .namespaces(nodeName)
@@ -360,7 +414,6 @@ class Parser extends Object {
 
         return currentNode;
     }
-
 }
 
 
@@ -403,12 +456,12 @@ export interface IDoclet {
 }
 
 export interface IMeta {
-    filename: string;
-    line: number;
-    lineEnd: number;
     column?: number;
     default?: (boolean|number|string);
+    filename?: string;
     fullname?: string;
+    line?: number;
+    lineEnd?: number;
     name?: string;
 }
 

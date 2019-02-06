@@ -4,8 +4,6 @@
  * 
  * */
 
-
-
 /* *
  *
  *  Types
@@ -32,8 +30,6 @@ export type Kinds = (
     'namespace'
 );
 
-
-
 /* *
  *
  *  Interfaces
@@ -56,8 +52,6 @@ interface PathElements {
     path: string;
     scope: string;
 }
-
-
 
 /* *
  *
@@ -799,9 +793,15 @@ export abstract class IDeclaration extends Object {
 
     /**
      * Returns a sorted array with the names of all child declarations.
+     *
+     * @param withFullname
+     *        Set to true to get the fullname.
      */
-    public getChildrenNames (): Array<string> {
-        return this.getChildren().map(child => child.name);
+    public getChildrenNames (withFullname?: boolean): Array<string> {
+
+        const prefix = (withFullname ? this.fullName + '.' : '');
+
+        return this.getChildren().map(child => prefix + child.name);
     }
 
     /**
@@ -1028,12 +1028,12 @@ export abstract class IDeclaration extends Object {
         filterFunctions: boolean = false
     ): string {
 
-        let root = this.root,
-            rootName = root && root.name,
-            types = this.types.slice();
+        const root = this.root;
 
-        if (rootName) {
-            types = IDeclaration.simplifyType(rootName, ...types);
+        let types = this.types.slice();
+
+        if (root && root.name) {
+            types = IDeclaration.simplifyType(root.name, ...types);
         }
 
         if (filterUndefined &&
@@ -1079,7 +1079,6 @@ export abstract class IDeclaration extends Object {
     public abstract toString (indent?: string): string;
 }
 
-
 /**
  * Extended base class for TypeScript declarations with parameters and types
  * description. This is used by class, constructor, and function declarations.
@@ -1105,7 +1104,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         super(name);
 
         this._events = [];
-        this._parameters = {};
+        this._parameters = [];
         this._typesDescription = '';
     }
 
@@ -1127,9 +1126,9 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      * Returns true, if declaration has parameters.
      */
     public get hasParameters(): boolean {
-        return (Object.keys(this._parameters).length > 0);
+        return this._parameters.length > 0;
     }
-    private _parameters: Dictionary<ParameterDeclaration>;
+    private _parameters: Array<ParameterDeclaration>;
 
     /**
      * Returns the description for the return types.
@@ -1153,16 +1152,14 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      */
     public getParameter(name: string): (ParameterDeclaration|undefined) {
 
-        return this._parameters[name];
+        return this
+            .getParameters()
+            .find(parameter => parameter.name === name);
     }
 
     public getParameters(): Array<ParameterDeclaration> {
 
-        let parameters = this._parameters;
-
-        return this
-            .getParameterNames()
-            .map(name => parameters[name]);
+        return this._parameters.slice();
     }
 
     /**
@@ -1170,7 +1167,9 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      */
     public getParameterNames(): Array<string> {
 
-        return Object.keys(this._parameters);
+        return this
+            .getParameters()
+            .map(parameter => parameter.name);
     }
 
     /**
@@ -1216,9 +1215,7 @@ export abstract class IExtendedDeclaration extends IDeclaration {
         }
 
         return (
-            '(' + Object
-                .keys(parameters)
-                .map(parameterName => parameters[parameterName])
+            '(' + parameters
                 .map(parameter => parameter.toString())
                 .join(', ') +
             ')'
@@ -1239,11 +1236,8 @@ export abstract class IExtendedDeclaration extends IDeclaration {
             renderedEvents = this.renderEvents(indent),
             renderedSee = this.renderSee(indent);
         
-        renderedExtendedDescription += Object
-            .keys(parameters)
-            .map(parameterName => parameters[parameterName]
-                .renderParameterDescription(indent)
-            )
+        renderedExtendedDescription += parameters
+            .map(parameter => parameter.renderParameterDescription(indent))
             .join(indent + ' *\n');
 
         if (this.typesDescription) {
@@ -1319,12 +1313,16 @@ export abstract class IExtendedDeclaration extends IDeclaration {
     /**
      * Adds parameter declarations to this TypeScriot declaration.
      *
+     * @param merge
+     *        Merge parameters with existing ones.
+     *
      * @param declarations
      *        The parameter declarations to add.
      */
     public setParameters(...declarations: Array<ParameterDeclaration>) {
 
         let parameters = this._parameters,
+            parameterNames = this.getParameterNames(),
             name = '';
 
         declarations.forEach(declaration => {
@@ -1337,14 +1335,9 @@ export abstract class IExtendedDeclaration extends IDeclaration {
 
             name = declaration.name;
 
-            if (parameters[name]) {
-                throw new Error(
-                    'Parameter declaration with the name "' +
-                    name + '" already added to "' + this.fullName + '".'
-                );
+            if (parameterNames.indexOf(name) === -1) {
+                parameters.push(declaration)
             }
-
-            parameters[name] = declaration;
         });
     }
 
@@ -1356,8 +1349,6 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      */
     public abstract toString(indent?: string): string;
 }
-
-
 
 /**
  * Class for class declarations in TypeScript.
@@ -1495,8 +1486,6 @@ export class ClassDeclaration extends IExtendedDeclaration {
         );
     }
 }
-
-
 
 /**
  * Class for constructor declarations in TypeScript. This is used by the class
@@ -1644,6 +1633,104 @@ export class EventDeclaration extends IDeclaration {
 }
 
 /**
+ * Class for external module declarations in TypeScript.
+ * 
+ * @extends IDeclaration
+ */
+export class ExternalModuleDeclaration extends IDeclaration {
+
+    /* *
+     *
+     *  Constructor
+     *
+     * */
+
+    public constructor (name: string, relativePath: string) {
+
+        super(name);
+
+        this._path = relativePath;
+
+    }
+
+    /* *
+     *
+     *  Properties
+     *
+     * */
+
+    /**
+     * Kind of declaration.
+     */
+    public readonly kind = 'module';
+
+    public get path (): string {
+        return this._path;
+    }
+    public set path (value: string) {
+        this._path = value;
+    }
+    private _path: string;
+
+    /* *
+     *
+     *  Functions
+     *
+     * */
+
+    /**
+     * Returns a clone of this namespace declaration.
+     */
+    public clone (): ExternalModuleDeclaration {
+
+        let clone = new ExternalModuleDeclaration(this.name, this.path);
+
+        clone.defaultValue = this.defaultValue;
+        clone.description = this.description;
+        clone.isOptional = this.isOptional;
+        clone.isPrivate = this.isPrivate;
+        clone.isStatic = this.isStatic;
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
+        clone.addChildren(...this.getChildren().map(child => child.clone()));
+
+        return clone;
+    }
+
+    /**
+     * Returns a rendered string of this namespace declaration.
+     *
+     * @param indent
+     *        The indentation string for formatting.
+     */
+    public toString (indent: string = ''): string {
+
+        let childIndent = indent + '    ',
+            renderedChildren = this.renderChildren(childIndent),
+            renderedDescription = this.renderDescription(indent),
+            renderedModule = 'module "' + this.path + '"';
+
+        renderedModule = this.renderScopePrefix() + renderedModule;
+
+        if (renderedChildren) {
+            renderedChildren = (
+                '{\n' +
+                renderedChildren +
+                indent + '}'
+            );
+        }
+        else {
+            renderedChildren = '{}'
+        }
+
+        return (
+            renderedDescription +
+            indent + renderedModule + ' ' + renderedChildren+ '\n'
+        );
+    }
+}
+
+/**
  * Class for function declarations in TypeScript.
  *
  * @extends IExtendedDeclaration
@@ -1724,8 +1811,6 @@ export class FunctionDeclaration extends IExtendedDeclaration {
     }
 }
 
-
-
 /**
  * Class for function type declarations in TypeScript.
  *
@@ -1753,7 +1838,7 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
     /**
      * Returns a clone of this type declaration.
      */
-    public clone (): TypeDeclaration {
+    public clone (): FunctionTypeDeclaration {
 
         let clone = new FunctionTypeDeclaration(this.name);
 
@@ -1763,9 +1848,9 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
-        clone.events.push(...this.events.slice());
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.events.push(...this.events);
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
         clone.setParameters(...this.getParameters().map(
             parameter => parameter.clone()
@@ -1805,8 +1890,6 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
     }
 }
 
-
-
 /**
  * Class for interface declarations in TypeScript.
  *
@@ -1843,8 +1926,8 @@ export class InterfaceDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -1896,114 +1979,12 @@ export class InterfaceDeclaration extends IDeclaration {
     }
 }
 
-
-
 /**
- * Class for module declarations in TypeScript.
- * 
- * @extends IDeclaration
- */
-export class ModuleDeclaration extends IDeclaration {
-
-    /* *
-     *
-     *  Constructor
-     *
-     * */
-
-    public constructor (name: string, relativePath: string) {
-
-        super(name);
-
-        this._path = relativePath;
-
-    }
-
-    /* *
-     *
-     *  Properties
-     *
-     * */
-
-    /**
-     * Kind of declaration.
-     */
-    public readonly kind = 'module';
-
-    public get path (): string {
-        return this._path;
-    }
-    public set path (value: string) {
-        this._path = value;
-    }
-    private _path: string;
-
-    /* *
-     *
-     *  Functions
-     *
-     * */
-
-    /**
-     * Returns a clone of this namespace declaration.
-     */
-    public clone (): ModuleDeclaration {
-
-        let clone = new ModuleDeclaration(this.name, this.path);
-
-        clone.defaultValue = this.defaultValue;
-        clone.description = this.description;
-        clone.isOptional = this.isOptional;
-        clone.isPrivate = this.isPrivate;
-        clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
-        clone.addChildren(...this.getChildren().map(child => child.clone()));
-
-        return clone;
-    }
-
-    /**
-     * Returns a rendered string of this namespace declaration.
-     *
-     * @param indent
-     *        The indentation string for formatting.
-     */
-    public toString (indent: string = ''): string {
-
-        let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
-            renderedDescription = this.renderDescription(indent),
-            renderedModule = 'module "' + this.path + '"';
-
-        renderedModule = this.renderScopePrefix() + renderedModule;
-
-        if (renderedChildren) {
-            renderedChildren = (
-                '{\n' +
-                renderedChildren +
-                indent + '}'
-            );
-        }
-        else {
-            renderedChildren = '{}'
-        }
-
-        return (
-            renderedDescription +
-            indent + renderedModule + ' ' + renderedChildren+ '\n'
-        );
-    }
-}
-
-
-
-/**
- * Class for global declarations in a TypeScript module file.
+ * Class for declarations in a module file.
  *
  * @extends IDeclaration
  */
-export class ModuleGlobalDeclaration extends IDeclaration {
+export class ModuleDeclaration extends IDeclaration {
 
     /* *
      *
@@ -2058,9 +2039,9 @@ export class ModuleGlobalDeclaration extends IDeclaration {
     /**
      * Returns a clone of this global declaration.
      */
-    public clone(): ModuleGlobalDeclaration {
+    public clone(): ModuleDeclaration {
 
-        let clone = new ModuleGlobalDeclaration();
+        let clone = new ModuleDeclaration(this.name);
 
         clone.defaultValue = this.defaultValue;
         clone.description = this.description;
@@ -2129,8 +2110,6 @@ export class ModuleGlobalDeclaration extends IDeclaration {
     }
 }
 
-
-
 /**
  * Class for namespace declarations in TypeScript.
  *
@@ -2167,8 +2146,8 @@ export class NamespaceDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -2210,8 +2189,6 @@ export class NamespaceDeclaration extends IDeclaration {
         );
     }
 }
-
-
 
 /**
  * Class for parameter declarations in TypeScript, that are used in the
@@ -2353,8 +2330,6 @@ export class ParameterDeclaration extends IDeclaration {
     }
 }
 
-
-
 /**
  * Class for property declarations in TypeScript, that can be found in a class,
  * global scope, interface, and namespace.
@@ -2425,8 +2400,8 @@ export class PropertyDeclaration extends IDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isReadOnly = this.isReadOnly;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
@@ -2442,6 +2417,7 @@ export class PropertyDeclaration extends IDeclaration {
     public toString (indent: string = ''): string {
 
         let childIndent = indent + '    ',
+            childOfSpace = this.childOfSpace(),
             renderedMember = this.name.replace(':', ': ');
 
         // special treatment for indexers
@@ -2449,17 +2425,16 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember.indexOf(' ') > -1
         ) {
 
-            let root = this.root,
-                rootName = root && root.name;
+            const root = this.root;
 
-            if (rootName) {
+            if (root && root.name) {
 
                 // type is part of the member name
                 let typePosition = (renderedMember.lastIndexOf(' ') + 1),
                     type = renderedMember.substr(typePosition);
 
                 renderedMember = renderedMember.substr(0, typePosition);
-                renderedMember += IDeclaration.simplifyType(rootName, type)[0];
+                renderedMember += IDeclaration.simplifyType(root.name, type)[0];
             }
         }
 
@@ -2467,12 +2442,17 @@ export class PropertyDeclaration extends IDeclaration {
             renderedMember = 'readonly ' + renderedMember;
         }
 
-        if (this.childOfSpace()) {
+        if (childOfSpace) {
             renderedMember = 'let ' + renderedMember;
         }
 
-        if (this.isOptional) {
-            renderedMember += '?';
+        if (this.isOptional ) {
+            if (!childOfSpace) {
+                renderedMember += '?';
+            }
+            else if (this.types.indexOf('undefined') === -1) {
+                this.types.push('undefined');
+            }
         }
 
         if (this.hasChildren) {
@@ -2483,7 +2463,9 @@ export class PropertyDeclaration extends IDeclaration {
             );
         } else if (this.hasTypes) {
             renderedMember += (
-                ': ' + this.renderTypes(true, this.isIndexer, true) + ';'
+                ': ' +
+                this.renderTypes(true, this.isIndexer, !childOfSpace) +
+                ';'
             );
         } else {
             renderedMember += ': any;';
@@ -2497,8 +2479,6 @@ export class PropertyDeclaration extends IDeclaration {
         );
     }
 }
-
-
 
 /**
  * Class for type alias declarations in TypeScript.
@@ -2536,8 +2516,8 @@ export class TypeDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
-        clone.see.push(...this.see.slice());
-        clone.types.push(...this.types.slice());
+        clone.see.push(...this.see);
+        clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
