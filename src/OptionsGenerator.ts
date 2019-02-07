@@ -1,8 +1,8 @@
-/* *
- * 
+/*!*
+ *
  *  Copyright (c) Highsoft AS. All rights reserved.
- * 
- * */
+ *
+ *!*/
 
 import * as Config from './Config';
 import * as Parser from './OptionsParser';

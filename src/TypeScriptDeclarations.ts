@@ -1,8 +1,8 @@
-/* *
+/*!*
  *
  *  Copyright (c) Highsoft AS. All rights reserved.
  * 
- * */
+ *!*/
 
 /* *
  *
@@ -266,12 +266,13 @@ export abstract class IDeclaration extends Object {
             if (newLine) {
                 line = linePrefix + word;
                 newLine = false;
-            } else {
+            }
+            else {
                 line += ' ' + word;
             }
         });
 
-        return paddedStr + line.trimRight() + '\n';
+        return (newLine ? paddedStr : paddedStr + line.trimRight() + '\n');
     }
 
     /**
@@ -871,8 +872,13 @@ export abstract class IDeclaration extends Object {
      *
      * @param infix
      *        The separation string between children.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    protected renderChildren (indent: string = '', infix: string = ''): string {
+    protected renderChildren (
+        indent: string = '', infix: string = '', withoutDoclet: boolean = false
+    ): string {
 
         if (!this.hasChildren) {
             return '';
@@ -880,7 +886,7 @@ export abstract class IDeclaration extends Object {
 
         return this
             .getChildren()
-            .map(child => child.toString(indent))
+            .map(child => child.toString(indent, withoutDoclet))
             .join(infix);
     }
 
@@ -1075,8 +1081,11 @@ export abstract class IDeclaration extends Object {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public abstract toString (indent?: string): string;
+    public abstract toString (indent?: string, withoutDoclet?: boolean): string;
 }
 
 /**
@@ -1348,8 +1357,11 @@ export abstract class IExtendedDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public abstract toString(indent?: string): string;
+    public abstract toString(indent?: string, withoutDoclet?: boolean): string;
 }
 
 /**
@@ -1440,8 +1452,14 @@ export class ClassDeclaration extends IExtendedDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString (indent: string = ''): string {
+    public toString (
+        indent: string = '',
+        withoutDoclet: boolean = false
+    ): string {
 
         if (this.hasParameters &&
             this.getChildren('constructor').length === 0
@@ -1453,7 +1471,9 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
+            renderedChildren = this.renderChildren(
+                childIndent, undefined, withoutDoclet
+            ),
             renderedClass = 'class ' + this.name,
             renderedDescription = this.renderDescription(indent);
 
@@ -1478,6 +1498,10 @@ export class ClassDeclaration extends IExtendedDeclaration {
         }
         else {
             renderedChildren = '{}';
+        }
+
+        if (withoutDoclet) {
+            renderedDescription = '';
         }
 
         return (
@@ -1557,8 +1581,13 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString (indent: string = ''): string {
+    public toString (
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let renderedConstructor = 'constructor',
             renderedDescription = this.renderExtendedDescription(indent);
@@ -1566,6 +1595,10 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
         renderedConstructor += this.renderParameterBrackets();
 
         renderedConstructor = this.renderScopePrefix() + renderedConstructor;
+
+        if (withoutDoclet) {
+            renderedDescription = '';
+        }
 
         return (
             renderedDescription +
@@ -1616,14 +1649,23 @@ export class EventDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString(indent: string = ''): string {
+    public toString(
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let renderedDescription = this.renderDescription(indent),
             renderedTypes = this.renderTypes(false);
 
         if (renderedDescription) {
             renderedDescription += indent + ' *\n';
+        }
+
+        if (withoutDoclet) {
+            return '';
         }
 
         return (
@@ -1704,25 +1746,32 @@ export class ExternalModuleDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString (indent: string = ''): string {
+    public toString (
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
+            renderedChildren = this.renderChildren(
+                childIndent, undefined, withoutDoclet
+            ),
             renderedDescription = this.renderDescription(indent),
             renderedModule = 'module "' + this.path + '"';
 
         renderedModule = this.renderScopePrefix() + renderedModule;
 
         if (renderedChildren) {
-            renderedChildren = (
-                '{\n' +
-                renderedChildren +
-                indent + '}'
-            );
+            renderedChildren = '{\n' + renderedChildren + indent + '}';
         }
         else {
-            renderedChildren = '{}'
+            renderedChildren = '{}';
+        }
+
+        if (withoutDoclet) {
+            renderedDescription = '';
         }
 
         return (
@@ -1787,8 +1836,13 @@ export class FunctionDeclaration extends IExtendedDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString(indent: string = ''): string {
+    public toString(
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let renderedDescription = this.renderExtendedDescription(indent),
             renderedFunction = this.name,
@@ -1804,6 +1858,10 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         }
         else {
             renderedFunction = (renderedScope + renderedFunction).trim();
+        }
+
+        if (withoutDoclet) {
+            renderedDescription = '';
         }
 
         return (
@@ -1866,8 +1924,13 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString(indent: string = ''): string {
+    public toString(
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let renderedDescription = this.renderExtendedDescription(indent),
             renderedParameters = this.renderParameterBrackets(),
@@ -1883,6 +1946,10 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
 
         if (renderedScope) {
             renderedType = renderedScope + renderedType;
+        }
+
+        if (withoutDoclet) {
+            renderedDescription = '';
         }
 
         return (
@@ -1940,11 +2007,18 @@ export class InterfaceDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString(indent: string = ''): string {
+    public toString(
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
+            renderedChildren = this.renderChildren(
+                childIndent, undefined, withoutDoclet
+            ),
             renderedDescription = this.renderDescription(indent, true),
             renderedInterface = this.name;
 
@@ -1970,6 +2044,10 @@ export class InterfaceDeclaration extends IDeclaration {
         }
         else {
             renderedChildren = '{}';
+        }
+
+        if (withoutDoclet) {
+            renderedDescription = '';
         }
 
         return (
@@ -2001,6 +2079,7 @@ export class ModuleDeclaration extends IDeclaration {
 
         super(name);
 
+        this._copyright = '';
         this._exports = [];
         this._imports = [];
     }
@@ -2010,6 +2089,17 @@ export class ModuleDeclaration extends IDeclaration {
      *  Properties
      *
      * */
+
+    /**
+     * Copyright header
+     */
+    public get copyright (): string {
+        return this._copyright;
+    }
+    public set copyright (value: string) {
+        this._copyright = value;
+    }
+    private _copyright: string;
 
     /**
      * Import statemens.
@@ -2045,6 +2135,7 @@ export class ModuleDeclaration extends IDeclaration {
 
         let clone = new ModuleDeclaration(this.name);
 
+        clone.copyright = this.copyright;
         clone.defaultValue = this.defaultValue;
         clone.description = this.description;
         clone.isOptional = this.isOptional;
@@ -2057,6 +2148,31 @@ export class ModuleDeclaration extends IDeclaration {
         clone.addChildren(...this.getChildren().map(child => child.clone()));
 
         return clone;
+    }
+
+    /**
+     * Return the copyright header.
+     */
+    protected renderCopyright(): string {
+
+        if (!this.copyright) {
+            return '';
+        }
+
+        let renderedCopyright = IDeclaration.normalize(
+            this.copyright, true
+        );
+
+        renderedCopyright = IDeclaration.indent(
+            renderedCopyright,
+            ' *  '
+        );
+
+        return (
+            '/' + '*!*\n *\n' +
+            renderedCopyright +
+            ' *\n *!*' + '/\n'
+        );
     }
 
     /**
@@ -2089,10 +2205,19 @@ export class ModuleDeclaration extends IDeclaration {
 
     /**
      * Returns a rendered string of this global declaration.
+     *
+     * @param indent
+     *        The indentation string for formatting child declarations.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString(): string {
+    public toString(indent: string = '', withoutDoclet: boolean = false): string {
 
-        let renderedChildren = this.renderChildren(''),
+        let renderedChildren = this.renderChildren(
+                indent, undefined, withoutDoclet
+            ),
+            renderedCopyright = this.renderCopyright(),
             renderedDescription = this.renderDescription(''),
             renderedExports = this.renderExports(),
             renderedImports = this.renderImports();
@@ -2103,7 +2228,12 @@ export class ModuleDeclaration extends IDeclaration {
             );
         }
 
+        if (withoutDoclet) {
+            renderedDescription = '';
+        }
+
         return (
+            renderedCopyright +
             renderedDescription +
             renderedImports +
             renderedChildren +
@@ -2160,11 +2290,18 @@ export class NamespaceDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString (indent: string = ''): string {
+    public toString (
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
+            renderedChildren = this.renderChildren(
+                childIndent, undefined, withoutDoclet
+            ),
             renderedDescription = this.renderDescription(indent),
             renderedNamespace = (
                 this.name === 'external:' ?
@@ -2183,6 +2320,10 @@ export class NamespaceDeclaration extends IDeclaration {
         }
         else {
             renderedChildren = '{}';
+        }
+
+        if (withoutDoclet) {
+            renderedDescription = '';
         }
 
         return (
@@ -2415,11 +2556,17 @@ export class PropertyDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString (indent: string = ''): string {
+    public toString (
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let childIndent = indent + '    ',
             childOfSpace = this.childOfSpace(),
+            renderedDescription = this.renderDescription(indent, true),
             renderedMember = this.name.replace(':', ': ');
 
         // special treatment for indexers
@@ -2460,7 +2607,7 @@ export class PropertyDeclaration extends IDeclaration {
         if (this.hasChildren) {
             renderedMember += (
                 ': {\n' +
-                this.renderChildren(childIndent) +
+                this.renderChildren(childIndent, undefined, withoutDoclet) +
                 indent + '};'
             );
         } else if (this.hasTypes) {
@@ -2475,8 +2622,12 @@ export class PropertyDeclaration extends IDeclaration {
 
         renderedMember = this.renderScopePrefix() + renderedMember + '\n';
 
+        if (withoutDoclet) {
+            renderedDescription = '';
+        }
+
         return (
-            this.renderDescription(indent, true) +
+            renderedDescription +
             IDeclaration.breakLongLines(indent + renderedMember)
         );
     }
@@ -2530,11 +2681,19 @@ export class TypeDeclaration extends IDeclaration {
      *
      * @param indent
      *        The indentation string for formatting.
+     *
+     * @param withoutDoclet
+     *        Set to true to get declarations without any description.
      */
-    public toString(indent: string = ''): string {
+    public toString(
+        indent: string = '', withoutDoclet: boolean = false
+    ): string {
 
         let childIndent = indent + '    ',
-            renderedChildren = this.renderChildren(childIndent),
+            renderedChildren = this.renderChildren(
+                childIndent, undefined, withoutDoclet
+            ),
+            renderedDescription = this.renderDescription(indent),
             renderedType = this.renderTypes(true);
 
         if (!renderedType) {
@@ -2553,8 +2712,12 @@ export class TypeDeclaration extends IDeclaration {
 
         renderedType = this.renderScopePrefix() + renderedType + '\n';
 
+        if (withoutDoclet) {
+            renderedDescription = '';
+        }
+
         return (
-            this.renderDescription(indent) +
+            renderedDescription +
             IDeclaration.breakLongLines(indent + renderedType)
         );
     }
