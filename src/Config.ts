@@ -8,9 +8,21 @@ import * as Path from 'path';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
+/* *
+ *
+ *  Constants
+ *
+ * */
+
 const MAP_TYPE_MINIARRAY: RegExp = /Array<((?:[^<>\[\]]+|<[^<>\[\]]+>),(?:[^<>\[\]]+|<[^<>\[\]]+>)+)>/;
 
 const SEE_LINK_NAME_LAST = /\.(\w+)$/;
+
+/* *
+ *
+ *  Construction
+ *
+ * */
 
 const config = (function () {
 
@@ -35,9 +47,31 @@ const config = (function () {
 
 }()) as IConfig;
 
+/* *
+ *
+ *  Properties
+ *
+ * */
+
 config.cgd = (config.cgd || Utils.parent(__dirname));
 
 config.cwd = (config.cwd || process.cwd());
+
+config.treeNamespaceJsonFile = (config.treeNamespaceJsonFile || '').replace(
+    /\//g, Path.sep
+);
+
+config.treeOptionsJsonFile = (config.treeOptionsJsonFile || '').replace(
+    /\//g, Path.sep
+);
+
+config.withoutDoclets = (config.withoutDoclets || false);
+
+/* *
+ *
+ *  Functions
+ *
+ * */
 
 config.mapOptionType = function (option: string): string {
     return config.optionTypeMapping[option];
@@ -135,15 +169,11 @@ config.seeLink = function (name: string, kind: string, product?: string) {
     }
 };
 
-config.treeNamespaceJsonFile = (config.treeNamespaceJsonFile || '').replace(
-    /\//g, Path.sep
-);
-
-config.treeOptionsJsonFile = (config.treeOptionsJsonFile || '').replace(
-    /\//g, Path.sep
-);
-
-export = config;
+/* *
+ *
+ *  Interfaces
+ *
+ * */
 
 interface IConfig {
     cgd: string;
@@ -155,8 +185,17 @@ interface IConfig {
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;
     typeMapping: { [type: string]: string };
+    withoutDoclets: boolean;
     mapOptionType (option: string): string;
     mapType (type: string, withoutConfig?: boolean): string;
     mapValue (value: any): string;
     seeLink (name: string, kind: string, product?: string): string;
 }
+
+/* *
+ *
+ *  Exports
+ *
+ * */
+
+export = config;
