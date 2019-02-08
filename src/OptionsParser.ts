@@ -206,6 +206,7 @@ class Parser extends Object {
 
         if (nodeExtends) {
 
+            node.doclet._extends = node.doclet.extends;
             delete node.doclet.extends;
 
             nodeExtends
@@ -438,6 +439,7 @@ export interface INode {
 // Level 2
 
 export interface IDoclet {
+    _extends?: string;
     access?: string;
     context?: string;
     default?: IDefault;

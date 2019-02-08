@@ -2566,6 +2566,7 @@ export class PropertyDeclaration extends IDeclaration {
 
         let childIndent = indent + '    ',
             childOfSpace = this.childOfSpace(),
+            isIndexer = false,
             renderedDescription = this.renderDescription(indent, true),
             renderedMember = this.name.replace(':', ': ');
 
@@ -2584,23 +2585,29 @@ export class PropertyDeclaration extends IDeclaration {
 
                 renderedMember = renderedMember.substr(0, typePosition);
                 renderedMember += IDeclaration.simplifyType(root.name, type)[0];
+
+                isIndexer = true;
             }
         }
 
-        if (this.isReadOnly) {
-            renderedMember = 'readonly ' + renderedMember;
-        }
+        if (!isIndexer) {
 
-        if (childOfSpace) {
-            renderedMember = 'let ' + renderedMember;
-        }
-
-        if (this.isOptional ) {
-            if (!childOfSpace) {
-                renderedMember += '?';
+            if (this.isReadOnly) {
+                renderedMember = 'readonly ' + renderedMember;
             }
-            else if (this.types.indexOf('undefined') === -1) {
-                this.types.push('undefined');
+
+            if (childOfSpace) {
+                renderedMember = 'let ' + renderedMember;
+            }
+
+            if (this.isOptional) {
+
+                if (!childOfSpace) {
+                    renderedMember += '?';
+                }
+                else if (this.types.indexOf('undefined') === -1) {
+                    this.types.push('undefined');
+                }
             }
         }
 
