@@ -229,10 +229,6 @@ class Generator {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode);
 
-        if (sourceNode.meta.name && sourceNode.meta.name.indexOf(':') > -1) {
-            console.log(doclet);
-        }
-
         if (Object.keys(sourceNode.children).length > 0) {
 
             let interfaceDeclaration = this.generateInterfaceDeclaration(
