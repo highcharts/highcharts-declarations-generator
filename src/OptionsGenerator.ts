@@ -393,6 +393,7 @@ class Generator {
             .forEach(
                 childName => {
                     const child = new TSD.PropertyDeclaration(childName);
+                    child.description = 'Not available';
                     child.isOptional = true;
                     child.types.push('undefined');
                     declaration.addChildren(child);
