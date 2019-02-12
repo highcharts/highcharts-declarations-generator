@@ -89,7 +89,9 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         type = type.replace(new RegExp(MAP_TYPE_MINIARRAY, 'gm'), '[$1]');
     }
 
-    if (TSD.IDeclaration.TYPE_SEPARATOR.test(type)) {
+    if (!type.startsWith('"') &&
+        TSD.IDeclaration.TYPE_SEPARATOR.test(type)
+    ) {
         return type.replace(
             new RegExp(TSD.IDeclaration.TYPE_NAME, 'gm'),
             (match: string, type: string, suffix: string) => {
