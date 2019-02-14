@@ -1,8 +1,8 @@
-/* *
- * 
+/*!*
+ *
  *  Copyright (c) Highsoft AS. All rights reserved.
- * 
- * */
+ *
+ *!*/
 
 import * as Config from './Config';
 import * as Parser from './OptionsParser';
@@ -42,9 +42,7 @@ class Generator {
      *
      * */
 
-    private static getCamelCaseName (node: Parser.INode): string {
-
-        let name = (node.meta.fullname || node.meta.name || '');
+    private static getCamelCaseName (name: string): string {
 
         return (TSD.IDeclaration
             .namespaces(name)
@@ -59,7 +57,7 @@ class Generator {
 
         let doclet = node.doclet,
             description = (node.doclet.description || '').trim(),
-            name = (node.meta && (node.meta.fullname || node.meta.name) || ''),
+            name = (node.meta.fullname || node.meta.name || ''),
             removedLinks = [] as Array<string>;
 
         description = Utils.removeExamples(description);
@@ -151,7 +149,9 @@ class Generator {
         }
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
-            name = Generator.getCamelCaseName(sourceNode),
+            name = Generator.getCamelCaseName(
+                sourceNode.meta.fullname || sourceNode.meta.name || ''
+            ),
             declaration = new TSD.InterfaceDeclaration(name),
             children = Utils.Dictionary.values(sourceNode.children);
 
@@ -166,17 +166,51 @@ class Generator {
         this.namespace.addChildren(declaration);
 
         if (name === 'SeriesOptions') {
+
+            const seriesIndexer = {
+                doclet: {
+                    type: { names: [ '*' ] }
+                },
+                meta: {
+                    fullname: 'series.[key:string]',
+                    name: '[key:string]'
+                },
+                children: {}
+            };
+
             children
-                .filter(child => Object.keys(child.children).length === 0)
+                .filter(child => (
+                    Object.keys(child.children).length === 0 ||
+                    !child.doclet._extends ||
+                    child.doclet._extends.every(
+                        name => !name.startsWith('plotOptions')
+                    )
+                ))
+                .concat(Utils.clone(seriesIndexer, Number.MAX_SAFE_INTEGER))
                 .forEach(child => this.generatePropertyDeclaration(
                     child, declaration
                 ));
+
             children
-                .filter(child => Object.keys(child.children).length > 0)
+                .filter(child => (
+                    Object.keys(child.children).length > 0 &&
+                    child.doclet._extends &&
+                    child.doclet._extends.some(
+                        name => name.startsWith('plotOptions')
+                    )
+                ))
                 .forEach(child => {
+
+                    // indicators have no data option
+                    if (child.children.data) {
+                        child.children.data.children['[key:string]'] = Utils
+                            .clone(seriesIndexer, Number.MAX_SAFE_INTEGER);
+                    }
+
                     let seriesDeclaration = this.generateSeriesTypeDeclaration(
-                        child, declaration
+                        child, this.namespace
                     );
+
                     if (seriesDeclaration) {
                         Generator._series.push(seriesDeclaration.fullName);
                     }
@@ -284,18 +318,31 @@ class Generator {
 
     private generateSeriesTypeDeclaration (
         sourceNode: Parser.INode,
-        targetDeclaration: TSD.IDeclaration
+        targetDeclaration: TSD.ModuleDeclaration
     ): (TSD.InterfaceDeclaration|undefined) {
 
-        if (sourceNode.doclet.access === 'private' ||
-            !sourceNode.meta.name
+        if (!sourceNode.meta.name ||
+            sourceNode.doclet.access === 'private'
         ) {
             return undefined;
         }
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
-            name = Generator.getCamelCaseName(sourceNode),
-            declaration = new TSD.InterfaceDeclaration(name);
+            name = Generator.getCamelCaseName(
+                sourceNode.meta.fullname || sourceNode.meta.name || ''
+            ),
+            declaration = new TSD.InterfaceDeclaration(name),
+            children = sourceNode.children,
+            extendedChildren = [ 'type' ] as Array<string>;
+
+        (sourceNode.doclet._extends || [])
+            .map(name => Generator.getCamelCaseName(name))
+            .map(name => this.namespace.getChildren(name)[0])
+            .forEach(
+                declaration =>
+                    extendedChildren.push(...declaration.getChildrenNames())
+            );
+        extendedChildren = Utils.uniqueArray(extendedChildren);
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -314,14 +361,6 @@ class Generator {
             'Highcharts.SeriesOptions'
         );
 
-        this.namespace.addChildren(declaration);
-
-        let dataNode = sourceNode.children['data'];
-
-        if (dataNode) {
-            this.generatePropertyDeclaration(dataNode, declaration);
-        }
-
         let typePropertyDeclaration = new TSD.PropertyDeclaration('type');
 
         typePropertyDeclaration.description = (
@@ -333,14 +372,33 @@ class Generator {
 
         declaration.addChildren(typePropertyDeclaration);
 
-        (sourceNode.doclet.exclude || []).forEach(exclude => {
-            if (!declaration.getChildren(exclude)) {
-                let excludeDeclaration = new TSD.PropertyDeclaration(exclude);
-                excludeDeclaration.isOptional = true;
-                excludeDeclaration.types.push('undefined');
-                declaration.addChildren(excludeDeclaration);
-            }
-        });
+        targetDeclaration.addChildren(declaration);
+
+        Object
+            .keys(children)
+            .filter(childName => extendedChildren.indexOf(childName) === -1)
+            .forEach(
+                childName =>
+                    this.generatePropertyDeclaration(
+                        children[childName], declaration
+                    )
+            );
+
+        Utils
+            .uniqueArray(sourceNode.doclet.exclude || [])
+            .filter(childName => extendedChildren.indexOf(childName) === -1)
+            .filter(
+                childName => declaration.getChildren(childName).length === 0
+            )
+            .forEach(
+                childName => {
+                    const child = new TSD.PropertyDeclaration(childName);
+                    child.description = 'Not available';
+                    child.isOptional = true;
+                    child.types.push('undefined');
+                    declaration.addChildren(child);
+                }
+            );
 
         return declaration;
     }

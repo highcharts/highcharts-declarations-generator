@@ -1,8 +1,8 @@
-/* *
+/*!*
  * 
  *  Copyright (c) Highsoft AS. All rights reserved.
  * 
- * */
+ *!*/
 
 
 
@@ -598,8 +598,12 @@ export function uniqueArray<T>(
     let target = [] as Array<T>;
 
     sources.forEach(
-        source => target.push(
-            ...source.filter(item => target.indexOf(item) === -1)
+        source => source.forEach(
+            item => {
+                if (target.indexOf(item) === -1) {
+                    target.push(item);
+                }
+            }
         )
     );
 

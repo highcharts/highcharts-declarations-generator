@@ -1,8 +1,8 @@
-/* *
+/*!*
  * 
  *  Copyright (c) Highsoft AS. All rights reserved.
  * 
- * */
+ *!*/
 
 import * as Config from './Config';
 import * as FS from 'fs';
@@ -202,17 +202,20 @@ class Parser extends Object {
     private completeNodeExtensions(node: INode) {
 
         const nodeChildren = node.children;
-        const nodeExtends = (node.doclet.extends || '');
+        const nodeExtends = (node.doclet.extends || '')
+            .split(/[\s,]+/g)
+            .filter(name => !!name.trim())
+            .sort(xName => xName === 'series' ? 1 : 0)
+            .map(xName => xName === 'series' ? 'plotOptions.series' : xName);
 
-        if (nodeExtends) {
+        if (nodeExtends[0]) {
+
+            node.doclet._extends = nodeExtends;
 
             delete node.doclet.extends;
 
-            nodeExtends
-                .split(/[\s,]+/g)
-                .sort(xName => xName === 'series' ? 1 : 0)
-                .map(xName => xName === 'series' ? 'plotOptions.series' : xName)
-                .forEach(xName => {
+            nodeExtends.forEach(
+                xName => {
 
                     let xNode = this.findNode(xName);
 
@@ -243,7 +246,8 @@ class Parser extends Object {
 
                     this.cloneNodeInto(xNode, node);
 
-                });
+                }
+            );
 
         }
 
@@ -438,6 +442,7 @@ export interface INode {
 // Level 2
 
 export interface IDoclet {
+    _extends?: Array<string>;
     access?: string;
     context?: string;
     default?: IDefault;

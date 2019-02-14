@@ -1,8 +1,8 @@
-/* *
+/*!*
  * 
  *  Copyright (c) Highsoft AS. All rights reserved.
  * 
- * */
+ *!*/
 
 import * as Colors from 'colors';
 import * as Config from './Config';

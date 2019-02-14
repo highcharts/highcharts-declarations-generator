@@ -1,18 +1,35 @@
-/* *
- * 
+/*!*
+ *
  *  Copyright (c) Highsoft AS. All rights reserved.
- * 
- * */
+ *
+ *!*/
 
 import * as Config from './Config';
 import * as Parser from './NamespaceParser';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
-
+/* *
+ *
+ *  Types
+ *
+ * */
 
 type TemporaryDictionary = Utils.Dictionary<Array<TSD.Kinds>>;
 
+/* *
+ *
+ *  Constants
+ *
+ * */
+
+const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
+
+/* *
+ *
+ *  Static Functions
+ *
+ * */
 
 export function generate (
     moduleNodes: Utils.Dictionary<Parser.INode>,
@@ -25,7 +42,9 @@ export function generate (
             {} as Utils.Dictionary<TSD.ModuleDeclaration>
         );
         const globalsNamespace = new TSD.ModuleDeclaration('globals');
-        const globalsModule = Utils.parent(Config.mainModule) + 'globals.d.ts';
+        const globalsModule = Utils.path(
+            Utils.parent(Config.mainModule), 'globals'
+        );
 
         Object
             .keys(moduleNodes)
@@ -57,12 +76,18 @@ export function save (
         const savePromises = [] as Array<Promise<string>>;
 
         let declarations = '';
+        let declarationsModule: TSD.ModuleDeclaration;
 
         Object
             .keys(declarationsModules)
             .forEach(module => {
 
-                declarations = declarationsModules[module].toString();
+                declarationsModule = declarationsModules[module];
+                declarationsModule.copyright = COPYRIGHT_HEADER;
+
+                declarations = declarationsModule.toString(
+                    undefined, Config.withoutDoclets
+                );
 
                 if (!declarations) {
                     return;
@@ -123,7 +148,7 @@ class Generator {
         description = Utils.removeLinks(description, removedLinks);
         description = Utils.transformLists(description);
 
-        doclet.description = description;
+        doclet.description = ''; //description;
         doclet.name = (namespaces[namespaces.length - 1] || '');
 
         if (doclet.parameters) {
