@@ -474,8 +474,14 @@ class Generator {
         const existingDeclaration = this.namespace.getChildren(name)[0];
 
         if (existingDeclaration instanceof TSD.TypeDeclaration) {
-            console.error(name + ' already exists');
-            return undefined;
+
+            if (Utils.isDeepEqual(existingDeclaration.types, types)) {
+                return existingDeclaration;
+            }
+            else {
+                console.error(name + ' already exists');
+                return undefined;
+            }
             /*
             const mergedTypes = Utils.uniqueArray(
                 existingDeclaration.types,
