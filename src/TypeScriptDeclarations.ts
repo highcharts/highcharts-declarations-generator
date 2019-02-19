@@ -17,8 +17,9 @@ export type Kinds = (
     'global' |
     'type' |
     'interface' |
+    'constant' | // @todo
+    'enum' | // @todo
     'class' |
-    'constant' |
     'static property' |
     'static function' |
     'constructor' |
@@ -79,8 +80,9 @@ export abstract class IDeclaration extends Object {
         'global',
         'type',
         'interface',
-        'class',
         'constant',
+        'enum',
+        'class',
         'static property',
         'static function',
         'constructor',
@@ -1542,7 +1544,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
      * */
 
     /**
-     * Kind of declaration.
+     * Kind of declaration
      */
     public readonly kind = 'constructor';
 
@@ -1632,7 +1634,7 @@ export class EventDeclaration extends IDeclaration {
      * */
 
     /**
-     * Returns a clone of this function declaration.
+     * Returns a clone of this event declaration.
      */
     public clone(): EventDeclaration {
 
