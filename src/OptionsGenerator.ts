@@ -70,8 +70,8 @@ class Generator {
         }
 
         if (doclet.type && doclet.type.names) {
-            doclet.type.names = doclet.type.names.map(
-                type => Config.mapType(type)
+            doclet.type.names = Utils.uniqueArray(
+                doclet.type.names.map(type => Config.mapType(type))
             );
         }
         else {
@@ -121,6 +121,7 @@ class Generator {
 
         this.generateInterfaceDeclaration(parsedOptions);
         this.generateSeriesDeclaration();
+        this.generateLiteralTypeDeclarations();
     }
 
     /* *
@@ -129,7 +130,7 @@ class Generator {
      *
      * */
 
-    public get namespace(): TSD.ModuleDeclaration {
+    public get namespace (): TSD.ModuleDeclaration {
         return this._namespace;
     }
     private _namespace: TSD.ModuleDeclaration;
@@ -225,6 +226,36 @@ class Generator {
         return declaration;
     }
 
+    private generateLiteralTypeDeclarations (
+        sourceDeclaration: TSD.IDeclaration = this._namespace
+    ) {
+
+        const types = sourceDeclaration.types;
+
+        if (sourceDeclaration instanceof TSD.PropertyDeclaration &&
+            types.length > 1 &&
+            types.every(type => type.startsWith('"'))
+        ) {
+
+            let name = (
+                'Options' + Utils.capitalize(sourceDeclaration.name) + 'Value'
+            );
+
+            const declaration = this.generateTypeDeclaration(name, types);
+
+            if (declaration) {
+                sourceDeclaration.types.length = 0;
+                sourceDeclaration.types.push(declaration.fullName);
+            }
+        }
+
+        if (sourceDeclaration.hasChildren) {
+            sourceDeclaration
+                .getChildren()
+                .forEach(child => this.generateLiteralTypeDeclarations(child));
+        }
+    }
+
     private generatePropertyDeclaration (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration
@@ -252,9 +283,7 @@ class Generator {
             sourceNode.doclet.type.names = sourceNode.doclet.type.names
                 .map(type => Config.mapType(type))
                 .map(type => {
-                    if (ANY_TYPE.test(type) &&
-                        interfaceDeclaration
-                    ) {
+                    if (ANY_TYPE.test(type) && interfaceDeclaration) {
                         replacedAnyType = true;
                         return type.replace(
                             new RegExp(ANY_TYPE, 'gm'),
@@ -269,6 +298,10 @@ class Generator {
                     interfaceDeclaration.fullName
                 );
             }
+
+            sourceNode.doclet.type.names = Utils.uniqueArray(
+                sourceNode.doclet.type.names
+            );
         }
 
         let declaration = new TSD.PropertyDeclaration(
@@ -301,9 +334,7 @@ class Generator {
             }
         }
 
-        if (!isValueType &&
-            doclet.type
-        ) {
+        if (!isValueType && doclet.type) {
             let mergedTypes = Utils.uniqueArray(
                 declaration.types, doclet.type.names
             );
@@ -316,6 +347,39 @@ class Generator {
         return declaration;
     }
 
+    private generateSeriesDeclaration () {
+
+        let optionsDeclaration = this.namespace.getChildren('Options')[0];
+
+        if (!optionsDeclaration) {
+            throw new Error('Highcharts.Options not declared!');
+        }
+
+        let seriesPropertyDeclaration = optionsDeclaration.getChildren(
+            'series'
+        )[0];
+
+        if (!seriesPropertyDeclaration) {
+            throw new Error('Highcharts.Options#series not declared!');
+        }
+
+        let seriesTypeDeclaration = new TSD.TypeDeclaration(
+            'SeriesOptionsType'
+        );
+
+        seriesTypeDeclaration.description = (
+            'The possible types of series options.'
+        );
+        seriesTypeDeclaration.types.push(...Generator._series);
+
+        this.namespace.addChildren(seriesTypeDeclaration);
+
+        seriesPropertyDeclaration.types.length = 0;
+        seriesPropertyDeclaration.types.push(
+            'Array<Highcharts.SeriesOptionsType>'
+        );
+    }
+ 
     private generateSeriesTypeDeclaration (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.ModuleDeclaration
@@ -403,42 +467,39 @@ class Generator {
         return declaration;
     }
 
-    private generateSeriesDeclaration () {
+    private generateTypeDeclaration (
+        name: string, types: Array<string>, description?: string
+    ): (TSD.TypeDeclaration|undefined) {
 
-        let optionsDeclaration = this.namespace.getChildren('Options')[0];
+        const existingDeclaration = this.namespace.getChildren(name)[0];
 
-        if (!optionsDeclaration) {
-            throw new Error('Highcharts.Options not declared!');
-            return;
+        if (existingDeclaration instanceof TSD.TypeDeclaration) {
+
+            const mergedTypes = Utils.uniqueArray(
+                existingDeclaration.types,
+                types
+            );
+
+            existingDeclaration.types.length = 0;
+            existingDeclaration.types.push(...mergedTypes);
+
+            return existingDeclaration;
         }
 
-        let seriesPropertyDeclaration = optionsDeclaration.getChildren(
-            'series'
-        )[0];
+        const newDeclaration = new TSD.TypeDeclaration(name);
 
-        if (!seriesPropertyDeclaration) {
-            throw new Error('Highcharts.Options#series not declared!');
-            return;
+        if (description) {
+            newDeclaration.description = description;
         }
 
-        let seriesTypeDeclaration = new TSD.TypeDeclaration(
-            'SeriesOptionsType'
-        );
+        newDeclaration.types.push(...types);
 
-        seriesTypeDeclaration.description = (
-            'The possible types of series options.'
-        );
-        seriesTypeDeclaration.types.push(...Generator._series);
+        this.namespace.addChildren(newDeclaration);
 
-        this.namespace.addChildren(seriesTypeDeclaration);
-
-        seriesPropertyDeclaration.types.length = 0;
-        seriesPropertyDeclaration.types.push(
-            'Array<Highcharts.SeriesOptionsType>'
-        );
+        return newDeclaration;
     }
- 
-    public toString(): string {
+
+    public toString (): string {
 
         return this.namespace.toString();
     }
