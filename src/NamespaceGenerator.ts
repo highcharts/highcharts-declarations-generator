@@ -118,7 +118,7 @@ class Generator {
      * */
 
     private static readonly OPTION_TYPE = (
-        /^Highcharts.\w+(?:CallbackFunction|Object|Options)$/
+        /^Highcharts.\w+(?:CallbackFunction|Object|Options|Value)$/
     );
 
     private static temporaryDictionary: TemporaryDictionary = {};
@@ -1318,7 +1318,7 @@ class Generator {
             .extractTypeNames(...baseDeclaration.types)
             .filter(type => !Utils.isCoreType(type))
             .some(type => (type === name));
-        
+
         if (!isMainType &&
             baseDeclaration instanceof TSD.IExtendedDeclaration
         ) {
