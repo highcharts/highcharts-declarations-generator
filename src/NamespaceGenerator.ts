@@ -148,7 +148,7 @@ class Generator {
         description = Utils.removeLinks(description, removedLinks);
         description = Utils.transformLists(description);
 
-        doclet.description = ''; //description;
+        doclet.description = description;
         doclet.name = (namespaces[namespaces.length - 1] || '');
 
         if (doclet.parameters) {
