@@ -209,6 +209,11 @@ export function copyAll (
         ));
 }
 
+export function extract (text: string, filter: RegExp): string {
+
+    return (text.match(filter) || [''])[0];
+}
+
 /**
  * Return of all files in a given folder and subfolders.
  *

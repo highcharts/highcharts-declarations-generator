@@ -118,7 +118,7 @@ class Generator {
      * */
 
     private static readonly OPTION_TYPE = (
-        /^Highcharts.\w+(?:CallbackFunction|Object|Options)$/
+        /^Highcharts.\w+(?:CallbackFunction|Object|Options|Value)$/
     );
 
     private static temporaryDictionary: TemporaryDictionary = {};
@@ -148,7 +148,7 @@ class Generator {
         description = Utils.removeLinks(description, removedLinks);
         description = Utils.transformLists(description);
 
-        doclet.description = ''; //description;
+        doclet.description = description;
         doclet.name = (namespaces[namespaces.length - 1] || '');
 
         if (doclet.parameters) {
@@ -510,7 +510,9 @@ class Generator {
         if (existingChild instanceof TSD.ClassDeclaration) {
             declaration = existingChild;
         }
-        else if (this.isDeclaredSomewhere(targetDeclaration, declaration)) {
+        else if (!(existingChild instanceof TSD.InterfaceDeclaration) &&
+            this.isDeclaredSomewhere(targetDeclaration, declaration)
+        ) {
             return;
         }
 
@@ -1318,7 +1320,7 @@ class Generator {
             .extractTypeNames(...baseDeclaration.types)
             .filter(type => !Utils.isCoreType(type))
             .some(type => (type === name));
-        
+
         if (!isMainType &&
             baseDeclaration instanceof TSD.IExtendedDeclaration
         ) {

@@ -25,5 +25,6 @@
         "Number": "number",
         "Object": "object",
         "String": "string"
-    }
+    },
+    "withoutDoclets": false
 }
