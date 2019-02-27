@@ -148,7 +148,7 @@ class Generator {
         description = Utils.removeLinks(description, removedLinks);
         description = Utils.transformLists(description);
 
-        doclet.description = ''; //description;
+        doclet.description = description;
         doclet.name = (namespaces[namespaces.length - 1] || '');
 
         if (doclet.parameters) {
@@ -510,7 +510,9 @@ class Generator {
         if (existingChild instanceof TSD.ClassDeclaration) {
             declaration = existingChild;
         }
-        else if (this.isDeclaredSomewhere(targetDeclaration, declaration)) {
+        else if (!(existingChild instanceof TSD.InterfaceDeclaration) &&
+            this.isDeclaredSomewhere(targetDeclaration, declaration)
+        ) {
             return;
         }
 
