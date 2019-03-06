@@ -249,7 +249,7 @@ class Generator {
 
         doclet.types = Utils.uniqueArray(doclet.types);
 
-        if (removedLinks.length > 0) {
+        if (!Config.withoutLinks && removedLinks.length > 0) {
 
             let see = [] as Array<string>;
 

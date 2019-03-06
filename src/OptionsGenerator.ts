@@ -98,7 +98,7 @@ class Generator {
             }
         }
 
-        if (removedLinks.length > 0) {
+        if (!Config.withoutLinks && removedLinks.length > 0) {
             doclet.see = removedLinks
                 .map(link => Utils.urls(link)[0])
                 .filter(link => !!link);
