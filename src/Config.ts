@@ -188,6 +188,7 @@ interface IConfig {
     treeOptionsJsonFile: string;
     typeMapping: { [type: string]: string };
     withoutDoclets: boolean;
+    withoutLinks: boolean;
     mapOptionType (option: string): string;
     mapType (type: string, withoutConfig?: boolean): string;
     mapValue (value: any): string;
