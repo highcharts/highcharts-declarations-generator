@@ -1312,6 +1312,11 @@ class Generator {
             name = ('Highcharts.' + name);
         }
 
+        name = TSD.IDeclaration
+            .extractTypeNames(name)
+            .filter(type => !Utils.isCoreType(type))
+            [0];
+
         if (!Generator.OPTION_TYPE.test(name)) {
             return false;
         }
