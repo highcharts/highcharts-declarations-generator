@@ -1198,6 +1198,10 @@ class Generator {
             declaration.isPrivate = true;
         }
 
+        if (doclet.isReadOnly) {
+            declaration.isReadOnly = true;
+        }
+
         if (doclet.isStatic) {
             declaration.isStatic = true;
         }

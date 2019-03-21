@@ -351,6 +351,7 @@ export interface IDoclet {
     isGlobal?: boolean;
     isOptional?: boolean;
     isPrivate?: boolean;
+    isReadOnly?: boolean;
     isStatic?: boolean;
     parameters?: Utils.Dictionary<IParameter>;
     products?: Array<string>

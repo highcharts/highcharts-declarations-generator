@@ -2594,7 +2594,9 @@ export class PropertyDeclaration extends IDeclaration {
 
         if (!isIndexer) {
 
-            if (this.isReadOnly) {
+            if (this.isReadOnly &&
+                !(this.parent instanceof InterfaceDeclaration)
+            ) {
                 renderedMember = 'readonly ' + renderedMember;
             }
 
