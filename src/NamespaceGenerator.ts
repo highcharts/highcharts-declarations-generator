@@ -357,13 +357,16 @@ class Generator {
                     Config.mainModule.replace(/highcharts$/, 'globals'),
                     true
                 ) + '";'),
-                ('import * as Highcharts from "' + Utils.relative(
+                ('import * as _Highcharts from "' + Utils.relative(
                     modulePath, Config.mainModule, true
                 ) + '";')
             );
 
             this.moduleNamespace.addChildren(factoryDeclaration);
             this.moduleNamespace.exports.push('export default factory;');
+            this.moduleNamespace.exports.push(
+                'export let Highcharts: typeof _Highcharts;'
+            );
 
         }
 
