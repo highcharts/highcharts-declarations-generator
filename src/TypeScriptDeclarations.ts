@@ -471,6 +471,22 @@ export abstract class IDeclaration extends Object {
                 return -1;
         }
 
+        if ((typeA[0] === '(' &&
+            typeB[0] !== '(') ||
+            (typeA[0] === '{' &&
+            typeB[0] !== '{')
+        ) {
+            return -1;
+        }
+
+        if ((typeB[0] === '(' &&
+            typeA[0] !== '(') ||
+            (typeB[0] === '{' &&
+            typeA[0] !== '{')
+        ) {
+            return 1;
+        }
+
         if (typeA.indexOf('<') > -1 &&
             typeB.indexOf('<') === -1
         ) {
