@@ -14,7 +14,7 @@ import * as Utils from './Utilities';
  *
  * */
 
-const MAP_TYPE_MINIARRAY: RegExp = /Array<((?:[^<>\[\]]+|<[^<>\[\]]+>),(?:[^<>\[\]]+|<[^<>\[\]]+>)+)>/;
+const MAP_TYPE_ARRAY_FIXED: RegExp = /Array<((?:[^<>\[\]]+|[\w\.]+<[^<>\[\]]+>),(?:[^<>\[\]]+|[\w\.]+<[^<>\[\]]+>)+)>/;
 
 const SEE_LINK_NAME_LAST = /\.(\w+)$/;
 
@@ -85,8 +85,8 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         .replace(/\.</gm, '<')
         .replace(/\*/gm, 'any');
 
-    if (MAP_TYPE_MINIARRAY.test(type)) {
-        type = type.replace(new RegExp(MAP_TYPE_MINIARRAY, 'gm'), '[$1]');
+    if (MAP_TYPE_ARRAY_FIXED.test(type)) {
+        type = type.replace(new RegExp(MAP_TYPE_ARRAY_FIXED, 'gm'), '[$1]');
     }
 
     if (!type.startsWith('"') &&
