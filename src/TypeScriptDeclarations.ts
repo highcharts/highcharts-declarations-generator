@@ -1865,8 +1865,8 @@ export class FunctionDeclaration extends IExtendedDeclaration {
         let renderedDescription = this.renderExtendedDescription(indent),
             renderedFunction = this.name,
             renderedParameters = this.renderParameterBrackets(),
-            renderedScope = this.renderScopePrefix(),
-            renderedReturn = this.renderTypes(true, true, true);
+            renderedReturn = this.renderTypes(true, true),
+            renderedScope = this.renderScopePrefix();
 
         renderedFunction += renderedParameters + ': ';
         renderedFunction += (renderedReturn || 'void');
@@ -2474,7 +2474,7 @@ export class ParameterDeclaration extends IDeclaration {
     public toString (): string {
 
         let renderedParameter = this.name,
-            renderedTypes = this.renderTypes(true, true, true);
+            renderedTypes = this.renderTypes(true, true);
 
         if (this.isOptional) {
             renderedParameter += '?';
@@ -2607,6 +2607,9 @@ export class PropertyDeclaration extends IDeclaration {
                 isIndexer = true;
             }
         }
+        else if (/\W/.test(renderedMember)) {
+            renderedMember = '"' + renderedMember + '"';
+        }
 
         if (!isIndexer) {
 
@@ -2640,7 +2643,7 @@ export class PropertyDeclaration extends IDeclaration {
         } else if (this.hasTypes) {
             renderedMember += (
                 ': ' +
-                this.renderTypes(true, this.isIndexer, !childOfSpace) +
+                this.renderTypes(true, this.isIndexer) +
                 ';'
             );
         } else {
