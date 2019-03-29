@@ -2607,6 +2607,9 @@ export class PropertyDeclaration extends IDeclaration {
                 isIndexer = true;
             }
         }
+        else if (/\W/.test(renderedMember)) {
+            renderedMember = '"' + renderedMember + '"';
+        }
 
         if (!isIndexer) {
 
