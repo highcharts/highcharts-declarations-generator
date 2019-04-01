@@ -226,19 +226,25 @@ export function files (folder: string): Promise<Array<string>> {
 
         try {
             FS
-                .readdir(folder, { withFileTypes: true }, (error, entries) => {
+                .readdir(folder, (error, entries) => {
                     if (error) {
                         reject(error);
                         return;
                     }
 
-                    const filesPromises = entries
-                        .filter(entry => entry.isDirectory())
-                        .map(entry => files(path(folder, entry.name)));
+                    entries = entries.map(entry => path(folder, entry));
 
-                    const promisedFiles = entries
-                        .filter(entry => entry.isFile())
-                        .map(entry => path(folder, entry.name));
+                    const filesPromises = entries
+                        .filter(entry =>
+                            FS.statSync(entry).isDirectory()
+                        )
+                        .map(entry =>
+                            files(entry)
+                        );
+
+                    const promisedFiles = entries.filter(entry =>
+                        FS.statSync(entry).isFile()
+                    );
 
                     Promise
                         .all(filesPromises)
