@@ -15,7 +15,9 @@ import * as Utils from './Utilities';
  *
  * */
 
-type TemporaryDictionary = Utils.Dictionary<Array<TSD.Kinds>>;
+type ModuleDictionary = Utils.Dictionary<TSD.ModuleDeclaration>;
+
+type ReferenceDictionary = Utils.Dictionary<Array<TSD.IDeclaration>>;
 
 /* *
  *
@@ -27,7 +29,7 @@ const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
 
 /* *
  *
- *  Static Functions
+ *  Functions
  *
  * */
 
@@ -38,20 +40,30 @@ export function generate (
 
     return new Promise(resolve => {
 
-        const declarationModules = (
-            {} as Utils.Dictionary<TSD.ModuleDeclaration>
-        );
+        const declarationModules = {} as ModuleDictionary;
         const globalsNamespace = new TSD.ModuleDeclaration('globals');
         const globalsModule = Utils.path(
             Utils.parent(Config.mainModule), 'globals'
         );
+        const referenceDictionary = Generator.referenceDictionary;
+
+        if (Object.keys(referenceDictionary).length === 0) {
+
+            optionDeclarations
+                .getChildren()
+                .forEach(child =>
+                    referenceDictionary[
+                        TSD.IDeclaration.extractTypeNames(child.fullName)[0]
+                    ] = [child]
+                );
+        }
 
         Object
             .keys(moduleNodes)
-            .forEach(module =>
-                declarationModules[module] = new Generator(
-                    module,
-                    moduleNodes[module],
+            .forEach(moduleNode =>
+                declarationModules[moduleNode] = new Generator(
+                    moduleNode,
+                    moduleNodes[moduleNode],
                     globalsNamespace,
                     optionDeclarations
                 ).moduleNamespace
@@ -59,11 +71,56 @@ export function generate (
 
         declarationModules[globalsModule] = globalsNamespace;
 
+        moveReferenceDeclarations(
+            declarationModules[Config.mainModule],
+            referenceDictionary
+        );
+
         resolve(declarationModules);
     });
 }
 
+function moveReferenceDeclarations (
+    mainNamespace: TSD.ModuleDeclaration,
+    referenceDictionary: ReferenceDictionary
+) {
 
+    const _move = (declaration: TSD.IDeclaration) => {
+
+        const mainChildFullNames = mainNamespace.getChildrenNames(true);
+        const mainFullName = mainNamespace.fullName;
+
+        declaration
+            .getReferencedTypes(true)
+            .filter(type => !!referenceDictionary[type])
+            .forEach(type => 
+                referenceDictionary[type]
+                    .filter(referenceDeclaration =>
+                        referenceDeclaration.parent &&
+                        referenceDeclaration.parent !== mainNamespace &&
+                        referenceDeclaration.parent.fullName === mainFullName &&
+                        mainChildFullNames
+                            .indexOf(referenceDeclaration.fullName) === -1
+                    )
+                    .forEach(referenceDeclaration => {
+
+                        const referenceDeclarations = referenceDeclaration
+                            .parent!
+                            .removeChild(referenceDeclaration.name);
+
+                        mainNamespace
+                            .addChildren(...referenceDeclarations);
+
+                        referenceDeclarations
+                            .forEach(_move);
+                    })
+            )
+    };
+
+    mainNamespace
+        .getChildren()
+        .forEach(_move);
+}
 
 export function save (
     declarationsModules: Utils.Dictionary<TSD.ModuleDeclaration>
@@ -107,7 +164,11 @@ export function save (
     });
 }
 
-
+/* *
+ *
+ *  Classes
+ *
+ * */
 
 class Generator {
 
@@ -117,11 +178,7 @@ class Generator {
      *
      * */
 
-    private static readonly OPTION_TYPE = (
-        /^Highcharts.\w+(?:CallbackFunction|Object|Options|Value)$/
-    );
-
-    private static temporaryDictionary: TemporaryDictionary = {};
+    public static referenceDictionary: ReferenceDictionary = {};
 
     /* *
      *
@@ -304,7 +361,7 @@ class Generator {
 
     public constructor (
         modulePath: string,
-        node: Parser.INode,
+        moduleNode: Parser.INode,
         globalsNamespace: TSD.ModuleDeclaration,
         optionsNamespace: TSD.ModuleDeclaration
     ) {
@@ -331,11 +388,11 @@ class Generator {
             this.moduleNamespace.exports.push(
                 'export as namespace Highcharts;'
             );
-
-        } else {
+        }
+        else {
 
             this._isMainModule = false;
-            this._moduleNamespace = new TSD.ModuleDeclaration('Highcharts');
+            this._moduleNamespace = new TSD.ModuleDeclaration();
 
             let factoryDeclaration = new TSD.FunctionDeclaration('factory');
             factoryDeclaration.description = (
@@ -367,11 +424,9 @@ class Generator {
             this.moduleNamespace.exports.push(
                 'export let Highcharts: typeof _Highcharts;'
             );
-
         }
 
-        this.generate(node);
-
+        this.generate(moduleNode);
     }
 
     /* *
@@ -626,6 +681,7 @@ class Generator {
         }
 
         targetDeclaration.addChildren(declaration);
+        this.setDeclared(declaration);
 
         return declaration;
     }
@@ -682,6 +738,7 @@ class Generator {
 
         if (!declaration.parent) {
             globalDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -790,6 +847,7 @@ class Generator {
         }
 
         targetDeclaration.addChildren(declaration);
+        this.setDeclared(declaration);
 
         return declaration;
     }
@@ -804,12 +862,6 @@ class Generator {
 
         if (doclet.isGlobal) {
             targetDeclaration = this.globalsNamespace;
-        }
-        else if ((this.isMainModule ||
-            this.isMainMember(doclet.name)) &&
-            targetDeclaration.kind !== this.mainNamespace.kind
-        ) {
-            targetDeclaration = this.mainNamespace;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -896,12 +948,6 @@ class Generator {
         if (doclet.isGlobal) {
             targetDeclaration = this.globalsNamespace;
         }
-        else if ((this.isMainModule ||
-            this.isMainMember(doclet.name)) &&
-            targetDeclaration.kind !== this.mainNamespace.kind
-        ) {
-            targetDeclaration = this.mainNamespace;
-        }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
@@ -960,12 +1006,6 @@ class Generator {
 
         if (doclet.isGlobal) {
             targetDeclaration = this.globalsNamespace;
-        }
-        else if ((this.isMainModule ||
-            this.isMainMember(doclet.name)) &&
-            targetDeclaration.kind !== this.mainNamespace.kind
-        ) {
-            targetDeclaration = this.mainNamespace;
         }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
@@ -1034,6 +1074,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -1050,7 +1091,9 @@ class Generator {
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = this._moduleNamespace;
 
-        if (this.isMainModule && doclet.description) {
+        if (this.isMainModule &&
+            doclet.description
+        ) {
             declaration.description = doclet.description;
         }
 
@@ -1067,6 +1110,7 @@ class Generator {
         }
 
         this._moduleNamespace = declaration;
+        this.setDeclared(declaration);
 
         if (sourceNode.children) {
             this.generateChildren(sourceNode.children, declaration);
@@ -1123,6 +1167,7 @@ class Generator {
 
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
         }
 
         if (sourceNode.children) {
@@ -1242,12 +1287,6 @@ class Generator {
             // global helper types are always limited to the main module scope
             targetDeclaration = this.globalsNamespace;
         }
-        else if ((this.isMainModule ||
-            this.isMainMember(doclet.name)) &&
-            targetDeclaration.kind !== this.mainNamespace.kind
-        ) {
-            targetDeclaration = this.mainNamespace;
-        }
 
         let existingChild = targetDeclaration.getChildren(declaration.name)[0];
 
@@ -1296,9 +1335,12 @@ class Generator {
         ...declarationKind: Array<TSD.Kinds>
     ): boolean {
 
-        const dictionary = Generator.temporaryDictionary;
+        const dictionary = Generator.referenceDictionary;
         const fullName = (
-            targetDeclaration.fullName + '.' + declaration.fullName
+            TSD.IDeclaration.extractTypeNames(
+                targetDeclaration.fullName + '.' + declaration.fullName
+            )[0] ||
+            ''
         );
 
         if (declarationKind.length === 0) {
@@ -1306,64 +1348,27 @@ class Generator {
         }
         else {
             return declarationKind.some(
-                kind => dictionary[fullName].indexOf(kind) > -1
+                kind => dictionary[fullName].some(
+                    declaration => declaration.kind === kind
+                )
             );
         }
     }
 
-    private isMainMember (
-        name: string, baseDeclaration: TSD.IDeclaration = this.mainNamespace
-    ): boolean {
-
-        if (!name.startsWith('Highcharts.')) {
-            name = ('Highcharts.' + name);
-        }
-
-        name = TSD.IDeclaration
-            .extractTypeNames(name)
-            .filter(type => !Utils.isCoreType(type))
-            [0];
-
-        if (!Generator.OPTION_TYPE.test(name)) {
-            return false;
-        }
-
-        let isMainType = TSD.IDeclaration
-            .extractTypeNames(...baseDeclaration.types)
-            .filter(type => !Utils.isCoreType(type))
-            .some(type => (type === name));
-
-        if (!isMainType &&
-            baseDeclaration instanceof TSD.IExtendedDeclaration
-        ) {
-            isMainType = baseDeclaration
-                .getParameters()
-                .map(param => TSD.IDeclaration.extractTypeNames(
-                    ...param.types
-                ))
-                .some(types => types.indexOf(name) > -1);
-        }
-
-        if (!isMainType) {
-            isMainType = baseDeclaration
-                .getChildren()
-                .some(child => this.isMainMember(name, child))
-        };
-
-        return isMainType;
-    }
-
     private setDeclared (declaration: TSD.IDeclaration) {
 
-        const dictionary = Generator.temporaryDictionary;
-        const fullName = declaration.fullName;
-        const kind = declaration.kind;
+        const dictionary = Generator.referenceDictionary;
+        const fullName = (
+            TSD.IDeclaration.extractTypeNames(declaration.fullName)[0] || ''
+        );
 
         if (!dictionary[fullName]) {
-            dictionary[fullName] = [kind];
+            dictionary[fullName] = [declaration];
         }
-        else if (dictionary[fullName].indexOf(kind) === -1) {
-            dictionary[fullName].push(kind);
+        else if (dictionary[fullName].every(
+            reference => reference !== declaration
+        )) {
+            dictionary[fullName].push(declaration);
         }
     }
 
