@@ -824,6 +824,56 @@ export abstract class IDeclaration extends Object {
     }
 
     /**
+     * Returns a array with the referenced types of this declaration.
+     *
+     * @param includeChildren
+     *        True, to include referenced types of child declarations
+     */
+    public getReferencedTypes (includeChildren: boolean): Array<string> {
+
+        const referencedTypes = [] as Array<string>;
+
+        if (this instanceof IExtendedDeclaration) {
+
+            this.getParameters()
+                .forEach(parameter =>
+                    referencedTypes.push(
+                        ...IDeclaration
+                            .extractTypeNames(...parameter.types)
+                            .filter(type =>
+                                referencedTypes.indexOf(type) === -1
+                            )
+                    )
+                );
+        }
+
+        referencedTypes.push(
+            ...IDeclaration
+                .extractTypeNames(...this.types)
+                .filter(type =>
+                    referencedTypes.indexOf(type) === -1
+                )
+        );
+
+        if (includeChildren) {
+
+            this
+                .getChildren()
+                .forEach(child =>
+                    referencedTypes.push(
+                        ...child
+                            .getReferencedTypes(includeChildren)
+                            .filter(type =>
+                                referencedTypes.indexOf(type) === -1
+                            )
+                    )
+                );
+        }
+
+        return referencedTypes;
+    }
+
+    /**
      * Returns true, if declaration is of given kind.
      *
      * @param kinds
@@ -1092,6 +1142,27 @@ export abstract class IDeclaration extends Object {
         } else {
             return types.sort(IDeclaration.sortType).join('|');
         }
+    }
+
+    /**
+     * Returns a JSON object of the relation between TypeScript declarations for
+     * debug purposes.
+     */
+    public toJSON (): any {
+
+        const json = {
+            name: this.name,
+            kind: this.kind,
+            types: this.types.slice()
+        } as any;
+
+        if (this.hasChildren) {
+            json.children = this
+                .getChildren()
+                .map(child => child.toJSON());
+        }
+
+        return json;
     }
 
     /**
@@ -1368,6 +1439,23 @@ export abstract class IExtendedDeclaration extends IDeclaration {
                 parameters.push(declaration)
             }
         });
+    }
+
+    /**
+     * Returns a JSON object of the relation between TypeScript declarations for
+     * debug purposes.
+     */
+    public toJSON (): any {
+
+        const json = super.toJSON();
+
+        if (this.hasParameters) {
+            json.parameters = this
+                .getParameters()
+                .map(parameter => parameter.toJSON());
+        }
+
+        return json;
     }
 
     /**
