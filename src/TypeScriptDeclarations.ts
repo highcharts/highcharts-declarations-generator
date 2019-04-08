@@ -1152,9 +1152,12 @@ export abstract class IDeclaration extends Object {
 
         const json = {
             name: this.name,
-            kind: this.kind,
-            types: this.types.slice()
+            kind: this.kind
         } as any;
+
+        if (this.hasTypes) {
+            json.types = this.types.slice();
+        }
 
         if (this.hasChildren) {
             json.children = this
