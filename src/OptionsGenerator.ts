@@ -478,12 +478,11 @@ class Generator {
             if (Utils.isDeepEqual(existingDeclaration.types, types)) {
                 return existingDeclaration;
             }
-            else {
-                console.error(name + ' already exists with different types');
-                console.info(existingDeclaration.types, 'vs.', types);
-                return undefined;
-            }
-            /*
+
+            console.error(name + ' already exists with different types');
+            console.info(existingDeclaration.types, 'vs.', types);
+            console.info('Merge types of ' + name);
+
             const mergedTypes = Utils.uniqueArray(
                 existingDeclaration.types,
                 types
@@ -493,7 +492,6 @@ class Generator {
             existingDeclaration.types.push(...mergedTypes);
 
             return existingDeclaration;
-             */
         }
 
         const newDeclaration = new TSD.TypeDeclaration(name);
