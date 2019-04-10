@@ -335,7 +335,7 @@ class Generator {
         }
 
         if (!isValueType && doclet.type) {
-            let mergedTypes = Utils.uniqueArray(
+            const mergedTypes = Utils.uniqueArray(
                 declaration.types, doclet.type.names
             );
             declaration.types.length = 0;
