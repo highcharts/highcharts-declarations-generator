@@ -323,36 +323,7 @@ class Generator {
 
         return doclet;
     }
-/*
-    public static mergeDeclarations(
-        targetDeclaration: tsd.IDeclaration,
-        sourceDeclaration: tsd.IDeclaration
-    ) {
 
-        if (!targetDeclaration.description) {
-            targetDeclaration.description = sourceDeclaration.description;
-        }
-
-        targetDeclaration.types.push(...utils.mergeArrays(
-            targetDeclaration.types, sourceDeclaration.types
-        ));
-
-        let existingChild = undefined as (tsd.IDeclaration|undefined),
-            sourceChildren = sourceDeclaration.getChildren(),
-            targetChildrenNames = targetDeclaration.getChildrenNames();
-
-        sourceChildren.forEach(sourceChild => {
-
-            existingChild = targetDeclaration.getChildren(sourceChild.name)[0];
-
-            if (existingChild) {
-                Generator.mergeDeclarations(existingChild, sourceChild);
-            } else {
-                targetDeclaration.addChildren(sourceChild.clone());
-            }
-        });
-    }
- */
     /* *
      *
      *  Constructor
@@ -374,8 +345,6 @@ class Generator {
 
             this._isMainModule = true;
             this._moduleNamespace = this._mainNamespace;
-
-            //this.moduleGlobal.addChildren(this.mainNamespace);
 
             this.moduleNamespace.imports.push(
                 ('import * as globals from "' + Utils.relative(
@@ -1090,12 +1059,6 @@ class Generator {
 
         let doclet = Generator.getNormalizedDoclet(sourceNode),
             declaration = this._moduleNamespace;
-
-        if (this.isMainModule &&
-            doclet.description
-        ) {
-            declaration.description = doclet.description;
-        }
 
         if (!this._mainNamespace.description) {
             this._mainNamespace.description = declaration.description;
