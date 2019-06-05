@@ -1,10 +1,13 @@
 {
     "private": true,
     "name": "highcharts-declarations-generator",
-    "version": "1.1.8",
+    "version": "1.1.9",
     "author": "Highsoft AS",
     "files": [
-        "lib"
+        "dtsconfig.json",
+        "LICENSE",
+        "lib",
+        "README.md"
     ],
     "main": "lib/GulpTask.js",
     "dependencies": {
@@ -16,7 +19,7 @@
         "@types/mkdirp": "^0.5.2",
         "@types/node": "^10.12.10",
         "@types/request": "^2.48.1",
-        "typescript": "^3.4.3"
+        "typescript": "3.4.5"
     },
     "engines": {
         "node": ">=10.0.0"
