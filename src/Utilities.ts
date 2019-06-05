@@ -459,13 +459,13 @@ export function log<T> (obj: T): Promise<T> {
 
 
 export function parent (childPath: string): string {
-    return Path.dirname(childPath);
+    return Path.posix.dirname(childPath);
 }
 
 
 
 export function path (...pathes: Array<string>): string {
-    return Path.join(...pathes);
+    return Path.posix.join(...pathes);
 }
 
 
