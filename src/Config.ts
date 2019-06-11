@@ -4,9 +4,9 @@
  * 
  *!*/
 
+import { sep, posix } from 'path';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
-import { sep, posix } from 'path';
 
 /* *
  *

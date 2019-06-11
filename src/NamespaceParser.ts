@@ -4,10 +4,10 @@
  * 
  *!*/
 
+import { sep, posix } from 'path';
 import * as Config from './Config';
 import * as Utils from './Utilities';
 import * as TSD from './TypeScriptDeclarations';
-import { sep, posix } from 'path';
 
 
 
