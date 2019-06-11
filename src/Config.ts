@@ -4,7 +4,7 @@
  * 
  *!*/
 
-import * as Path from 'path';
+import { sep, posix } from 'path';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utils from './Utilities';
 
@@ -53,17 +53,13 @@ const config = (function () {
  *
  * */
 
-config.cgd = (config.cgd || Utils.parent(__dirname));
+config.cgd = (config.cgd || Utils.parent(__dirname.split(sep).join(posix.sep)));
 
-config.cwd = (config.cwd || process.cwd());
+config.cwd = (config.cwd || process.cwd().split(sep).join(posix.sep));
 
-config.treeNamespaceJsonFile = (config.treeNamespaceJsonFile || '').replace(
-    /\//g, Path.sep
-);
+config.treeNamespaceJsonFile = (config.treeNamespaceJsonFile || '')
 
-config.treeOptionsJsonFile = (config.treeOptionsJsonFile || '').replace(
-    /\//g, Path.sep
-);
+config.treeOptionsJsonFile = (config.treeOptionsJsonFile || '')
 
 config.withoutDoclets = (config.withoutDoclets || false);
 
