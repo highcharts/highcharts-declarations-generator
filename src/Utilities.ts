@@ -8,10 +8,11 @@
 
 import * as FS from 'fs';
 import * as MkDirP from 'mkdirp';
-import * as Path from 'path';
+import { posix, sep } from 'path';
 import * as Request from 'request';
 
 
+const CWD = process.cwd().split(sep).join(posix.sep);
 
 const JSON_ESCAPE: RegExp = /([\[,]\s?)"?(undefined)"?(\s?[,\]])/;
 const JSON_QUOTE: RegExp = /['`]/;
@@ -83,7 +84,7 @@ export function ajax (url: string): Promise<any> {
 
 
 export function base (filePath: string): string {
-    let slashIndex = filePath.lastIndexOf(Path.sep),
+    let slashIndex = filePath.lastIndexOf(posix.sep),
         pointIndex = filePath.indexOf('.', slashIndex);
     if (pointIndex > slashIndex + 1) {
         return filePath.substring(0, pointIndex);
@@ -173,7 +174,7 @@ export function copy (
 ): Promise<string> {
 
     return new Promise((resolve, reject) => {
-        MkDirP(Path.dirname(targetFilePath), error => {
+        MkDirP(posix.dirname(targetFilePath), error => {
 
             if (error) {
                 reject(error);
@@ -434,7 +435,7 @@ export function load (
     filePath: string
 ): Promise<(Array<any> | Dictionary<any>)> {
     return new Promise((resolve, reject) => {
-        filePath = Path.resolve(process.cwd(), filePath);
+        filePath = posix.join(CWD, filePath);
         FS.readFile(filePath, (err, data) => {
             if (err) {
                 reject(err);
@@ -459,13 +460,13 @@ export function log<T> (obj: T): Promise<T> {
 
 
 export function parent (childPath: string): string {
-    return Path.posix.dirname(childPath);
+    return posix.dirname(childPath);
 }
 
 
 
 export function path (...pathes: Array<string>): string {
-    return Path.posix.join(...pathes);
+    return posix.join(...pathes);
 }
 
 
@@ -489,39 +490,39 @@ export function relative (
         isFromFile = false,
         isToFile = false;
 
-    if (moduleMode || Path.extname(fromPath)) {
-        fromDirectory = Path.dirname(fromDirectory);
+    if (moduleMode || posix.extname(fromPath)) {
+        fromDirectory = posix.dirname(fromDirectory);
         isFromFile = true;
     }
 
-    if (moduleMode || Path.extname(toPath)) {
-        toDirectory = Path.dirname(toDirectory);
+    if (moduleMode || posix.extname(toPath)) {
+        toDirectory = posix.dirname(toDirectory);
         isToFile = true;
     }
 
-    let relativePath = Path.relative(
+    let relativePath = posix.relative(
         fromDirectory, toDirectory
     );
 
     if (moduleMode &&
        relativePath[0] !== '.'
     ) {
-        if (relativePath[0] !== Path.sep) {
-            relativePath = Path.sep + relativePath;
+        if (relativePath[0] !== posix.sep) {
+            relativePath = posix.sep + relativePath;
         }
         relativePath = '.' + relativePath;
     }
 
     if (isToFile) {
         if (relativePath &&
-            relativePath[relativePath.length-1] !== Path.sep
+            relativePath[relativePath.length-1] !== posix.sep
         ) {
-            relativePath += Path.sep;
+            relativePath += posix.sep;
         }
-        return relativePath + Path.basename(toPath);
+        return relativePath + posix.basename(toPath);
     } else {
         if (relativePath &&
-            relativePath[relativePath.length-1] === Path.sep
+            relativePath[relativePath.length-1] === posix.sep
         ) {
             relativePath = relativePath.substr(0, (relativePath.length - 1));
         }
@@ -575,9 +576,9 @@ export function removeLinks(
 export function save (filePath: string, fileContent: string): Promise<string> {
     return new Promise((resolve, reject) => {
 
-        filePath = Path.resolve(process.cwd(), filePath);
+        filePath = posix.join(CWD, filePath);
 
-        MkDirP(Path.dirname(filePath), err => {
+        MkDirP(posix.dirname(filePath), err => {
             if (err) {
                 reject(err);
                 return;

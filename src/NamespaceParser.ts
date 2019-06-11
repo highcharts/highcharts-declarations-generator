@@ -7,6 +7,7 @@
 import * as Config from './Config';
 import * as Utils from './Utilities';
 import * as TSD from './TypeScriptDeclarations';
+import { sep, posix } from 'path';
 
 
 
@@ -279,7 +280,7 @@ class NamespaceParser {
             sourceMeta = sourceNode.meta;
 
         (sourceMeta.files || [])
-            .map(file => Utils.base(file.path))
+            .map(file => Utils.base(file.path.split(sep).join(posix.sep)))
             .forEach(modulePath => {
 
                 let moduleNode = this.prepareModule(modulePath),
