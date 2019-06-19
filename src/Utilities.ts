@@ -21,7 +21,7 @@ const JSON_UNESCAPE: RegExp = /^\[(undefined)\]$/;
 const REMOVE_EXAMPLE_HTML = /<(\w+)[^\>]*>([\S\s]*?)<\/\1>/;
 const REMOVE_EXAMPLE_JSDOC = /@example[^@]*/;
 const REMOVE_EXAMPLE_MARKDOWN = /\s*```[^`]*?```/;
-const REMOVE_EXAMPLE_REPLACEMENT = '(see online documentation for example)';
+const REMOVE_EXAMPLE_REPLACEMENT = ' (see online documentation for example)';
 
 const REMOVE_LINK_JSDOC = /\{@link\s+([^\}\|]+)(?:\|([^\}]+))?\}/;
 const REMOVE_LINK_MARKDOWN = /\[([^\]]+)\]\(([^\)]+)\)/;

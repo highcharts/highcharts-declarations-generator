@@ -168,16 +168,16 @@ class Generator {
 
         if (name === 'SeriesOptions') {
 
-            const seriesIndexer = {
-                doclet: {
-                    type: { names: [ '*' ] }
-                },
-                meta: {
-                    fullname: 'series.[key:string]',
-                    name: '[key:string]'
-                },
-                children: {}
-            };
+            declaration.description += [
+                '\n\n',
+                'You have to extend the `SeriesOptions` via an interface ',
+                'to allow custom properties:', '\n',
+                '```', '\n',
+                'declare interface SeriesOptions {', '\n',
+                '    customProperty: string;', '\n',
+                '}', '\n',
+            ].join('');
+
 
             children
                 .filter(child => (
@@ -187,7 +187,6 @@ class Generator {
                         name => !name.startsWith('plotOptions')
                     )
                 ))
-                .concat(Utils.clone(seriesIndexer, Number.MAX_SAFE_INTEGER))
                 .forEach(child => this.generatePropertyDeclaration(
                     child, declaration
                 ));
@@ -201,12 +200,6 @@ class Generator {
                     )
                 ))
                 .forEach(child => {
-
-                    // indicators have no data option
-                    if (child.children.data) {
-                        child.children.data.children['[key:string]'] = Utils
-                            .clone(seriesIndexer, Number.MAX_SAFE_INTEGER);
-                    }
 
                     let seriesDeclaration = this.generateSeriesTypeDeclaration(
                         child, this.namespace
@@ -410,6 +403,15 @@ class Generator {
 
         if (doclet.description) {
             declaration.description = doclet.description;
+            declaration.description += [
+                '\n\n',
+                'You have to extend the `', declaration.name,
+                '` via an interface to allow custom properties:', '\n',
+                '```', '\n',
+                'declare interface ', declaration.name, ' {', '\n',
+                '    customProperty: string;', '\n',
+                '}', '\n',
+            ].join('');
         }
 
         if (doclet.see) {

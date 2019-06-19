@@ -717,6 +717,45 @@ class Generator {
         return declaration;
     }
 
+    private generateExternalModule (
+        sourceNode: Parser.INode,
+        targetDeclaration: TSD.IDeclaration
+    ): TSD.ExternalModuleDeclaration {
+
+        let doclet = Generator.getNormalizedDoclet(sourceNode),
+            // reference namespace of highcharts.js with module path
+            declaration = new TSD.ExternalModuleDeclaration(
+                this._mainNamespace.name,
+                Utils.relative(this.modulePath, Config.mainModule, true)
+            );
+
+        if (doclet.isGlobal) {
+            // add global declaration in the current module file scope
+            targetDeclaration = this.moduleNamespace;
+        }
+
+        let existingChild = targetDeclaration.getChildren(Config.mainModule)[0];
+
+        if (existingChild instanceof TSD.ExternalModuleDeclaration) {
+            declaration = existingChild;
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
+        }
+
+        if (!declaration.parent) {
+            targetDeclaration.addChildren(declaration);
+            this.setDeclared(declaration);
+        }
+
+        if (sourceNode.children) {
+            this.generateChildren(sourceNode.children, declaration);
+        }
+
+        return declaration;
+    }
+
     private generateFunction (
         sourceNode: Parser.INode,
         targetDeclaration: TSD.IDeclaration
@@ -1000,45 +1039,6 @@ class Generator {
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
-        }
-
-        if (!declaration.parent) {
-            targetDeclaration.addChildren(declaration);
-            this.setDeclared(declaration);
-        }
-
-        if (sourceNode.children) {
-            this.generateChildren(sourceNode.children, declaration);
-        }
-
-        return declaration;
-    }
-
-    private generateExternalModule (
-        sourceNode: Parser.INode,
-        targetDeclaration: TSD.IDeclaration
-    ): TSD.ExternalModuleDeclaration {
-
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            // reference namespace of highcharts.js with module path
-            declaration = new TSD.ExternalModuleDeclaration(
-                this._mainNamespace.name,
-                Utils.relative(this.modulePath, Config.mainModule, true)
-            );
-
-        if (doclet.isGlobal) {
-            // add global declaration in the current module file scope
-            targetDeclaration = this.moduleNamespace;
-        }
-
-        let existingChild = targetDeclaration.getChildren(Config.mainModule)[0];
-
-        if (existingChild instanceof TSD.ExternalModuleDeclaration) {
-            declaration = existingChild;
-        }
-
-        if (doclet.see) {
-            declaration.see.push(...doclet.see);
         }
 
         if (!declaration.parent) {
