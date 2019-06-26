@@ -57,6 +57,7 @@ class Parser extends Object {
             children: json
         };
 
+        this.removeDeprecatedNodes(this._root);
         this.completeNodeNames(this._root, '');
         this.completeNodeExtensions(this._root);
         this.completeNodeNames(this._root, '');
@@ -420,6 +421,27 @@ class Parser extends Object {
             });
 
         return currentNode;
+    }
+
+    /**
+     * Removes all deprecated nodes to speed things up.
+     *
+     * @param node
+     *        Node with children to check.
+     */
+    private removeDeprecatedNodes(node: INode) {
+
+        let children = node.children;
+
+        Object
+            .keys(children)
+            .forEach(key => {
+                if (children[key].doclet.deprecated) {
+                    delete children[key];
+                } else {
+                    this.removeDeprecatedNodes(children[key]);
+                }
+            });
     }
 }
 
