@@ -57,6 +57,8 @@ class Parser extends Object {
             children: json
         };
 
+        this.removeDeprecatedNodes(this._root);
+        this.removeInternalNodes(this._root);
         this.completeNodeNames(this._root, '');
         this.completeNodeExtensions(this._root);
         this.completeNodeNames(this._root, '');
@@ -421,6 +423,48 @@ class Parser extends Object {
 
         return currentNode;
     }
+
+    /**
+     * Removes all deprecated nodes to speed things up.
+     *
+     * @param node
+     *        Node with children to check.
+     */
+    private removeDeprecatedNodes(node: INode) {
+
+        let children = node.children;
+
+        Object
+            .keys(children)
+            .forEach(key => {
+                if (children[key].doclet.deprecated) {
+                    delete children[key];
+                } else {
+                    this.removeDeprecatedNodes(children[key]);
+                }
+            });
+    }
+
+    /**
+     * Removes all internal nodes to speed things up.
+     *
+     * @param node
+     *        Node with children to check.
+     */
+    private removeInternalNodes(node: INode) {
+
+        let children = node.children;
+
+        Object
+            .keys(children)
+            .forEach(key => {
+                if (children[key].doclet.internal) {
+                    delete children[key];
+                } else {
+                    this.removeInternalNodes(children[key]);
+                }
+            });
+    }
 }
 
 
@@ -452,6 +496,7 @@ export interface IDoclet {
     description?: string;
     exclude?: Array<string>;
     extends?: string;
+    internal?: boolean;
     products?: Array<string>;
     sample?: ISample;
     samples?: Array<ISample>;
