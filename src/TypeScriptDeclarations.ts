@@ -2573,7 +2573,9 @@ export class ParameterDeclaration extends IDeclaration {
 
         if (this.isVariable) {
             renderedParameter = '...' + renderedParameter;
-            renderedTypes = 'Array<' + renderedTypes + '>';
+            if (!renderedTypes.includes('Array<')) {
+                renderedTypes = 'Array<' + renderedTypes + '>';
+            }
         }
 
         renderedParameter += ': ' + renderedTypes;
