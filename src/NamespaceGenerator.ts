@@ -104,9 +104,21 @@ function moveReferenceDeclarations (
                     )
                     .forEach(referenceDeclaration => {
 
-                        const referenceDeclarations = referenceDeclaration
-                            .parent!
-                            .removeChild(referenceDeclaration.name);
+                        const referenceParent = referenceDeclaration.parent;
+
+                        if (!referenceParent) {
+                            return;
+                        }
+
+                        const mainDeclarationIDs = mainNamespace
+                            .getChildren(referenceDeclaration.name)
+                            .map(declaration => declaration.uniqueID);
+
+                        const referenceDeclarations = referenceParent
+                            .removeChild(referenceDeclaration.name)
+                            .filter(declaration => mainDeclarationIDs
+                                .indexOf(declaration.uniqueID) === -1
+                            );
 
                         mainNamespace
                             .addChildren(...referenceDeclarations);
@@ -548,6 +560,12 @@ class Generator {
             declaration.description = doclet.description;
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         if (doclet.see) {
             declaration.see.push(...doclet.see);
         }
@@ -649,6 +667,12 @@ class Generator {
             }
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         targetDeclaration.addChildren(declaration);
         this.setDeclared(declaration);
 
@@ -701,6 +725,12 @@ class Generator {
             declaration.description = doclet.description;
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         if (doclet.see) {
             declaration.see.push(...doclet.see);
         }
@@ -738,6 +768,12 @@ class Generator {
 
         if (existingChild instanceof TSD.ExternalModuleDeclaration) {
             declaration = existingChild;
+        }
+
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
         }
 
         if (doclet.see) {
@@ -802,6 +838,12 @@ class Generator {
 
         if (doclet.isStatic) {
             declaration.isStatic = true;
+        }
+
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
         }
 
         if (doclet.return) {
@@ -884,6 +926,12 @@ class Generator {
             declaration.description = doclet.description;
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         if (doclet.see) {
             declaration.see.push(...doclet.see);
         }
@@ -915,6 +963,12 @@ class Generator {
             functionDeclaration.setParameters(
                 ...this.generateParameters(doclet.parameters)
             );
+        }
+
+        if (doclet.randomID &&
+            !functionDeclaration.uniqueID
+        ) {
+            functionDeclaration.uniqueID = doclet.randomID;
         }
 
         if (doclet.return) {
@@ -978,6 +1032,12 @@ class Generator {
             );
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         if (doclet.return) {
             if (doclet.return.description) {
                 declaration.typesDescription = doclet.return.description;
@@ -1028,6 +1088,12 @@ class Generator {
             declaration.description = doclet.description;
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         if (doclet.see) {
             declaration.see.push(...doclet.see);
         }
@@ -1062,6 +1128,12 @@ class Generator {
 
         if (!this._mainNamespace.description) {
             this._mainNamespace.description = declaration.description;
+        }
+
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
         }
 
         if (doclet.see) {
@@ -1122,6 +1194,12 @@ class Generator {
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
         }
 
         if (doclet.see) {
@@ -1217,6 +1295,12 @@ class Generator {
             declaration.isStatic = true;
         }
 
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
+        }
+
         if (doclet.see) {
             declaration.see.push(...doclet.see);
         }
@@ -1262,6 +1346,12 @@ class Generator {
 
         if (doclet.description) {
             declaration.description = doclet.description;
+        }
+
+        if (!declaration.uniqueID &&
+            doclet.randomID
+        ) {
+            declaration.uniqueID = doclet.randomID;
         }
 
         if (doclet.see) {

@@ -554,6 +554,7 @@ export abstract class IDeclaration extends Object {
         this._parent = undefined;
         this._see = [];
         this._types = [];
+        this._uniqueID = 0;
     }
 
     /* *
@@ -697,6 +698,17 @@ export abstract class IDeclaration extends Object {
         return this._types;
     }
     private _types: Array<string>;
+
+    /**
+     * Unique ID to identify clones.
+     */
+    public get uniqueID(): number {
+        return this._uniqueID;
+    }
+    public set uniqueID(value: number) {
+        this._uniqueID = value;
+    }
+    private _uniqueID: number;
 
     /* *
      *
@@ -1544,6 +1556,7 @@ export class ClassDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
+        clone.uniqueID = this.uniqueID;
         clone.events.push(...this.events);
         clone.implements.push(...this.implements);
         clone.see.push(...this.see);
@@ -1674,6 +1687,7 @@ export class ConstructorDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
+        clone.uniqueID = this.uniqueID;
         clone.events.push(...this.events);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
@@ -1843,6 +1857,7 @@ export class ExternalModuleDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
+        clone.uniqueID = this.uniqueID;
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -2017,6 +2032,7 @@ export class FunctionTypeDeclaration extends IExtendedDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.typesDescription = this.typesDescription;
+        clone.uniqueID = this.uniqueID;
         clone.events.push(...this.events);
         clone.see.push(...this.see);
         clone.types.push(...this.types);
@@ -2104,6 +2120,7 @@ export class InterfaceDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
+        clone.uniqueID = this.uniqueID;
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -2387,6 +2404,7 @@ export class NamespaceDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
+        clone.uniqueID = this.uniqueID;
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -2519,6 +2537,7 @@ export class ParameterDeclaration extends IDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
         clone.isVariable = this.isVariable;
+        clone.uniqueID = this.uniqueID;
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -2654,6 +2673,7 @@ export class PropertyDeclaration extends IDeclaration {
         clone.isPrivate = this.isPrivate;
         clone.isReadOnly = this.isReadOnly;
         clone.isStatic = this.isStatic;
+        clone.uniqueID = this.uniqueID;
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
@@ -2792,6 +2812,7 @@ export class TypeDeclaration extends IDeclaration {
         clone.isOptional = this.isOptional;
         clone.isPrivate = this.isPrivate;
         clone.isStatic = this.isStatic;
+        clone.uniqueID = this.uniqueID;
         clone.see.push(...this.see);
         clone.types.push(...this.types);
         clone.addChildren(...this.getChildren().map(child => child.clone()));
