@@ -105,7 +105,7 @@ export function capitalize (str: string): string {
 
 
 
-export function clone<T> (
+export function clone<T extends object> (
     obj: T,
     maxDepth: number = 3,
     filterFn?: (value: any, key: (number|string), obj: T) => boolean
