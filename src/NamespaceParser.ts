@@ -279,6 +279,12 @@ class NamespaceParser {
         let sourceDoclet = sourceNode.doclet,
             sourceMeta = sourceNode.meta;
 
+        sourceDoclet.randomID = Math.round(
+            Math.random() >= 0.5 ?
+                ((Math.random() * (Number.MAX_SAFE_INTEGER - 1)) + 1) :
+                ((Math.random() * (Number.MIN_SAFE_INTEGER + 1)) - 1)
+        );
+
         (sourceMeta.files || [])
             .map(file => Utils.base(file.path.split(sep).join(posix.sep)))
             .forEach(modulePath => {
@@ -356,6 +362,7 @@ export interface IDoclet {
     isStatic?: boolean;
     parameters?: Utils.Dictionary<IParameter>;
     products?: Array<string>
+    randomID?: number;
     return?: IReturn;
     see?: Array<string>;
     types?: ITypes;

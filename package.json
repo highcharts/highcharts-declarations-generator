@@ -18,9 +18,9 @@
     },
     "devDependencies": {
         "@types/mkdirp": "^0.5.2",
-        "@types/node": "^10.12.10",
+        "@types/node": "^12.7.2",
         "@types/request": "^2.48.1",
-        "typescript": "3.4.5"
+        "typescript": "^3.6.2"
     },
     "engines": {
         "node": ">=10.0.0"
