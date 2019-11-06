@@ -153,8 +153,16 @@ class Generator {
             name = Generator.getCamelCaseName(
                 sourceNode.meta.fullname || sourceNode.meta.name || ''
             ),
-            declaration = new TSD.InterfaceDeclaration(name),
+            declaration = new TSD.InterfaceDeclaration(
+                sourceNode.doclet.declare || name
+            ),
             children = Utils.Dictionary.values(sourceNode.children);
+
+        let existingChild = this.namespace.getChildren(declaration.name)[0];
+
+        if (existingChild instanceof TSD.InterfaceDeclaration) {
+            declaration = existingChild;
+        }
 
         if (doclet.description) {
             declaration.description = doclet.description;
@@ -164,7 +172,9 @@ class Generator {
             declaration.see.push(...doclet.see);
         }
 
-        this.namespace.addChildren(declaration);
+        if (!declaration.parent) {
+            this.namespace.addChildren(declaration);
+        }
 
         if (name === 'SeriesOptions') {
 
@@ -301,6 +311,12 @@ class Generator {
             sourceNode.meta.name || ''
         );
 
+        let existingChild = targetDeclaration.getChildren(declaration.name)[0];
+
+        if (existingChild instanceof TSD.PropertyDeclaration) {
+            declaration = existingChild;
+        }
+
         if (doclet.description) {
             declaration.description = doclet.description;
         }
@@ -335,7 +351,9 @@ class Generator {
             declaration.types.push(...mergedTypes);
         }
 
-        targetDeclaration.addChildren(declaration);
+        if (!declaration.parent) {
+            targetDeclaration.addChildren(declaration);
+        }
 
         return declaration;
     }

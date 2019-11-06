@@ -489,6 +489,7 @@ export interface IDoclet {
     _extends?: Array<string>;
     access?: string;
     context?: string;
+    declare?: string;
     default?: IDefault;
     defaultByProduct?: Utils.Dictionary<string>;
     defaultvalue?: string;
