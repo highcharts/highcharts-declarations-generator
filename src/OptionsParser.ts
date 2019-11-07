@@ -145,6 +145,19 @@ class Parser extends Object {
             return;
         }
 
+        if (
+            targetDoclet.type &&
+            sourceDoclet.type &&
+            targetDoclet.type.names.length === 1 &&
+            targetDoclet.type.names[0] === '*' &&
+            (
+                sourceDoclet.type.names.length > 1 ||
+                sourceDoclet.type.names[0] !== '*'
+            )
+        ) {
+            targetDoclet.type.names = sourceDoclet.type.names.slice();
+        }
+
         let sourceChildren = sourceNode.children,
             targetChildren = targetNode.children;
 
@@ -489,6 +502,7 @@ export interface IDoclet {
     _extends?: Array<string>;
     access?: string;
     context?: string;
+    declare?: string;
     default?: IDefault;
     defaultByProduct?: Utils.Dictionary<string>;
     defaultvalue?: string;
