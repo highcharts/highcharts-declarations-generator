@@ -367,36 +367,38 @@ class Parser extends Object {
                 Object.keys(productDefaults).some(key => {
                     defaultValue = productDefaults[key];
                     return true;
-                })
+                });
             }
 
             if (!defaultValue) {
                 node.doclet.type = { names: [ 'object' ] };
-                return;
+            }
+            else {
+                switch (defaultValue) {
+                    default:
+                        if (parseInt(defaultValue) !== NaN ||
+                            parseFloat(defaultValue) !== NaN
+                        ) {
+                            node.doclet.type = { names: [ 'number' ] };
+                        } else {
+                            node.doclet.type = { names: [ 'string' ] };
+                        }
+                        break;
+                    case 'false':
+                    case 'true':
+                        node.doclet.type = { names: [ 'boolean' ] };
+                        break;
+                    case '0':
+                    case '1':
+                        node.doclet.type = { names: [ 'number' ] };
+                        break;
+                    case 'null':
+                    case 'undefined':
+                        node.doclet.type = { names: [ '*' ] };
+                        break;
+                }
             }
 
-            switch (defaultValue) {
-                case 'false':
-                case 'true':
-                    node.doclet.type = { names: [ 'boolean' ] };
-                    return;
-                case '0':
-                case '1':
-                    node.doclet.type = { names: [ 'number' ] };
-                    return;
-                case 'null':
-                case 'undefined':
-                    node.doclet.type = { names: [ '*' ] };
-                    return;
-            }
-
-            if (parseInt(defaultValue) !== NaN ||
-                parseFloat(defaultValue) !== NaN
-            ) {
-                node.doclet.type = { names: [ 'number' ] };
-            } else {
-                node.doclet.type = { names: [ 'string' ] };
-            }
         }
 
         let children = node.children;

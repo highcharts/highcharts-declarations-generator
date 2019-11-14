@@ -4,7 +4,7 @@
     "treeOptionsJsonFile": "tree.json",
     "mainModule": "code/highcharts",
     "optionTypeMapping": {
-        "chart.type": "\"area\"|\"areaspline\"|\"bar\"|\"column\"|\"line\"|\"pie\"|\"scatter\"|\"spline\"|string"
+        "exporting.buttons": "Highcharts.Dictionary<Highcharts.ExportingButtonsOptionsObject>"
     },
     "products": {
         "highcharts": "code/highcharts",
