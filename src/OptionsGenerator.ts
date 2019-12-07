@@ -46,7 +46,10 @@ class Generator {
 
         return (TSD.IDeclaration
             .namespaces(name)
-            .map(Utils.capitalize)
+            .map(name => name
+                .split(/\W+/g)
+                .map(Utils.capitalize)
+                .join(''))
             .join('')
             .replace(/Options/g, '') +
             'Options'
