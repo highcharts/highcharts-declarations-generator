@@ -1,7 +1,7 @@
 {
     "private": true,
     "name": "highcharts-declarations-generator",
-    "version": "1.1.16",
+    "version": "1.1.17",
     "author": "Highsoft AS",
     "files": [
         "dtsconfig.json",
@@ -13,17 +13,17 @@
     "main": "lib/GulpTask.js",
     "dependencies": {
         "colors": "^1.4.0",
-        "mkdirp": "^0.5.1",
-        "request": "^2.88.0"
+        "mkdirp": "^1.0.4",
+        "request": "^2.88.2"
     },
     "devDependencies": {
-        "@types/mkdirp": "^0.5.2",
-        "@types/node": "^10.0.0",
-        "@types/request": "^2.48.3",
-        "typescript": "~3.7.3"
+        "@types/mkdirp": "^1.0.0",
+        "@types/node": "^12.0.0",
+        "@types/request": "^2.48.4",
+        "typescript": "~3.8.3"
     },
     "engines": {
-        "node": ">=10.0.0"
+        "node": ">=12.0.0"
     },
     "scripts": {
         "build": "tsc -w"
