@@ -105,10 +105,15 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         type = config.typeMapping[type];
     }
 
-    if (type.startsWith('global.') ||
+    if (
+        type.startsWith('global.') ||
         type.startsWith('window.')
     ) {
         type = type.substr(7);
+    }
+
+    if (type.startsWith('globalThis.')) {
+        type = type.substr(11);
     }
 
     if (type.startsWith('typeof_')) {

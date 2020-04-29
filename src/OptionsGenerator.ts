@@ -377,21 +377,24 @@ class Generator {
             throw new Error('Highcharts.Options#series not declared!');
         }
 
+        let seriesRegistryDeclaration = new TSD.InterfaceDeclaration('SeriesOptionsRegistry');
+        seriesRegistryDeclaration.description = 'The registry for all types of series options.';
+        Generator._series.forEach(series =>
+            seriesRegistryDeclaration.addChildren(
+                new TSD.PropertyDeclaration(series, series)
+            )
+        );
+        this.namespace.addChildren(seriesRegistryDeclaration);
+
         let seriesTypeDeclaration = new TSD.TypeDeclaration(
-            'SeriesOptionsType'
+            'SeriesOptionsType',
+            'SeriesOptionsRegistry[keyof SeriesOptionsRegistry]'
         );
-
-        seriesTypeDeclaration.description = (
-            'The possible types of series options.'
-        );
-        seriesTypeDeclaration.types.push(...Generator._series);
-
+        seriesTypeDeclaration.description = 'The possible types of series options.';
         this.namespace.addChildren(seriesTypeDeclaration);
 
         seriesPropertyDeclaration.types.length = 0;
-        seriesPropertyDeclaration.types.push(
-            'Array<Highcharts.SeriesOptionsType>'
-        );
+        seriesPropertyDeclaration.types.push('Array<Highcharts.SeriesOptionsType>');
     }
  
     private generateSeriesTypeDeclaration (

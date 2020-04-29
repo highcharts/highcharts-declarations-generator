@@ -541,7 +541,7 @@ export abstract class IDeclaration extends Object {
      * @param name
      *        The name of the declaration.
      */
-    public constructor (name: string) {
+    public constructor (name: string, ...types: Array<string>) {
         super();
 
         this._name = IDeclaration.simplifyName(name);
@@ -553,7 +553,7 @@ export abstract class IDeclaration extends Object {
         this._isStatic = false;
         this._parent = undefined;
         this._see = [];
-        this._types = [];
+        this._types = [...types];
         this._uniqueID = 0;
     }
 
@@ -2617,9 +2617,9 @@ export class PropertyDeclaration extends IDeclaration {
      *
      * */
 
-    public constructor (name: string) {
+    public constructor (name: string, ...types: Array<string>) {
 
-        super(name);
+        super(name, ...types);
 
         this._isIndexer = (name[0] === '[');
         this._isReadOnly = false;

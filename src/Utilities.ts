@@ -6,7 +6,7 @@
 
 
 
-import * as FS from 'fs';
+import { promises as FS } from 'fs';
 import * as MkDirP from 'mkdirp';
 import { posix, sep } from 'path';
 import * as Request from 'request';
@@ -173,24 +173,9 @@ export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
 
-    return new Promise((resolve, reject) => {
-        MkDirP(posix.dirname(targetFilePath), error => {
-
-            if (error) {
-                reject(error);
-                return;
-            }
-
-            FS.copyFile(sourceFilePath, targetFilePath, error => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(targetFilePath);
-                }
-            });
-
-        });
-    });
+    return MkDirP(posix.dirname(targetFilePath))
+        .then(() => FS.copyFile(sourceFilePath, targetFilePath))
+        .then(() => targetFilePath);
 }
 
 
@@ -223,46 +208,29 @@ export function extract (text: string, filter: RegExp): string {
  */
 export function files (folder: string): Promise<Array<string>> {
 
-    return new Promise((resolve, reject) => {
+    return FS
+        .readdir(folder, { withFileTypes: true })
+        .then(entries => {
 
-        try {
-            FS
-                .readdir(folder, (error, entries) => {
-                    if (error) {
-                        reject(error);
-                        return;
-                    }
+            const subPromises = entries
+                .filter(entry => entry.isDirectory())
+                .map(entry => files(path(folder, entry.name)));
 
-                    entries = entries.map(entry => path(folder, entry));
+            const promisedFiles = entries
+                .filter(entry => entry.isFile())
+                .map(entry => path(folder, entry.name));
 
-                    const filesPromises = entries
-                        .filter(entry =>
-                            FS.statSync(entry).isDirectory()
-                        )
-                        .map(entry =>
-                            files(entry)
-                        );
+            return Promise
+                .all(subPromises)
+                .then(results => {
 
-                    const promisedFiles = entries.filter(entry =>
-                        FS.statSync(entry).isFile()
-                    );
+                results.forEach(
+                    result => promisedFiles.push(...result)
+                );
 
-                    Promise
-                        .all(filesPromises)
-                        .then(results => {
-
-                            results.forEach(
-                                result => promisedFiles.push(...result)
-                            );
-
-                            return promisedFiles;
-                        })
-                        .then(resolve);
-                });
-        } catch (error) {
-            reject(error);
-        }
-    });
+                return promisedFiles;
+            })
+        });
 }
 
 export function isBasicType (name: string): boolean {
@@ -434,18 +402,11 @@ export function json (
 export function load (
     filePath: string
 ): Promise<(Array<any> | Dictionary<any>)> {
-    return new Promise((resolve, reject) => {
-        filePath = posix.join(CWD, filePath);
-        FS.readFile(filePath, (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(
-                    json(data.toString())
-                );
-            }
-        });
-    });
+    filePath = posix.join(CWD, filePath);
+
+    return FS
+        .readFile(filePath)
+        .then(data => json(data.toString()));
 }
 
 
@@ -574,24 +535,11 @@ export function removeLinks(
 
 
 export function save (filePath: string, fileContent: string): Promise<string> {
-    return new Promise((resolve, reject) => {
+    filePath = posix.join(CWD, filePath);
 
-        filePath = posix.join(CWD, filePath);
-
-        MkDirP(posix.dirname(filePath), err => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            FS.writeFile(filePath, fileContent, err => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(filePath);
-                }
-            });
-        });
-    });
+    return MkDirP(posix.dirname(filePath))
+        .then(() => FS.writeFile(filePath, fileContent))
+        .then(() => filePath);
 }
 
 

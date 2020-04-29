@@ -388,10 +388,6 @@ class Parser extends Object {
                     case 'true':
                         node.doclet.type = { names: [ 'boolean' ] };
                         break;
-                    case '0':
-                    case '1':
-                        node.doclet.type = { names: [ 'number' ] };
-                        break;
                     case 'null':
                     case 'undefined':
                         node.doclet.type = { names: [ '*' ] };
