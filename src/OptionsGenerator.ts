@@ -293,7 +293,7 @@ class Generator {
                         replacedAnyType = true;
                         return type.replace(
                             new RegExp(ANY_TYPE, 'gm'),
-                            '$1' + interfaceDeclaration.name + '$2'
+                            '$1' + interfaceDeclaration.fullName + '$2'
                         );
                     }
                     return type;
