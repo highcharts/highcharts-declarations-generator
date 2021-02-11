@@ -136,7 +136,7 @@ function moveReferenceDeclarations (
 
 export function save (
     declarationsModules: Utils.Dictionary<TSD.ModuleDeclaration>
-): Promise<Array<string>> {
+): Promise<void> {
 
     const mainModuleRegExp = /(".*\/[A-z]+)(";|" {)/g;
 
