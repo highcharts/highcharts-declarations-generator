@@ -244,6 +244,7 @@ class Generator {
         ) {
 
             let name = (
+                sourceDeclaration.declareName ||
                 'Options' + Utils.capitalize(sourceDeclaration.name) + 'Value'
             );
 
@@ -318,6 +319,10 @@ class Generator {
 
         if (existingChild instanceof TSD.PropertyDeclaration) {
             declaration = existingChild;
+        }
+
+        if (doclet.declare) {
+            declaration.declareName = doclet.declare;
         }
 
         if (doclet.description) {

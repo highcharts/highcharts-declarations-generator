@@ -2632,6 +2632,17 @@ export class PropertyDeclaration extends IDeclaration {
      * */
 
     /**
+     * The name of the property's type alias.
+     */
+    public get declareName(): (string|undefined) {
+        return this._declareName;
+    }
+    public set declareName(value: (string|undefined)) {
+        this._declareName = value;
+    }
+    private _declareName?: string;
+
+    /**
      * Kind of declaration.
      */
     public get kind (): ('static property' | 'property') {
@@ -2667,6 +2678,7 @@ export class PropertyDeclaration extends IDeclaration {
 
         let clone = new PropertyDeclaration(this.name);
 
+        clone.declareName = this.declareName;
         clone.defaultValue = this.defaultValue;
         clone.description = this.description;
         clone.isOptional = this.isOptional;
