@@ -7,9 +7,7 @@
 
 
 import { promises as FS } from 'fs';
-import * as MkDirP from 'mkdirp';
 import { posix, sep } from 'path';
-import * as Request from 'request';
 
 
 const CWD = process.cwd().split(sep).join(posix.sep);
@@ -65,20 +63,6 @@ export class Dictionary<T> {
      * */
 
     [key: string]: T;
-}
-
-
-
-export function ajax (url: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-        Request(url, (err, response, body) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(json(body));
-            }
-        });
-    });
 }
 
 
@@ -173,7 +157,8 @@ export function copy (
     sourceFilePath: string, targetFilePath: string
 ): Promise<string> {
 
-    return MkDirP(posix.dirname(targetFilePath))
+    return FS
+        .mkdir(posix.dirname(targetFilePath), { recursive: true })
         .then(() => FS.copyFile(sourceFilePath, targetFilePath))
         .then(() => targetFilePath);
 }
@@ -537,7 +522,8 @@ export function removeLinks(
 export function save (filePath: string, fileContent: string): Promise<string> {
     filePath = posix.join(CWD, filePath);
 
-    return MkDirP(posix.dirname(filePath))
+    return FS
+        .mkdir(posix.dirname(filePath), { recursive: true })
         .then(() => FS.writeFile(filePath, fileContent))
         .then(() => filePath);
 }
