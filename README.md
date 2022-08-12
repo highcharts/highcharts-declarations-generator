@@ -4,7 +4,7 @@ Takes recent meta dumps of options and namespaces doclets, and generates
 declaration files (`*.d.ts`) for TypeScript.
 
 **Note:**
-This is temporary solution to migrate the Highcharts project to TypeScript.
+This is a temporary solution to migrate the Highcharts project to TypeScript.
 
 ## How To Use
 
