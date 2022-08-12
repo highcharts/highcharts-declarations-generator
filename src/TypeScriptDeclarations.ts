@@ -38,11 +38,6 @@ export type Kinds = (
  * */
 
 /**
- * Generic dictionary
- */
-interface Dictionary<T> { [key: string]: T };
-
-/**
  * Path elements
  */
 interface PathElements {
@@ -813,11 +808,20 @@ export abstract class IDeclaration extends Object {
 
         let foundChildren = [] as Array<IDeclaration>;
 
-        this._children.forEach(child => {
-            if (child.name === name) {
-                foundChildren.push(child);
+        if (name.includes('.')) {
+            for (const child of this._children) {
+                if (child.fullName === name) {
+                    foundChildren.push(child);
+                }
             }
-        });
+        }
+        else {
+            for (const child of this._children) {
+                if (child.name === name) {
+                    foundChildren.push(child);
+                }
+            }
+        }
 
         return foundChildren;
     }
