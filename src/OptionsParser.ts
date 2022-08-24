@@ -139,8 +139,9 @@ class Parser extends Object {
             targetMeta = targetNode.meta as any,
             targetName = (targetMeta.fullname || targetMeta.name);
 
-        if (product &&
-            (sourceDoclet.products || []).indexOf(product) === -1
+        if (
+            product &&
+            sourceDoclet.products?.indexOf(product) === -1
         ) {
             return;
         }
@@ -347,7 +348,7 @@ class Parser extends Object {
         if (mappedOptionType) {
             node.doclet.type = { names: [mappedOptionType] };
         }
-        else if (node.doclet.type && node.doclet.type.names) {
+        else if (node.doclet.type?.names) {
             // nothing to do
         }
         else if (node.meta.default) {
@@ -355,12 +356,12 @@ class Parser extends Object {
         }
         else {
 
-            let defaultValue = (
-                node.doclet.default && node.doclet.default.value ||
-                node.doclet.defaultvalue
-            );
+            let defaultValue = (node.doclet.default || node.doclet.defaultvalue);
 
-            if (!defaultValue && node.doclet.defaultByProduct) {
+            if (
+                typeof defaultValue === 'undefined' &&
+                node.doclet.defaultByProduct
+            ) {
 
                 let productDefaults = node.doclet.defaultByProduct;
 
@@ -370,24 +371,30 @@ class Parser extends Object {
                 });
             }
 
-            if (!defaultValue) {
+            if (typeof defaultValue === 'undefined') {
                 node.doclet.type = { names: [ 'object' ] };
             }
             else {
                 switch (defaultValue) {
                     default:
-                        if (parseInt(defaultValue) !== NaN ||
+                        if (
+                            typeof defaultValue === 'number' ||
+                            parseInt(defaultValue) !== NaN ||
                             parseFloat(defaultValue) !== NaN
                         ) {
                             node.doclet.type = { names: [ 'number' ] };
-                        } else {
+                        }
+                        else {
                             node.doclet.type = { names: [ 'string' ] };
                         }
                         break;
+                    case false:
+                    case true:
                     case 'false':
                     case 'true':
                         node.doclet.type = { names: [ 'boolean' ] };
                         break;
+                    case null:
                     case 'null':
                     case 'undefined':
                         node.doclet.type = { names: [ '*' ] };
@@ -501,9 +508,9 @@ export interface IDoclet {
     access?: string;
     context?: string;
     declare?: string;
-    default?: IDefault;
+    default?: (boolean|null|number|string);
     defaultByProduct?: Utils.Dictionary<string>;
-    defaultvalue?: string;
+    defaultvalue?: (boolean|null|number|string);
     deprecated?: boolean;
     description?: string;
     exclude?: Array<string>;
@@ -522,7 +529,7 @@ export interface IDoclet {
 
 export interface IMeta {
     column?: number;
-    default?: (boolean|number|string);
+    default?: (boolean|null|number|string);
     filename?: string;
     fullname?: string;
     line?: number;
@@ -533,7 +540,7 @@ export interface IMeta {
 // Level 3
 
 export interface IDefault {
-    value: string;
+    value: (boolean|null|number|string);
     product: Array<string>;
 }
 
