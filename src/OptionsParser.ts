@@ -356,7 +356,12 @@ class Parser extends Object {
         }
         else {
 
-            let defaultValue = (node.doclet.default || node.doclet.defaultvalue);
+            let defaultValue: (boolean|number|string|null|undefined) =
+                node.doclet.defaultvalue;
+            
+            if (typeof defaultValue === 'undefined') {
+                defaultValue = node.doclet.default;
+            }
 
             if (
                 typeof defaultValue === 'undefined' &&
@@ -510,7 +515,7 @@ export interface IDoclet {
     declare?: string;
     default?: (boolean|null|number|string);
     defaultByProduct?: Utils.Dictionary<string>;
-    defaultvalue?: (boolean|null|number|string);
+    defaultvalue?: string;
     deprecated?: boolean;
     description?: string;
     exclude?: Array<string>;
