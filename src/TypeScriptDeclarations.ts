@@ -570,6 +570,17 @@ export abstract class IDeclaration extends Object {
     private _defaultValue: (boolean|number|string|undefined);
 
     /**
+     * First unsupported version.
+     */
+    public get deprecated(): (string|boolean|undefined) {
+        return this._deprecated;
+    }
+    public set deprecated(value: (string|boolean|undefined)) {
+        this._deprecated = value;
+    }
+    private _deprecated?: (string|boolean);
+
+    /**
      * Description of this declaration.
      */
     public get description(): string {
@@ -659,15 +670,15 @@ export abstract class IDeclaration extends Object {
     /**
      * Parent declaration of this declaration.
      */
-    public get parent(): (IDeclaration | undefined) {
+    public get parent(): (IDeclaration|undefined) {
         return this._parent;
     }
-    private _parent: (IDeclaration | undefined);
+    private _parent: (IDeclaration|undefined);
 
     /**
      * Named root of this declaration.
      */
-    public get root (): (IDeclaration | undefined) {
+    public get root (): (IDeclaration|undefined) {
 
         let root = this.parent;
 
@@ -1017,6 +1028,17 @@ export abstract class IDeclaration extends Object {
             renderedDescription,
             indent + ' * '
         );
+
+        if (this.deprecated) {
+            renderedDescription += (
+                indent + ' *' + '\n' +
+                indent + ` * @deprecated${(
+                    typeof this.deprecated === 'string' ?
+                        ` ${this.deprecated}` :
+                        ''
+                )}` + '\n'
+            );
+        }
 
         if (includeMeta) {
             let renderedDefaultValue = this.renderDefaultValue(indent),

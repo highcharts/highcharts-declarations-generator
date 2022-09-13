@@ -804,6 +804,10 @@ class Generator {
             targetDeclaration = this.globalsNamespace;
         }
 
+        if (typeof doclet.deprecated === 'string') {
+            declaration.deprecated = doclet.deprecated;
+        }
+
         if (doclet.description) {
             declaration.description = doclet.description;
         }
@@ -859,10 +863,6 @@ class Generator {
             }
         }
 
-        if (doclet.see) {
-            declaration.see.push(...doclet.see);
-        }
-
         if (doclet.parameters) {
 
             let parameterDeclarations = this.generateParameters(
@@ -894,6 +894,10 @@ class Generator {
                     ...parameterDeclarations
                 );
             }
+        }
+
+        if (doclet.see) {
+            declaration.see.push(...doclet.see);
         }
 
         targetDeclaration.addChildren(declaration);
