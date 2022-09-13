@@ -175,6 +175,10 @@ class Generator {
             declaration.see.push(...doclet.see);
         }
 
+        if (typeof doclet.deprecated === 'string') {
+            declaration.deprecated = doclet.deprecated;
+        }
+
         if (!declaration.parent) {
             this.namespace.addChildren(declaration);
         }
@@ -329,12 +333,16 @@ class Generator {
             declaration.description = doclet.description;
         }
 
+        if (sourceNode.meta.fullname !== 'series.type') {
+            declaration.isOptional = true;
+        }
+
         if (doclet.see) {
             declaration.see.push(...doclet.see);
         }
 
-        if (sourceNode.meta.fullname !== 'series.type') {
-            declaration.isOptional = true;
+        if (doclet.deprecated) {
+            declaration.deprecated = doclet.deprecated;
         }
 
         let isValueType = false;
@@ -464,6 +472,10 @@ class Generator {
             '`undefined` in series objects from unknown sources.'
         );
         typePropertyDeclaration.types.push('"' + sourceNode.meta.name + '"');
+
+        if (doclet.deprecated) {
+            declaration.deprecated = doclet.deprecated;
+        }
 
         declaration.addChildren(typePropertyDeclaration);
 

@@ -348,6 +348,7 @@ export interface INode {
 
 
 export interface IDoclet {
+    deprecated: (boolean|string);
     description: string;
     kind: IKind;
     name: string;
@@ -365,6 +366,7 @@ export interface IDoclet {
     randomID?: number;
     return?: IReturn;
     see?: Array<string>;
+    since?: string;
     types?: ITypes;
     values?: string;
 }

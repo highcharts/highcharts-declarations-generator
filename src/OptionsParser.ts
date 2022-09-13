@@ -457,15 +457,13 @@ class Parser extends Object {
 
         let children = node.children;
 
-        Object
-            .keys(children)
-            .forEach(key => {
-                if (children[key].doclet.deprecated) {
-                    delete children[key];
-                } else {
-                    this.removeDeprecatedNodes(children[key]);
-                }
-            });
+        for (const key of Object.keys(children)) {
+            if (children[key].doclet.deprecated === true) {
+                delete children[key];
+            } else {
+                this.removeDeprecatedNodes(children[key]);
+            }
+        }
     }
 
     /**
@@ -478,15 +476,13 @@ class Parser extends Object {
 
         let children = node.children;
 
-        Object
-            .keys(children)
-            .forEach(key => {
-                if (children[key].doclet.internal) {
-                    delete children[key];
-                } else {
-                    this.removeInternalNodes(children[key]);
-                }
-            });
+        for (const key of Object.keys(children)) {
+            if (children[key].doclet.internal) {
+                delete children[key];
+            } else {
+                this.removeInternalNodes(children[key]);
+            }
+        }
     }
 }
 
@@ -516,7 +512,7 @@ export interface IDoclet {
     default?: (boolean|null|number|string);
     defaultByProduct?: Utils.Dictionary<string>;
     defaultvalue?: string;
-    deprecated?: boolean;
+    deprecated?: (boolean|string);
     description?: string;
     exclude?: Array<string>;
     extends?: string;
