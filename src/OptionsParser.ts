@@ -384,8 +384,8 @@ class Parser extends Object {
                     default:
                         if (
                             typeof defaultValue === 'number' ||
-                            parseInt(defaultValue) !== NaN ||
-                            parseFloat(defaultValue) !== NaN
+                            !isNaN(parseInt(defaultValue)) ||
+                            !isNaN(parseFloat(defaultValue))
                         ) {
                             node.doclet.type = { names: [ 'number' ] };
                         }

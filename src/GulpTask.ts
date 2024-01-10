@@ -11,7 +11,7 @@ import * as NamespaceParser from './NamespaceParser';
 import * as OptionsGenerator from './OptionsGenerator';
 import * as OptionsParser from './OptionsParser';
 import * as StaticGenerator from './StaticGenerator';
-import * as Utils from './Utilities';
+import * as Utilities from './Utilities';
 
 
 
@@ -28,6 +28,7 @@ function cliFeedback (colorOrMessage: string, message?: string) {
     }
 }
 
+export const config = Config;
 
 export function task (done: Function) {
 
@@ -35,12 +36,12 @@ export function task (done: Function) {
 
     return Promise
         .all([])
-        .then(() => Utils
+        .then(() => Utilities
             .load(Config.treeOptionsJsonFile)
             .then(OptionsParser.parse)
             .then(OptionsGenerator.generate)
         )
-        .then(optionsNamespace => Utils
+        .then(optionsNamespace => Utilities
             .load(Config.treeNamespaceJsonFile)
             .then(NamespaceParser.parse)
             .then(moduleNodes => {

@@ -7,7 +7,7 @@
 import * as Config from './Config';
 import * as Parser from './NamespaceParser';
 import * as TSD from './TypeScriptDeclarations';
-import * as Utils from './Utilities';
+import * as Utilities from './Utilities';
 
 /* *
  *
@@ -15,9 +15,9 @@ import * as Utils from './Utilities';
  *
  * */
 
-type ModuleDictionary = Utils.Dictionary<TSD.ModuleDeclaration>;
+type ModuleDictionary = Utilities.Dictionary<TSD.ModuleDeclaration>;
 
-type ReferenceDictionary = Utils.Dictionary<Array<TSD.IDeclaration>>;
+type ReferenceDictionary = Utilities.Dictionary<Array<TSD.IDeclaration>>;
 
 /* *
  *
@@ -34,16 +34,16 @@ const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
  * */
 
 export function generate (
-    moduleNodes: Utils.Dictionary<Parser.INode>,
+    moduleNodes: Utilities.Dictionary<Parser.INode>,
     optionDeclarations: TSD.ModuleDeclaration
-): Promise<Utils.Dictionary<TSD.ModuleDeclaration>> {
+): Promise<Utilities.Dictionary<TSD.ModuleDeclaration>> {
 
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
 
         const declarationModules = {} as ModuleDictionary;
         const globalsNamespace = new TSD.ModuleDeclaration('globals');
-        const globalsModule = Utils.path(
-            Utils.parent(Config.mainModule), 'globals'
+        const globalsModule = Utilities.path(
+            Utilities.parent(Config.mainModule), 'globals'
         );
         const referenceDictionary = Generator.referenceDictionary;
 
@@ -70,6 +70,13 @@ export function generate (
             );
 
         declarationModules[globalsModule] = globalsNamespace;
+
+        if (!declarationModules[Config.mainModule]) {
+            reject(new Error(
+                'Main module missing: ' + Config.mainModule + '; ' +
+                'found only: ' + Object.keys(declarationModules).join(', ')
+            ));
+        }
 
         moveReferenceDeclarations(
             declarationModules[Config.mainModule],
@@ -135,7 +142,7 @@ function moveReferenceDeclarations (
 }
 
 export function save (
-    declarationsModules: Utils.Dictionary<TSD.ModuleDeclaration>
+    declarationsModules: Utilities.Dictionary<TSD.ModuleDeclaration>
 ): Promise<void> {
 
     const mainModuleRegExp = /(".*\/[A-z]+)(";|" {)/g;
@@ -162,9 +169,9 @@ export function save (
                     return;
                 }
 
-                savePromises.push(Utils.save((module + '.d.ts'), declarations));
+                savePromises.push(Utilities.save((module + '.d.ts'), declarations));
                 savePromises.push(
-                    Utils.save((module + '.src.d.ts'),
+                    Utilities.save((module + '.src.d.ts'),
                     declarations.replace(mainModuleRegExp, '$1.src$2'))
                 );
             });
@@ -202,7 +209,7 @@ class Generator {
         sourceNode: Parser.INode
     ): Parser.IDoclet {
 
-        let doclet = Utils.clone(sourceNode.doclet || {
+        let doclet = Utilities.clone(sourceNode.doclet || {
             description: '',
             kind: 'global',
             name: ''
@@ -213,9 +220,9 @@ class Generator {
             removedLinks = [] as Array<string>,
             values;
 
-        description = Utils.removeExamples(description);
-        description = Utils.removeLinks(description, removedLinks);
-        description = Utils.transformLists(description);
+        description = Utilities.removeExamples(description);
+        description = Utilities.removeLinks(description, removedLinks);
+        description = Utilities.transformLists(description);
 
         doclet.description = description;
         doclet.name = (namespaces[namespaces.length - 1] || '');
@@ -232,10 +239,10 @@ class Generator {
                     parameterDescription = parameters[name].description;
 
                     if (parameterDescription) {
-                        parameterDescription = Utils.removeLinks(
+                        parameterDescription = Utilities.removeLinks(
                             parameterDescription, removedLinks
                         );
-                        parameterDescription = Utils.transformLists(
+                        parameterDescription = Utilities.transformLists(
                             parameterDescription
                         );
                         parameters[name].description = parameterDescription;
@@ -252,7 +259,7 @@ class Generator {
         if (doclet.products) {
 
             let products = doclet.products
-                .map(Utils.capitalize)
+                .map(Utilities.capitalize)
                 .join(', ');
 
             doclet.description = '(' + products + ') ' + description;
@@ -263,10 +270,10 @@ class Generator {
             let returnDescription = doclet.return.description;
 
             if (returnDescription) {
-                returnDescription = Utils.removeLinks(
+                returnDescription = Utilities.removeLinks(
                     returnDescription, removedLinks
                 );
-                returnDescription = Utils.transformLists(
+                returnDescription = Utilities.transformLists(
                     returnDescription
                 );
                 doclet.return.description = returnDescription;
@@ -284,7 +291,7 @@ class Generator {
 
         if (doclet.values) {
             try {
-                values = Utils.json((doclet.values || ''), true);
+                values = Utilities.json((doclet.values || ''), true);
             } catch (error) {
                 console.error(error);
             }
@@ -316,18 +323,18 @@ class Generator {
 
         }
 
-        doclet.types = Utils.uniqueArray(doclet.types);
+        doclet.types = Utilities.uniqueArray(doclet.types);
 
         if (!Config.withoutLinks && removedLinks.length > 0) {
 
             let see = [] as Array<string>;
 
             removedLinks.forEach(link =>
-                see.push(...Utils.urls(link))
+                see.push(...Utilities.urls(link))
             );
 
             if (see.length > 0) {
-                doclet.see = Utils.uniqueArray([
+                doclet.see = Utilities.uniqueArray([
                     Config.seeLink(namespaces.join('.'), doclet.kind)
                 ]);
             }
@@ -359,7 +366,7 @@ class Generator {
             this._moduleNamespace = this._mainNamespace;
 
             this.moduleNamespace.imports.push(
-                ('import * as globals from "' + Utils.relative(
+                ('import * as globals from "' + Utilities.relative(
                     modulePath,
                     Config.mainModule.replace(/highcharts$/, 'globals'),
                     true
@@ -390,12 +397,12 @@ class Generator {
             factoryDeclaration.setParameters(factoryParameterDeclaration);
 
             this.moduleNamespace.imports.push(
-                ('import * as globals from "' + Utils.relative(
+                ('import * as globals from "' + Utilities.relative(
                     modulePath,
                     Config.mainModule.replace(/highcharts$/, 'globals'),
                     true
                 ) + '";'),
-                ('import * as _Highcharts from "' + Utils.relative(
+                ('import * as _Highcharts from "' + Utilities.relative(
                     modulePath, Config.mainModule, true
                 ) + '";')
             );
@@ -571,7 +578,7 @@ class Generator {
         }
 
         if (doclet.types) {
-            let mergedTypes = Utils.uniqueArray(
+            let mergedTypes = Utilities.uniqueArray(
                 declaration.types,
                 doclet.types.filter(type => type !== type.toLowerCase())
             );
@@ -680,7 +687,7 @@ class Generator {
     }
 
     private generateEvents (
-        events: Utils.Dictionary<Parser.IEvent>
+        events: Utilities.Dictionary<Parser.IEvent>
     ): Array<TSD.EventDeclaration> {
 
         let declaration;
@@ -756,7 +763,7 @@ class Generator {
             // reference namespace of highcharts.js with module path
             declaration = new TSD.ExternalModuleDeclaration(
                 this._mainNamespace.name,
-                Utils.relative(this.modulePath, Config.mainModule, true)
+                Utilities.relative(this.modulePath, Config.mainModule, true)
             );
 
         if (doclet.isGlobal) {
@@ -855,7 +862,7 @@ class Generator {
                 declaration.typesDescription = doclet.return.description;
             }
             if (doclet.return.types) {
-                let mergedTypes = Utils.uniqueArray(
+                let mergedTypes = Utilities.uniqueArray(
                     declaration.types, doclet.return.types
                 );
                 declaration.types.length = 0;
@@ -982,7 +989,7 @@ class Generator {
                 );
             }
             if (doclet.return.types) {
-                let mergedTypes = Utils.uniqueArray(
+                let mergedTypes = Utilities.uniqueArray(
                     functionDeclaration.types,
                     doclet.return.types
                 );
@@ -1047,7 +1054,7 @@ class Generator {
                 declaration.typesDescription = doclet.return.description;
             }
             if (doclet.return.types) {
-                let mergedTypes = Utils.uniqueArray(
+                let mergedTypes = Utilities.uniqueArray(
                     declaration.types,
                     doclet.return.types
                 );
@@ -1103,7 +1110,7 @@ class Generator {
         }
 
         if (doclet.types) {
-            let mergedTypes = Utils.uniqueArray(
+            let mergedTypes = Utilities.uniqueArray(
                 declaration.types,
                 doclet.types.filter(type => type !== type.toLowerCase())
             );
@@ -1223,7 +1230,7 @@ class Generator {
     }
 
     private generateParameters (
-        parameters: Utils.Dictionary<Parser.IParameter>
+        parameters: Utilities.Dictionary<Parser.IParameter>
     ): Array<TSD.ParameterDeclaration> {
 
         let declaration = undefined as (TSD.ParameterDeclaration|undefined),
@@ -1310,7 +1317,7 @@ class Generator {
         }
 
         if (doclet.types) {
-            let mergedTypes = Utils.uniqueArray(
+            let mergedTypes = Utilities.uniqueArray(
                 declaration.types,
                 doclet.types
             );
@@ -1363,7 +1370,7 @@ class Generator {
         }
 
         if (doclet.types) {
-            let mergedTypes = Utils.uniqueArray(
+            let mergedTypes = Utilities.uniqueArray(
                 declaration.types,
                 doclet.types.filter(type =>
                     !sourceNode.children ||
