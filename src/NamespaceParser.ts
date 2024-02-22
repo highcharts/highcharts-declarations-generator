@@ -4,26 +4,41 @@
  * 
  *!*/
 
+
 import { sep, posix } from 'path';
 import * as Config from './Config';
-import * as Utils from './Utilities';
+import * as Utilities from './Utilities';
 import * as TSD from './TypeScriptDeclarations';
 
 
+/* *
+ *
+ *  Functions
+ *
+ * */
 
-export function parse(json: any): Promise<Utils.Dictionary<INode>> {
+
+export function parse(json: any): Promise<Utilities.Dictionary<INode>> {
     return new Promise(resolve => resolve((new NamespaceParser(json)).modules));
 }
 
 
+/* *
+ *
+ *  Class
+ *
+ * */
+
 
 class NamespaceParser {
+
 
     /* *
      *
      *  Static Functions
      *
      * */
+
 
     /**
      * Compares two light doclets for basic equality. Returns true, if the
@@ -45,16 +60,18 @@ class NamespaceParser {
             (
                 Object.keys(docletA).length == 1 ||
                 Object.keys(docletB).length == 1 ||
-                Utils.isDeepEqual(docletA, docletB)
+                Utilities.isDeepEqual(docletA, docletB)
             )
         );
     }
+
 
     /* *
      *
      *  Constructor
      *
      * */
+
 
     /**
      * Copies all nodes into there modules.
@@ -72,22 +89,26 @@ class NamespaceParser {
         this.transferNodes(sourceNode);
     }
 
+
     /* *
      *
      *  Properties
      *
      * */
 
-    public get modules (): Utils.Dictionary<INode> {
+
+    public get modules (): Utilities.Dictionary<INode> {
         return this._modules;
     }
-    private _modules: Utils.Dictionary<INode>;
+    private _modules: Utilities.Dictionary<INode>;
+
 
     /* *
      *
      *  Functions
      *
      * */
+
 
     /**
      * Search a node and returns it, if founded.
@@ -176,6 +197,7 @@ class NamespaceParser {
         return node;
     }
 
+
     /**
      * Finds a node in the main modules for reference.
      *
@@ -232,6 +254,7 @@ class NamespaceParser {
         };
     }
 
+
     /**
      * Prepares and returns the specified module.
      *
@@ -256,6 +279,7 @@ class NamespaceParser {
 
         return modules[modulePath];
     }
+
 
     /**
      * Copies all nodes into there modules.
@@ -286,7 +310,7 @@ class NamespaceParser {
         );
 
         (sourceMeta.files || [])
-            .map(file => Utils.base(file.path.split(sep).join(posix.sep)))
+            .map(file => Utilities.base(file.path.split(sep).join(posix.sep)))
             .forEach(modulePath => {
 
                 let moduleNode = this.prepareModule(modulePath),
@@ -353,7 +377,7 @@ export interface IDoclet {
     kind: IKind;
     name: string;
     defaultValue?: (boolean | number | string);
-    events?: Utils.Dictionary<IEvent>;
+    events?: Utilities.Dictionary<IEvent>;
     fires?: Array<string>;
     isDeprecated?: boolean;
     isGlobal?: boolean;
@@ -361,7 +385,7 @@ export interface IDoclet {
     isPrivate?: boolean;
     isReadOnly?: boolean;
     isStatic?: boolean;
-    parameters?: Utils.Dictionary<IParameter>;
+    parameters?: Utilities.Dictionary<IParameter>;
     products?: Array<string>
     randomID?: number;
     return?: IReturn;

@@ -5,12 +5,12 @@
  *!*/
 
 import * as Config from './Config';
-import * as Utils from './Utilities';
+import * as Utilities from './Utilities';
 
 export function save (): Promise<string[]> {
 
-    return Utils.copyAll(
-        Utils.path(Config.cgd, 'static'),
-        Utils.path(Utils.parent(Config.mainModule))
+    return Utilities.copyAll(
+        Utilities.path(Config.cgd, 'static'),
+        Utilities.path(Utilities.parent(Config.mainModule))
     );
 };

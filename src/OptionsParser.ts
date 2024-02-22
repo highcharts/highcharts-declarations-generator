@@ -4,12 +4,29 @@
  * 
  *!*/
 
+
 import * as Config from './Config';
 import * as FS from 'fs';
 import * as TSD from './TypeScriptDeclarations';
-import * as Utils from './Utilities';
+import * as Utilities from './Utilities';
+
+
+/* *
+ *
+ *  Constants
+ *
+ * */
+
 
 const PRODUCTS = Object.keys(Config.products);
+
+
+/* *
+ *
+ *  Functions
+ *
+ * */
+
 
 /**
  * Parse options JSON and returns a dictionary of options nodes.
@@ -22,8 +39,15 @@ export function parse(json: any): Promise<INode> {
 }
 
 
+/* *
+ *
+ *  Class
+ *
+ * */
+
 
 class Parser extends Object {
+
 
     /* *
      *
@@ -31,13 +55,14 @@ class Parser extends Object {
      *
      * */
 
+
     /**
      * Complete nodes in the JSON dictionary with inherited children.
      *
      * @param json
      *        The JSON dictionary to complete.
      */
-    public constructor (json: Utils.Dictionary<INode>) {
+    public constructor (json: Utilities.Dictionary<INode>) {
 
         super();
 
@@ -65,7 +90,7 @@ class Parser extends Object {
         this.completeNodeProducts(this._root, PRODUCTS);
         this.completeNodeTypes(this._root);
 
-        this._modules = {} as Utils.Dictionary<INode>;
+        this._modules = {} as Utilities.Dictionary<INode>;
 
         PRODUCTS.forEach(
             product => {
@@ -92,27 +117,32 @@ class Parser extends Object {
         );
     }
 
+
     /* *
      *
      *  Properties
      *
      * */
 
-    public get modules(): Utils.Dictionary<INode> {
+
+    public get modules(): Utilities.Dictionary<INode> {
         return this._modules;
     }
-    private _modules: Utils.Dictionary<INode>;
+    private _modules: Utilities.Dictionary<INode>;
+
 
     public get root(): INode {
         return this._root;
     }
     private _root: INode;
 
+
     /* *
      *
      *  Functions
      *
      * */
+
 
     /**
      * Transfers non existing properties and children to a node.
@@ -165,14 +195,14 @@ class Parser extends Object {
         Object
             .keys(sourceDoclet)
             .filter(key => typeof targetDoclet[key] === 'undefined')
-            .forEach(key => targetDoclet[key] = Utils.clone(
+            .forEach(key => targetDoclet[key] = Utilities.clone(
                 sourceDoclet[key], Number.MAX_SAFE_INTEGER
             ));
 
         Object
             .keys(sourceMeta)
             .filter(key => typeof targetMeta[key] === 'undefined')
-            .forEach(key => targetMeta[key] = Utils.clone(
+            .forEach(key => targetMeta[key] = Utilities.clone(
                 sourceMeta[key], Number.MAX_SAFE_INTEGER
             ));
 
@@ -208,6 +238,7 @@ class Parser extends Object {
                 );
             });
     }
+
 
     /**
      * Completes nodes with inherited children.
@@ -272,6 +303,7 @@ class Parser extends Object {
             .forEach(key => this.completeNodeExtensions(nodeChildren[key]));
     }
 
+
     /**
      * Update the node names with the give one.
      *
@@ -303,6 +335,7 @@ class Parser extends Object {
             ));
     }
 
+
     /**
      * Update the products information of the node, or determines the products,
      * if not set.
@@ -331,6 +364,7 @@ class Parser extends Object {
                 childNode, parentProducts.slice()
             ));
     }
+
 
     /**
      * Update the type of the node, or determines a type, if no is set.
@@ -417,6 +451,7 @@ class Parser extends Object {
             .forEach(childNode => this.completeNodeTypes(childNode));
     }
 
+
     /**
      * Finds a node in the json dictionary.
      *
@@ -447,6 +482,7 @@ class Parser extends Object {
         return currentNode;
     }
 
+
     /**
      * Removes all deprecated nodes to speed things up.
      *
@@ -465,6 +501,7 @@ class Parser extends Object {
             }
         }
     }
+
 
     /**
      * Removes all internal nodes to speed things up.
@@ -494,15 +531,23 @@ class Parser extends Object {
  * 
  * */
 
+
+
 // Level 1
 
+
+
 export interface INode {
-    children: Utils.Dictionary<INode>;
+    children: Utilities.Dictionary<INode>;
     doclet: IDoclet;
     meta: IMeta;
 }
 
+
+
 // Level 2
+
+
 
 export interface IDoclet {
     _extends?: Array<string>;
@@ -510,7 +555,7 @@ export interface IDoclet {
     context?: string;
     declare?: string;
     default?: (boolean|null|number|string);
-    defaultByProduct?: Utils.Dictionary<string>;
+    defaultByProduct?: Utilities.Dictionary<string>;
     defaultvalue?: string;
     deprecated?: (boolean|string);
     description?: string;
@@ -528,6 +573,8 @@ export interface IDoclet {
     values?: string;
 }
 
+
+
 export interface IMeta {
     column?: number;
     default?: (boolean|null|number|string);
@@ -538,12 +585,18 @@ export interface IMeta {
     name?: string;
 }
 
+
+
 // Level 3
+
+
 
 export interface IDefault {
     value: (boolean|null|number|string);
     product: Array<string>;
 }
+
+
 
 export interface ISample {
     value: string;
@@ -551,12 +604,16 @@ export interface ISample {
     name?: string;
 }
 
+
+
 export interface ITags {
     originalTitle: string;
     text: string;
     title: string;
     value: string;
 }
+
+
 
 export interface IType {
     names: Array<string>;

@@ -4,9 +4,11 @@
  * 
  *!*/
 
+
 import { sep, posix } from 'path';
 import * as TSD from './TypeScriptDeclarations';
-import * as Utils from './Utilities';
+import * as Utilities from './Utilities';
+
 
 /* *
  *
@@ -14,15 +16,19 @@ import * as Utils from './Utilities';
  *
  * */
 
+
 const MAP_TYPE_ARRAY_FIXED: RegExp = /Array<((?:[^<>\[\]]+|[\w\.]+<[^<>\[\]]+>),(?:[^<>\[\]]+|[\w\.]+<[^<>\[\]]+>)+)>/;
 
+
 const SEE_LINK_NAME_LAST = /\.(\w+)$/;
+
 
 /* *
  *
  *  Construction
  *
  * */
+
 
 const config = (function () {
 
@@ -47,13 +53,15 @@ const config = (function () {
 
 }()) as IConfig;
 
+
 /* *
  *
  *  Properties
  *
  * */
 
-config.cgd = (config.cgd || Utils.parent(__dirname.split(sep).join(posix.sep)));
+
+config.cgd = (config.cgd || Utilities.parent(__dirname.split(sep).join(posix.sep)));
 
 config.cwd = (config.cwd || process.cwd().split(sep).join(posix.sep));
 
@@ -63,15 +71,18 @@ config.treeOptionsJsonFile = (config.treeOptionsJsonFile || '')
 
 config.withoutDoclets = (config.withoutDoclets || false);
 
+
 /* *
  *
  *  Functions
  *
  * */
 
+
 config.mapOptionType = function (option: string): string {
     return config.optionTypeMapping[option];
 };
+
 
 config.mapType = function (type: string, withoutConfig: boolean = false): string {
 
@@ -123,6 +134,7 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
     return type;
 };
 
+
 config.mapValue = function (value: any): string {
 
     switch(typeof value) {
@@ -140,6 +152,7 @@ config.mapValue = function (value: any): string {
     }
 
 };
+
 
 config.seeLink = function (name: string, kind: string, product?: string) {
 
@@ -172,18 +185,20 @@ config.seeLink = function (name: string, kind: string, product?: string) {
     }
 };
 
+
 /* *
  *
  *  Interfaces
  *
  * */
 
+
 interface IConfig {
     cgd: string;
     cwd: string;
     mainModule: string;
     optionTypeMapping: { [option: string]: string };
-    products: Utils.Dictionary<string>;
+    products: Utilities.Dictionary<string>;
     seeBaseUrl: string;
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;
@@ -196,10 +211,12 @@ interface IConfig {
     seeLink (name: string, kind: string, product?: string): string;
 }
 
+
 /* *
  *
  *  Exports
  *
  * */
+
 
 export = config;
