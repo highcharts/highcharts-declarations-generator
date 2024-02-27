@@ -30,48 +30,46 @@ function cliFeedback (colorOrMessage: string, message?: string) {
 
 export const config = Config;
 
-export function task (done: Function) {
+export async function task (done: Function) {
 
-    cliFeedback('green', 'Start creating TypeScript declarations...');
+    try {
 
-    return Promise
-        .all([])
-        .then(() => Utilities
-            .load(Config.treeOptionsJsonFile)
-            .then(OptionsParser.parse)
-            .then(OptionsGenerator.generate)
-        )
-        .then(optionsNamespace => Utilities
-            .load(Config.treeNamespaceJsonFile)
-            .then(NamespaceParser.parse)
-            .then(moduleNodes => {
+        cliFeedback('green', 'Start creating TypeScript declarations...');
 
-                cliFeedback('green', 'Creating declarations...');
+        let declarationsModules = await OptionsGenerator.generate(
+            await OptionsParser.parse(
+                await Utilities.load(Config.treeOptionsJsonFile)
+            )
+        );
 
-                return NamespaceGenerator.generate(
-                    moduleNodes, optionsNamespace
-                );
-            })
-        )
-        .then(declarationsModules => {
+        cliFeedback('green', 'Creating declarations...');
 
-            cliFeedback('green', 'Saving declarations...');
+        declarationsModules = await NamespaceGenerator.generate(
+            await NamespaceParser.parse(
+                await Utilities.load(Config.treeNamespaceJsonFile)
+            ),
+            declarationsModules
+        );
 
-            return declarationsModules;
-        })
-        .then(NamespaceGenerator.save)
-        .then(StaticGenerator.save)
-        .then(() => cliFeedback(
-            'green',
-            'Finished creating TypeScript declarations.'
-        ))
-        .catch(error => {
-            if (error) {
-                cliFeedback('red', error.toString());
-                throw error;
-            }
-            else {
-                throw new Error('Unknown error');
-            }
-        });
+
+        cliFeedback('green', 'Saving declarations...');
+
+        await NamespaceGenerator.save(declarationsModules);
+        await StaticGenerator.save();
+
+        cliFeedback('green', 'Finished creating TypeScript declarations.');
+
+    }
+    catch (error) {
+
+        if (error) {
+            cliFeedback('red', error.toString());
+            throw error;
+        }
+        else {
+            throw new Error('Unknown error');
+        }
+
+    }
+
 }

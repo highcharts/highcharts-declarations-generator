@@ -7,6 +7,14 @@
 import * as Config from './Config';
 import * as Utilities from './Utilities';
 
+
+/* *
+ *
+ *  Functions
+ *
+ * */
+
+
 export function save (): Promise<string[]> {
 
     return Utilities.copyAll(

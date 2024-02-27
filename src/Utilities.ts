@@ -396,11 +396,9 @@ export function load (
 
 
 
-export function log<T> (obj: T): Promise<T> {
-    return new Promise((resolve, reject) => {
-        console.log(obj);
-        resolve(obj);
-    });
+export async function log<T> (obj: T): Promise<T> {
+    console.log(obj);
+    return obj;
 }
 
 
