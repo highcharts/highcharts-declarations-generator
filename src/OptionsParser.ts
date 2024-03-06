@@ -89,6 +89,7 @@ class Parser extends Object {
         this.completeNodeNames(this._root, '');
         this.completeNodeProducts(this._root, PRODUCTS);
         this.completeNodeTypes(this._root);
+        this.removeProductNodes(this._root, PRODUCTS);
 
         this._modules = {} as Utilities.Dictionary<INode>;
 
@@ -361,7 +362,7 @@ class Parser extends Object {
             .keys(children)
             .map(childName => children[childName])
             .forEach(childNode => this.completeNodeProducts(
-                childNode, parentProducts.slice()
+                childNode, parentProducts
             ));
     }
 
@@ -500,6 +501,7 @@ class Parser extends Object {
                 this.removeDeprecatedNodes(children[key]);
             }
         }
+
     }
 
 
@@ -509,7 +511,9 @@ class Parser extends Object {
      * @param node
      *        Node with children to check.
      */
-    private removeInternalNodes(node: INode) {
+    private removeInternalNodes(
+        node: INode
+    ) {
 
         let children = node.children;
 
@@ -520,7 +524,42 @@ class Parser extends Object {
                 this.removeInternalNodes(children[key]);
             }
         }
+
     }
+
+
+    /**
+     * Removes product-unrelated child nodes.
+     *
+     * @param node
+     *        Root node with children to check.
+     *
+     * @param products
+     *        Array of parent products.
+     */
+    private removeProductNodes(
+        node: INode,
+        products: Array<string>
+    ) {
+
+        let children = node.children,
+            childProducts: Array<string>;
+
+        for (const key in children) {
+
+            childProducts = children[key].doclet.products || products;
+
+            if (!childProducts.some(product => products.includes(product))) {
+                delete children[key];
+            } else {
+                this.removeProductNodes(children[key], childProducts);
+            }
+
+        }
+
+    } 
+
+
 }
 
 
