@@ -69,6 +69,16 @@ export function generate (
                     const name = TSD.IDeclaration
                         .extractTypeNames(declaration.fullName)[0];
 
+                    if (
+                        name.startsWith('Plot') ||
+                        (
+                            declaration instanceof TSD.InterfaceDeclaration &&
+                            declaration.types.includes('SeriesOptions')
+                        )
+                    ){
+                        continue;
+                    }
+
                     referenceDictionary[name] = [declaration];
                 }
             }
