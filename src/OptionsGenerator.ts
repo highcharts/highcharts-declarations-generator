@@ -10,22 +10,14 @@ import * as Parser from './OptionsParser';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utilities from './Utilities';
 
-
 /* *
  *
- *  Functions
+ *  Types
  *
  * */
 
 
-export function generate (
-    optionsNode: Parser.INode
-): Promise<TSD.ModuleDeclaration> {
-
-    return new Promise(
-        resolve => resolve((new Generator(optionsNode)).namespace)
-    );
-}
+type ModuleDictionary = Utilities.Dictionary<TSD.ModuleDeclaration>;
 
 
 /* *
@@ -38,6 +30,95 @@ export function generate (
 const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
 
 
+const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
+
+
+const SERIES_NAME = /^Highcharts\.(?:Plot|Series)(([A-Z][a-z]+)(?:[A-Z][a-z]+)?)\w*Options$/;
+
+
+/* *
+ *
+ *  Functions
+ *
+ * */
+
+
+export async function generate (
+    optionsNode: Parser.INode
+): Promise<ModuleDictionary> {
+
+    const optionsNamespace = new OptionsGenerator(optionsNode).namespace;
+    const declarationModules: ModuleDictionary = {
+        [Config.mainModule]: optionsNamespace
+    };
+    const optionsPath = Utilities
+        .path(Utilities.parent(Config.mainModule), 'options');
+    const seriesTypes: Array<string> = [];
+
+    for (
+        const child
+        of optionsNamespace.getChildren('PlotOptions')[0].getChildren()
+    ) {
+        seriesTypes.push(child.name);
+    }
+
+    let moduleImport: string;
+    let modulePath: string;
+    let name: string;
+    let type: string;
+    let type2: string;
+
+    for (const child of optionsNamespace.getChildren()) {
+
+        name = TSD.IDeclaration.extractTypeNames(child.fullName)[0];
+        type = (name.match(SERIES_NAME)?.[1] || '').toLowerCase();
+        type2 = (name.match(SERIES_NAME)?.[2] || '').toLowerCase();
+
+        if (seriesTypes.includes(type) || seriesTypes.includes(type2)) {
+
+            if (!seriesTypes.includes(type)) {
+                type = type2;
+            }
+
+            modulePath = Utilities.path(optionsPath, type);
+
+            if (!declarationModules[modulePath]) {
+                declarationModules[modulePath] = new TSD.ModuleDeclaration(modulePath);
+                declarationModules[modulePath].imports.push(
+                    'import * as Highcharts from "' +
+                    Utilities.relative(modulePath, Config.mainModule, true) +
+                    '";'
+                );
+                declarationModules[modulePath]
+                    .addChildren(new TSD.ExternalModuleDeclaration(
+                        Config.mainModule,
+                        Utilities.relative(modulePath, Config.mainModule, true)
+                    ));
+
+            }
+
+            declarationModules[modulePath]
+                .getChildren()[0]
+                .addChildren(...optionsNamespace.removeChild(child.name));
+
+            moduleImport = (
+                'import "' +
+                Utilities.relative(Config.mainModule, modulePath, true) +
+                '";'
+            );
+
+            if (!optionsNamespace.imports.includes(moduleImport)) {
+                optionsNamespace.imports.push(moduleImport);
+            }
+
+        }
+
+    }
+
+    return declarationModules;
+}
+
+
 /* *
  *
  *  Class
@@ -45,7 +126,8 @@ const ANY_TYPE = /(^|[\<\(\|])any([\|\)\>]|$)/;
  * */
 
 
-class Generator {
+class OptionsGenerator {
+
 
 
     /* *
@@ -57,6 +139,7 @@ class Generator {
 
     private static _series: Array<string> = [];
 
+
     /* *
      *
      *  Static Functions
@@ -64,7 +147,9 @@ class Generator {
      * */
 
 
-    private static getCamelCaseName (name: string): string {
+    private static getCamelCaseName (
+        name: string
+    ): string {
 
         return (TSD.IDeclaration
             .namespaces(name)
@@ -79,7 +164,9 @@ class Generator {
     }
 
 
-    private static getNormalizedDoclet (node: Parser.INode): Parser.IDoclet {
+    private static getNormalizedDoclet (
+        node: Parser.INode
+    ): Parser.IDoclet {
 
         let doclet = node.doclet,
             description = (node.doclet.description || '').trim(),
@@ -143,13 +230,16 @@ class Generator {
      * */
 
 
-    public constructor (parsedOptions: Parser.INode) {
+    public constructor (
+        parsedOptions: Parser.INode
+    ) {
 
         this._namespace = new TSD.ModuleDeclaration('Highcharts');
 
         this.generateInterfaceDeclaration(parsedOptions);
         this.generateSeriesDeclaration();
         this.generateLiteralTypeDeclarations();
+
     }
 
 
@@ -183,8 +273,8 @@ class Generator {
             return undefined;
         }
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            name = Generator.getCamelCaseName(
+        let doclet = OptionsGenerator.getNormalizedDoclet(sourceNode),
+            name = OptionsGenerator.getCamelCaseName(
                 sourceNode.meta.fullname || sourceNode.meta.name || ''
             ),
             declaration = new TSD.InterfaceDeclaration(
@@ -226,7 +316,6 @@ class Generator {
                 '}', '\n',
             ].join('');
 
-
             children
                 .filter(child => (
                     Object.keys(child.children).length === 0 ||
@@ -254,7 +343,7 @@ class Generator {
                     );
 
                     if (seriesDeclaration) {
-                        Generator._series.push(seriesDeclaration.fullName);
+                        OptionsGenerator._series.push(seriesDeclaration.fullName);
                     }
                 });
         }
@@ -309,7 +398,7 @@ class Generator {
             return undefined;
         }
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode);
+        let doclet = OptionsGenerator.getNormalizedDoclet(sourceNode);
 
         if (Object.keys(sourceNode.children).length > 0) {
 
@@ -426,7 +515,7 @@ class Generator {
 
         let seriesRegistryDeclaration = new TSD.InterfaceDeclaration('SeriesOptionsRegistry');
         seriesRegistryDeclaration.description = 'The registry for all types of series options.';
-        Generator._series.forEach(series =>
+        OptionsGenerator._series.forEach(series =>
             seriesRegistryDeclaration.addChildren(
                 new TSD.PropertyDeclaration(series, series)
             )
@@ -456,8 +545,8 @@ class Generator {
             return undefined;
         }
 
-        let doclet = Generator.getNormalizedDoclet(sourceNode),
-            name = Generator.getCamelCaseName(
+        let doclet = OptionsGenerator.getNormalizedDoclet(sourceNode),
+            name = OptionsGenerator.getCamelCaseName(
                 sourceNode.meta.fullname || sourceNode.meta.name || ''
             ),
             declaration = new TSD.InterfaceDeclaration(name),
@@ -465,7 +554,7 @@ class Generator {
             extendedChildren = [ 'type' ] as Array<string>;
 
         (sourceNode.doclet._extends || [])
-            .map(name => Generator.getCamelCaseName(name))
+            .map(name => OptionsGenerator.getCamelCaseName(name))
             .map(name => this.namespace.getChildren(name)[0])
             .forEach(
                 declaration =>

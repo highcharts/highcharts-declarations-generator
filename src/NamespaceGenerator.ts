@@ -9,15 +9,19 @@ import * as Parser from './NamespaceParser';
 import * as TSD from './TypeScriptDeclarations';
 import * as Utilities from './Utilities';
 
+
 /* *
  *
  *  Types
  *
  * */
 
+
 type ModuleDictionary = Utilities.Dictionary<TSD.ModuleDeclaration>;
 
+
 type ReferenceDictionary = Utilities.Dictionary<Array<TSD.IDeclaration>>;
+
 
 /* *
  *
@@ -25,7 +29,9 @@ type ReferenceDictionary = Utilities.Dictionary<Array<TSD.IDeclaration>>;
  *
  * */
 
+
 const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
+
 
 /* *
  *
@@ -33,41 +39,59 @@ const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
  *
  * */
 
+
 export function generate (
     moduleNodes: Utilities.Dictionary<Parser.INode>,
-    optionDeclarations: TSD.ModuleDeclaration
+    declarationModules: ModuleDictionary
 ): Promise<Utilities.Dictionary<TSD.ModuleDeclaration>> {
 
     return new Promise((resolve, reject) => {
 
-        const declarationModules = {} as ModuleDictionary;
         const globalsNamespace = new TSD.ModuleDeclaration('globals');
         const globalsModule = Utilities.path(
             Utilities.parent(Config.mainModule), 'globals'
         );
+        const mainNamespace = declarationModules[Config.mainModule];
         const referenceDictionary = Generator.referenceDictionary;
 
         if (Object.keys(referenceDictionary).length === 0) {
+            let declarations: Array<TSD.IDeclaration>;
 
-            optionDeclarations
-                .getChildren()
-                .forEach(child =>
-                    referenceDictionary[
-                        TSD.IDeclaration.extractTypeNames(child.fullName)[0]
-                    ] = [child]
-                );
+            for (const module in declarationModules) {
+                if (module === Config.mainModule) {
+                    declarations = declarationModules[module].getChildren();
+                }
+                else {
+                    declarations = declarationModules[module]
+                        .getChildren()[0].getChildren();
+                }
+                for (const declaration of declarations) {
+                    const name = TSD.IDeclaration
+                        .extractTypeNames(declaration.fullName)[0];
+
+                    if (
+                        name.startsWith('Plot') ||
+                        (
+                            declaration instanceof TSD.InterfaceDeclaration &&
+                            declaration.types.includes('SeriesOptions')
+                        )
+                    ){
+                        continue;
+                    }
+
+                    referenceDictionary[name] = [declaration];
+                }
+            }
         }
 
-        Object
-            .keys(moduleNodes)
-            .forEach(moduleNode =>
-                declarationModules[moduleNode] = new Generator(
-                    moduleNode,
-                    moduleNodes[moduleNode],
-                    globalsNamespace,
-                    optionDeclarations
-                ).moduleNamespace
-            );
+        for (const moduleNode in moduleNodes) {
+            declarationModules[moduleNode] = new Generator(
+                moduleNode,
+                moduleNodes[moduleNode],
+                globalsNamespace,
+                mainNamespace
+            ).moduleNamespace;
+        }
 
         declarationModules[globalsModule] = globalsNamespace;
 
@@ -79,7 +103,7 @@ export function generate (
         }
 
         moveReferenceDeclarations(
-            declarationModules[Config.mainModule],
+            declarationModules,
             referenceDictionary
         );
 
@@ -88,57 +112,79 @@ export function generate (
 }
 
 function moveReferenceDeclarations (
-    mainNamespace: TSD.ModuleDeclaration,
+    declarationModules: ModuleDictionary,
     referenceDictionary: ReferenceDictionary
 ) {
+    const mainNamespace = declarationModules[Config.mainModule];
 
-    const _move = (declaration: TSD.IDeclaration) => {
-
+    const moveReferences = (declaration: TSD.IDeclaration) => {
         const mainChildFullNames = mainNamespace.getChildrenNames(true);
         const mainFullName = mainNamespace.fullName;
 
-        declaration
-            .getReferencedTypes(true)
-            .filter(type => !!referenceDictionary[type])
-            .forEach(type => 
-                referenceDictionary[type]
-                    .filter(referenceDeclaration =>
-                        referenceDeclaration.parent &&
-                        referenceDeclaration.parent !== mainNamespace &&
-                        referenceDeclaration.parent.fullName === mainFullName &&
-                        mainChildFullNames
-                            .indexOf(referenceDeclaration.fullName) === -1
-                    )
-                    .forEach(referenceDeclaration => {
+        const types = declaration.getReferencedTypes(true);
 
-                        const referenceParent = referenceDeclaration.parent;
+        for (const type of types) {
 
-                        if (!referenceParent) {
-                            return;
-                        }
+            if(!referenceDictionary[type]) {
+                continue;
+            }
 
-                        const mainDeclarationIDs = mainNamespace
-                            .getChildren(referenceDeclaration.name)
-                            .map(declaration => declaration.uniqueID);
+            referenceDictionary[type]
+                .filter(referenceDeclaration =>
+                    referenceDeclaration.parent &&
+                    referenceDeclaration.parent !== mainNamespace &&
+                    referenceDeclaration.parent.fullName === mainFullName &&
+                    mainChildFullNames
+                        .indexOf(referenceDeclaration.fullName) === -1
+                )
+                .forEach(referenceDeclaration => {
 
-                        const referenceDeclarations = referenceParent
-                            .removeChild(referenceDeclaration.name)
-                            .filter(declaration => mainDeclarationIDs
-                                .indexOf(declaration.uniqueID) === -1
-                            );
+                    const referenceParent = referenceDeclaration.parent;
 
-                        mainNamespace
-                            .addChildren(...referenceDeclarations);
+                    if (!referenceParent) {
+                        return;
+                    }
 
-                        referenceDeclarations
-                            .forEach(_move);
-                    })
-            )
+                    const mainDeclarationIDs = mainNamespace
+                        .getChildren(referenceDeclaration.name)
+                        .map(declaration => declaration.uniqueID);
+
+                    const referenceDeclarations = referenceParent
+                        .removeChild(referenceDeclaration.name)
+                        .filter(declaration => mainDeclarationIDs
+                            .indexOf(declaration.uniqueID) === -1
+                        );
+
+                    mainNamespace
+                        .addChildren(...referenceDeclarations);
+
+                    referenceDeclarations
+                        .forEach(moveReferences);
+                })
+
+        }
     };
 
-    mainNamespace
-        .getChildren()
-        .forEach(_move);
+    // Move references into main namespace to address circulars
+    for (const child of mainNamespace.getChildren()) {
+        moveReferences(child);
+    }
+
+    // Move references by series into main namespace to address circulars
+    for (const module in declarationModules) {
+        if (!module.includes('options')) {
+            continue;
+        }
+        for (const external of declarationModules[module].getChildren()) {
+            if (!(external instanceof TSD.ExternalModuleDeclaration)) {
+                continue;
+            }
+            for (const child of external.getChildren()) {
+                moveReferences(child);
+            }
+        }
+    }
+
 }
 
 export function save (
@@ -157,7 +203,6 @@ export function save (
         Object
             .keys(declarationsModules)
             .forEach(module => {
-
                 declarationsModule = declarationsModules[module];
                 declarationsModule.copyright = COPYRIGHT_HEADER;
 
@@ -353,11 +398,11 @@ class Generator {
         modulePath: string,
         moduleNode: Parser.INode,
         globalsNamespace: TSD.ModuleDeclaration,
-        optionsNamespace: TSD.ModuleDeclaration
+        mainNamespace: TSD.ModuleDeclaration
     ) {
 
         this._globalsNamespace = globalsNamespace;
-        this._mainNamespace = optionsNamespace;
+        this._mainNamespace = mainNamespace;
         this._modulePath = modulePath;
 
         if (this.modulePath === Config.mainModule) {
