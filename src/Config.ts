@@ -203,6 +203,7 @@ interface IConfig {
     treeNamespaceJsonFile: string;
     treeOptionsJsonFile: string;
     typeMapping: { [type: string]: string };
+    withoutDeprecates: boolean;
     withoutDoclets: boolean;
     withoutLinks: boolean;
     mapOptionType (option: string): string;

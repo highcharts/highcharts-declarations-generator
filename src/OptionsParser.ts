@@ -82,7 +82,10 @@ class Parser extends Object {
             children: json
         };
 
-        this.removeDeprecatedNodes(this._root);
+        if (Config.withoutDeprecates) {
+            this.removeDeprecatedNodes(this._root);
+        }
+
         this.removeInternalNodes(this._root);
         this.completeNodeNames(this._root, '');
         this.completeNodeExtensions(this._root);
