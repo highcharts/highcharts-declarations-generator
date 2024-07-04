@@ -82,10 +82,7 @@ class Parser extends Object {
             children: json
         };
 
-        if (Config.withoutDeprecates) {
-            this.removeDeprecatedNodes(this._root);
-        }
-
+        this.removeDeprecatedNodes(this._root);
         this.removeInternalNodes(this._root);
         this.completeNodeNames(this._root, '');
         this.completeNodeExtensions(this._root);
@@ -498,7 +495,9 @@ class Parser extends Object {
         let children = node.children;
 
         for (const key of Object.keys(children)) {
-            if (children[key].doclet.deprecated === true) {
+            if (children[key].doclet.deprecated === true ||
+                (Config.withoutDeprecates && children[key].doclet.deprecated)
+            ) {
                 delete children[key];
             } else {
                 this.removeDeprecatedNodes(children[key]);
