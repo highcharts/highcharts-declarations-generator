@@ -289,6 +289,12 @@ class NamespaceParser {
      */
     private transferNodes (sourceNode: INode) {
 
+        if (Config.withoutDeprecates &&
+            sourceNode.doclet.deprecated
+        ) {
+            return;
+        }
+
         if (!sourceNode.doclet ||
             !sourceNode.meta
         ) {
@@ -372,11 +378,9 @@ export interface INode {
 
 
 export interface IDoclet {
+    defaultValue?: (boolean | number | string);
     deprecated: (boolean|string);
     description: string;
-    kind: IKind;
-    name: string;
-    defaultValue?: (boolean | number | string);
     events?: Utilities.Dictionary<IEvent>;
     fires?: Array<string>;
     isDeprecated?: boolean;
@@ -385,6 +389,8 @@ export interface IDoclet {
     isPrivate?: boolean;
     isReadOnly?: boolean;
     isStatic?: boolean;
+    kind: IKind;
+    name: string;
     parameters?: Utilities.Dictionary<IParameter>;
     products?: Array<string>
     randomID?: number;

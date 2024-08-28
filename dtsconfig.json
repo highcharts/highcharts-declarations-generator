@@ -37,6 +37,7 @@
         "Object": "object",
         "String": "string"
     },
+    "withoutDeprecates": false,
     "withoutDoclets": false,
     "withoutLinks": true
 }

@@ -495,7 +495,9 @@ class Parser extends Object {
         let children = node.children;
 
         for (const key of Object.keys(children)) {
-            if (children[key].doclet.deprecated === true) {
+            if (children[key].doclet.deprecated === true ||
+                (Config.withoutDeprecates && children[key].doclet.deprecated)
+            ) {
                 delete children[key];
             } else {
                 this.removeDeprecatedNodes(children[key]);
