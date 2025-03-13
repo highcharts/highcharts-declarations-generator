@@ -427,19 +427,23 @@ class Generator {
             this._isMainModule = false;
             this._moduleNamespace = new TSD.ModuleDeclaration();
 
-            let factoryDeclaration = new TSD.FunctionDeclaration('factory');
-            factoryDeclaration.description = (
-                'Adds the module to the imported Highcharts namespace.'
-            );
+            let factoryDeclaration;
 
-            let factoryParameterDeclaration = new TSD.ParameterDeclaration(
-                'highcharts'
-            );
-            factoryParameterDeclaration.description = (
-                'The imported Highcharts namespace to extend.'
-            );
-            factoryParameterDeclaration.types.push('typeof Highcharts');
-            factoryDeclaration.setParameters(factoryParameterDeclaration);
+            if (!Config.withoutFactory) {
+                factoryDeclaration = new TSD.FunctionDeclaration('factory');
+                factoryDeclaration.description = (
+                    'Adds the module to the imported Highcharts namespace.'
+                );
+
+                let factoryParameterDeclaration = new TSD.ParameterDeclaration(
+                    'highcharts'
+                );
+                factoryParameterDeclaration.description = (
+                    'The imported Highcharts namespace to extend.'
+                );
+                factoryParameterDeclaration.types.push('typeof Highcharts');
+                factoryDeclaration.setParameters(factoryParameterDeclaration);
+            }
 
             this.moduleNamespace.imports.push(
                 ('import * as globals from "' + Utilities.relative(
@@ -452,11 +456,17 @@ class Generator {
                 ) + '";')
             );
 
-            this.moduleNamespace.addChildren(factoryDeclaration);
-            this.moduleNamespace.exports.push('export default factory;');
-            this.moduleNamespace.exports.push(
-                'export let Highcharts: typeof _Highcharts;'
-            );
+            if (!Config.withoutFactory && factoryDeclaration) {
+                this.moduleNamespace.addChildren(factoryDeclaration);
+                this.moduleNamespace.exports.push('export default factory;');
+                this.moduleNamespace.exports.push(
+                    'export let Highcharts: typeof _Highcharts;'
+                );
+            } else {
+                this.moduleNamespace.exports.push(
+                    'export default _Highcharts;'
+                );
+            }
         }
 
         this.generate(moduleNode);
