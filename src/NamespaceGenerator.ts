@@ -464,8 +464,7 @@ class Generator {
                 );
             } else {
                 this.moduleNamespace.exports.push(
-                    'const Highcharts: typeof _Highcharts = _Highcharts;',
-                    'export default Highcharts;'
+                    'export default _Highcharts;'
                 );
             }
         }
