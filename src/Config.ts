@@ -86,6 +86,10 @@ config.mapOptionType = function (option: string): string {
 
 config.mapType = function (type: string, withoutConfig: boolean = false): string {
 
+    if (type.startsWith('"TypeScript: ') && type.endsWith('"')) {
+        return type.substring(13, type.length - 1);
+    }
+
     type = type
         .replace(/\(\)/gm, '')
         .replace(/\s+/gm, ' ')
@@ -103,7 +107,7 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
             new RegExp(TSD.IDeclaration.TYPE_NAME, 'gm'),
             (match: string, type: string, suffix: string) => {
                 if (type.lastIndexOf('.') === (type.length - 1)) {
-                    type = type.substr(0, (type.length - 1));
+                    type = type.substring(0, (type.length - 1));
                 }
                 return config.mapType(type, (suffix === '<')) + suffix;
             }
@@ -120,16 +124,15 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         type.startsWith('global.') ||
         type.startsWith('window.')
     ) {
-        type = type.substr(7);
+        type = type.substring(7);
     }
 
     if (type.startsWith('globalThis.')) {
-        type = type.substr(11);
+        type = type.substring(11);
     }
 
-    if (type.startsWith('typeof_')) {
-        type = 'typeof ' + type.substr(7);
-    }
+    type = type.replace(/\bkeyof_(?=>\w)/gsu, 'keyof ');
+    type = type.replace(/\btypeof_(?=>\w)/gsu, 'typeof ');
 
     return type;
 };

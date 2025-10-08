@@ -15,3 +15,6 @@ The generator gets normally called via Gulp:
 ```js
 Gulp.task('dts', require('highcharts-declarations-generator').task);
 ```
+
+You can use `@type {"TypeScript: any"}` in JSDoc doclets to define complex
+TypeScript statement, that is otherwise not possible with JSDoc.
