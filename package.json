@@ -1,7 +1,7 @@
 {
     "private": true,
     "name": "@highcharts/highcharts-declarations-generator",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "author": "Highsoft AS",
     "files": [
         "dtsconfig.json",
