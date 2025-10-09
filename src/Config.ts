@@ -131,10 +131,7 @@ config.mapType = function (type: string, withoutConfig: boolean = false): string
         type = type.substring(11);
     }
 
-    type = type.replace(/\bkeyof_(?=>\w)/gsu, 'keyof ');
-    type = type.replace(/\btypeof_(?=>\w)/gsu, 'typeof ');
-
-    return type;
+    return type.replace(/(?:^|\b)(keyof|typeof)_(\w)/gsu, '$1 $2');
 };
 
 
