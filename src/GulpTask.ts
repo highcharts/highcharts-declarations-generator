@@ -14,22 +14,24 @@ import * as Utilities from './Utilities';
 
 
 
-function cliFeedback (colorOrMessage: string, message?: string) {
+function cliFeedback (message: string): void;
+function cliFeedback (color: string, message: string): void;
+function cliFeedback (colorOrMessage: string, message?: string): void {
     switch (message ? colorOrMessage : '') {
         default:
             console.info(colorOrMessage);
             return;
         case 'blue':
-            console.info('\x1b[34m' + colorOrMessage + '\x1b[0m');
+            console.info('\x1b[34m' + message + '\x1b[0m');
             return;
         case 'green':
-            console.info('\x1b[32m' + colorOrMessage + '\x1b[0m');
+            console.info('\x1b[32m' + message + '\x1b[0m');
             return;
         case 'red':
-            console.info('\x1b[31m' + colorOrMessage + '\x1b[0m');
+            console.info('\x1b[31m' + message + '\x1b[0m');
             return;
         case 'yellow':
-            console.info('\x1b[33m' + colorOrMessage + '\x1b[0m');
+            console.info('\x1b[33m' + message + '\x1b[0m');
             return;
     }
 }
