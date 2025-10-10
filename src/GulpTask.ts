@@ -4,7 +4,6 @@
  * 
  *!*/
 
-import * as Colors from 'colors';
 import * as Config from './Config';
 import * as NamespaceGenerator from './NamespaceGenerator';
 import * as NamespaceParser from './NamespaceParser';
@@ -19,11 +18,18 @@ function cliFeedback (colorOrMessage: string, message?: string) {
     switch (message ? colorOrMessage : '') {
         default:
             console.info(colorOrMessage);
+            return;
         case 'blue':
+            console.info('\x1b[34m' + colorOrMessage + '\x1b[0m');
+            return;
         case 'green':
+            console.info('\x1b[32m' + colorOrMessage + '\x1b[0m');
+            return;
         case 'red':
+            console.info('\x1b[31m' + colorOrMessage + '\x1b[0m');
+            return;
         case 'yellow':
-            console.info((Colors as any)[colorOrMessage](message));
+            console.info('\x1b[33m' + colorOrMessage + '\x1b[0m');
             return;
     }
 }
