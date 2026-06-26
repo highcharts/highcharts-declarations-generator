@@ -68,7 +68,7 @@ export async function generate (
     let type: string;
     let type2: string;
 
-    for (const child of optionsNamespace.getChildren()) {
+    for (const child of optionsNamespace.getChildren().slice()) {
 
         name = TSD.IDeclaration.extractTypeNames(child.fullName)[0];
         type = (name.match(SERIES_NAME)?.[1] || '').toLowerCase();
