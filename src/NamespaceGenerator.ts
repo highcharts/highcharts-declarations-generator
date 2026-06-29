@@ -40,6 +40,40 @@ const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
  * */
 
 
+function decorateSeriesOptionsReferences (
+    declarationModules: ModuleDictionary,
+) {
+    const namespace = `Highcharts.`;
+    const typePattern = /(?<=Highcharts.)\b(?:Plot|Series)\w*(Options|OptionsObject)\b/su
+
+    const decorate = (types: Array<string>) => {
+        let match: (RegExpMatchArray|null);
+
+        for (let i = 0, iEnd = types.length; i < iEnd; ++i) {
+            match = types[i].match(typePattern);
+            if (match) {
+                console.log(match);
+                types[i] = (
+                    types[i].substring(0, match.index || 0) +
+                    namespace +
+                    types[i].substring(match.index || 0)
+                );
+            }
+        }
+    }
+
+    const walk = (declaration: TSD.IDeclaration) => {
+        decorate(declaration.types);
+        if (declaration instanceof TSD.IExtendedDeclaration) {
+            declaration.getParameters().forEach(p => decorate(p.types));
+        }
+        declaration.getChildren().forEach(walk);
+    };
+
+    walk(declarationModules[Config.mainModule]);
+}
+
+
 export function generate (
     moduleNodes: Utilities.Dictionary<Parser.INode>,
     declarationModules: ModuleDictionary
@@ -58,7 +92,10 @@ export function generate (
             let declarations: Array<TSD.IDeclaration>;
 
             for (const module in declarationModules) {
-                if (module === Config.mainModule) {
+                if (
+                    module === Config.mainModule ||
+                    module.includes('options')
+                ) {
                     declarations = declarationModules[module].getChildren();
                 }
                 else {
@@ -107,9 +144,12 @@ export function generate (
             referenceDictionary
         );
 
+        decorateSeriesOptionsReferences(declarationModules);
+
         resolve(declarationModules);
     });
 }
+
 
 function moveReferenceDeclarations (
     declarationModules: ModuleDictionary,
@@ -186,6 +226,7 @@ function moveReferenceDeclarations (
     }
 
 }
+
 
 export function save (
     declarationsModules: Utilities.Dictionary<TSD.ModuleDeclaration>

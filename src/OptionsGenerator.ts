@@ -62,7 +62,8 @@ export async function generate (
         seriesTypes.push(child.name);
     }
 
-    let moduleImport: string;
+    // let moduleImport: string;
+    let modulePassthrough: string;
     let modulePath: string;
     let name: string;
     let type: string;
@@ -89,19 +90,18 @@ export async function generate (
                     Utilities.relative(modulePath, Config.mainModule, true) +
                     '";'
                 );
-                declarationModules[modulePath]
+                /* declarationModules[modulePath]
                     .addChildren(new TSD.ExternalModuleDeclaration(
                         Config.mainModule,
                         Utilities.relative(modulePath, Config.mainModule, true)
                     ));
-
+                */
             }
 
             declarationModules[modulePath]
-                .getChildren()[0]
                 .addChildren(...optionsNamespace.removeChild(child.name));
 
-            moduleImport = (
+            /* moduleImport = (
                 'import "' +
                 Utilities.relative(Config.mainModule, modulePath, true) +
                 '";'
@@ -109,6 +109,16 @@ export async function generate (
 
             if (!optionsNamespace.imports.includes(moduleImport)) {
                 optionsNamespace.imports.push(moduleImport);
+            } */
+
+            modulePassthrough = (
+                'export * from "' +
+                Utilities.relative(Config.mainModule, modulePath, true) +
+                '";'
+            );
+
+            if (!optionsNamespace.exports.includes(modulePassthrough)) {
+                optionsNamespace.exports.push(modulePassthrough);
             }
 
         }

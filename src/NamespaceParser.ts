@@ -5,7 +5,7 @@
  *!*/
 
 
-import { sep, posix } from 'path';
+import { sep, posix } from 'node:path';
 import * as Config from './Config';
 import * as Utilities from './Utilities';
 import * as TSD from './TypeScriptDeclarations';
