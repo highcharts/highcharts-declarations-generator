@@ -6,8 +6,8 @@
 
 
 
-import { promises as FS } from 'fs';
-import { posix, sep } from 'path';
+import { promises as FS } from 'node:fs';
+import { posix, sep } from 'node:path';
 
 
 const CWD = process.cwd().split(sep).join(posix.sep);
@@ -185,6 +185,7 @@ export function extract (text: string, filter: RegExp): string {
     return (text.match(filter) || [''])[0];
 }
 
+
 /**
  * Return of all files in a given folder and subfolders.
  *
@@ -218,10 +219,12 @@ export function files (folder: string): Promise<Array<string>> {
         });
 }
 
+
 export function isBasicType (name: string): boolean {
 
     switch (name) {
         case 'any':
+        case 'bigint':
         case 'boolean':
         case 'function':
         case 'number':
@@ -235,7 +238,6 @@ export function isBasicType (name: string): boolean {
 
     return false;
 }
-
 
 
 export function isCoreType (name: string): boolean {
@@ -252,15 +254,28 @@ export function isCoreType (name: string): boolean {
 
     switch (name) {
         case 'Array':
+        case 'ArrayBuffer':
+        case 'BigInt':
+        case 'BigIntArray':
+        case 'BigUIntArray':
         case 'Boolean':
         case 'false':
         case 'true':
         case 'Date':
+        case 'Element':
         case 'Error':
         case 'Event':
+        case 'Float32Array':
+        case 'Float64Array':
         case 'Function':
         case 'Global':
-        case 'global':
+        case 'GlobalThis':
+        case 'Int8Array':
+        case 'Int16Array':
+        case 'Int32Array':
+        case 'UInt8Array':
+        case 'UInt16Array':
+        case 'UInt32Array':
         case 'Number':
         case 'NaN':
         case 'Object':
@@ -268,7 +283,6 @@ export function isCoreType (name: string): boolean {
         case 'String':
         case 'Symbol':
         case 'Window':
-        case 'window':
             return true;
     }
 
@@ -297,7 +311,6 @@ export function isCoreType (name: string): boolean {
 
     return false;
 }
-
 
 
 export function isDeepEqual (objectA: any, objectB: any): boolean {
