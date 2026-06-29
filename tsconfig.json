@@ -7,8 +7,9 @@
         "strict": true,
         "target": "es2019",
         "module": "commonjs",
-        "outDir": "./lib/",
         "moduleResolution": "node",
+        "outDir": "./lib/",
+        "rootDir": "./src/"
     },
     "files": [
         "src/GulpTask.ts"
