@@ -88,6 +88,7 @@ class Parser extends Object {
         this.completeNodeExtensions(this._root);
         this.completeNodeNames(this._root, '');
         this.completeNodeProducts(this._root, PRODUCTS);
+        this.completeNodeRequires(this._root);
         this.completeNodeTypes(this._root);
         this.removeProductNodes(this._root, PRODUCTS);
 
@@ -368,6 +369,51 @@ class Parser extends Object {
 
 
     /**
+     * Update the requires information of the node.
+     *
+     * @param node
+     *        Node to update.
+     * 
+     * @param parentRequires
+     *        Requires array of the parent node.
+     */
+    private completeNodeRequires (
+        node: INode,
+        parentRequires: Array<string> = ['highcharts']
+    ) {
+
+        if (node.doclet.requires) {
+            parentRequires = node.doclet.requires
+                .map(require => {
+                    if (require.includes(':')) {
+                        require = require.substring(require.indexOf(':') + 1);
+                    }
+                    if (require.includes('indicators/')) {
+                        require = require.substring(require.indexOf('indicators/'));
+                    } else if (require.includes('modules/')) {
+                        require = require.substring(require.indexOf('modules/'));
+                    } else {
+                        require = require.split('/').pop() || require;
+                    }
+                    return require;
+                })
+                .filter(require => require !== 'highcharts');
+        }
+
+        node.doclet.requires = parentRequires.slice();
+
+        let children = node.children;
+
+        Object
+            .keys(children)
+            .map(childName => children[childName])
+            .forEach(childNode => this.completeNodeRequires(
+                childNode, parentRequires
+            ));
+    }
+
+
+    /**
      * Update the type of the node, or determines a type, if no is set.
      *
      * @param node
@@ -602,6 +648,7 @@ export interface IDoclet {
     extends?: string;
     internal?: boolean;
     products?: Array<string>;
+    requires?: Array<string>;
     sample?: ISample;
     samples?: Array<ISample>;
     see?: Array<string>;

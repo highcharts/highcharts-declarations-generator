@@ -10,6 +10,7 @@
  *
  * */
 
+
 /**
  * Declaration kinds as a typed string.
  */
@@ -30,24 +31,6 @@ export type Kinds = (
     'module' |
     'namespace'
 );
-
-/* *
- *
- *  Interfaces
- *
- * */
-
-/**
- * Path elements
- */
-interface PathElements {
-    directories: string[];
-    extension: string;
-    file: string;
-    name: string;
-    path: string;
-    scope: string;
-}
 
 /* *
  *
@@ -371,6 +354,7 @@ export abstract class IDeclaration extends Object {
 
     /**
      * Returns a simplified type.
+     * @deprecated
      *
      * @param rootName
      *        The root to remove.
@@ -547,6 +531,7 @@ export abstract class IDeclaration extends Object {
         this._isPrivate = false;
         this._isStatic = false;
         this._parent = undefined;
+        this._requires = [];
         this._see = [];
         this._types = [...types];
         this._uniqueID = 0;
@@ -674,6 +659,17 @@ export abstract class IDeclaration extends Object {
         return this._parent;
     }
     private _parent: (IDeclaration|undefined);
+
+    /**
+     * Requires of this declaration.
+     */
+    public get requires(): Array<string> {
+        return this._requires;
+    }
+    public set requires(value: Array<string>) {
+        this._requires = value;
+    }
+    private _requires: Array<string>;
 
     /**
      * Named root of this declaration.
@@ -1144,9 +1140,9 @@ export abstract class IDeclaration extends Object {
 
         let types = this.types.slice();
 
-        if (root && root.name) {
+        /*if (root && root.name) {
             types = IDeclaration.simplifyType(root.name, ...types);
-        }
+        }*/
 
         if (filterUndefined &&
             this.isOptional
@@ -2675,6 +2671,9 @@ export class PropertyDeclaration extends IDeclaration {
         return (this.isStatic ? 'static property' : 'property');
     }
 
+    /**
+     * Whether it is a special indexer (`[key: any]: any`). 
+     */
     public get isIndexer(): boolean {
         return this._isIndexer;
     }
@@ -2746,17 +2745,19 @@ export class PropertyDeclaration extends IDeclaration {
 
             const root = this.root;
 
-            if (root && root.name) {
+            /*if (root && root.name) {
 
                 // type is part of the member name
                 let typePosition = (renderedMember.lastIndexOf(' ') + 1),
-                    type = renderedMember.substr(typePosition);
+                    type = renderedMember.substring(typePosition);
 
-                renderedMember = renderedMember.substr(0, typePosition);
+                renderedMember = renderedMember.substring(0, typePosition);
                 renderedMember += IDeclaration.simplifyType(root.name, type)[0];
 
                 isIndexer = true;
-            }
+            }*/
+
+            isIndexer = !!root?.name;
         }
         else if (/\W/.test(renderedMember)) {
             renderedMember = '"' + renderedMember + '"';

@@ -386,8 +386,9 @@ export interface IDoclet {
     isReadOnly?: boolean;
     isStatic?: boolean;
     parameters?: Utilities.Dictionary<IParameter>;
-    products?: Array<string>
+    products?: Array<string>;
     randomID?: number;
+    requires?: Array<string>;
     return?: IReturn;
     see?: Array<string>;
     since?: string;

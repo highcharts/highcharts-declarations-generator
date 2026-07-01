@@ -86,9 +86,28 @@ export async function generate (
             if (!declarationModules[modulePath]) {
                 declarationModules[modulePath] = new TSD.ModuleDeclaration(modulePath);
                 declarationModules[modulePath].imports.push(
-                    'import * as Highcharts from "' +
-                    Utilities.relative(modulePath, Config.mainModule, true) +
-                    '";'
+                    ...(optionsNode.doclet.requires || ['highcharts']).map(require => {
+                        if (require === 'highcharts') {
+                            return (
+                                'import * as Highcharts from "' +
+                                Utilities.relative(
+                                    modulePath,
+                                    Config.mainModule,
+                                    true,
+                                ) +
+                                '";'
+                            );
+                        }
+                        return (
+                            'import "' +
+                            Utilities.relative(
+                                modulePath,
+                                require.replace('highcharts/', ''),
+                                true,
+                            ) +
+                            '";'
+                        );
+                    })
                 );
                 /* declarationModules[modulePath]
                     .addChildren(new TSD.ExternalModuleDeclaration(
@@ -314,6 +333,10 @@ class OptionsGenerator {
             this.namespace.addChildren(declaration);
         }
 
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
+        }
+
         if (name === 'SeriesOptions') {
 
             declaration.description += [
@@ -477,6 +500,10 @@ class OptionsGenerator {
             declaration.deprecated = doclet.deprecated;
         }
 
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
+        }
+
         let isValueType = false;
 
         if (doclet.values) {
@@ -623,6 +650,10 @@ class OptionsGenerator {
 
         if (doclet.deprecated) {
             declaration.deprecated = doclet.deprecated;
+        }
+
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
         }
 
         declaration.addChildren(typePropertyDeclaration);

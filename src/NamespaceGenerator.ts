@@ -40,40 +40,6 @@ const COPYRIGHT_HEADER = 'Copyright (c) Highsoft AS. All rights reserved.';
  * */
 
 
-function decorateSeriesOptionsReferences (
-    declarationModules: ModuleDictionary,
-) {
-    const namespace = `Highcharts.`;
-    const typePattern = /(?<=Highcharts.)\b(?:Plot|Series)\w*(Options|OptionsObject)\b/su
-
-    const decorate = (types: Array<string>) => {
-        let match: (RegExpMatchArray|null);
-
-        for (let i = 0, iEnd = types.length; i < iEnd; ++i) {
-            match = types[i].match(typePattern);
-            if (match) {
-                console.log(match);
-                types[i] = (
-                    types[i].substring(0, match.index || 0) +
-                    namespace +
-                    types[i].substring(match.index || 0)
-                );
-            }
-        }
-    }
-
-    const walk = (declaration: TSD.IDeclaration) => {
-        decorate(declaration.types);
-        if (declaration instanceof TSD.IExtendedDeclaration) {
-            declaration.getParameters().forEach(p => decorate(p.types));
-        }
-        declaration.getChildren().forEach(walk);
-    };
-
-    walk(declarationModules[Config.mainModule]);
-}
-
-
 export function generate (
     moduleNodes: Utilities.Dictionary<Parser.INode>,
     declarationModules: ModuleDictionary
@@ -144,7 +110,7 @@ export function generate (
             referenceDictionary
         );
 
-        decorateSeriesOptionsReferences(declarationModules);
+        updateImports(declarationModules);
 
         resolve(declarationModules);
     });
@@ -268,6 +234,39 @@ export function save (
             .catch(reject);
     });
 }
+
+
+function updateImports(
+    declarationModules: ModuleDictionary,
+) {
+    const updateImports = (
+        modulePath: string,
+        module: TSD.ModuleDeclaration,
+        declaration: TSD.IDeclaration = module,
+    ) => {
+        if (declaration.requires.length) {
+            for (let require of declaration.requires) {
+                if (module.imports.some(i => i.includes(require))) {
+                    continue;
+                }
+                require = Utilities.path(Utilities.parent(Config.mainModule), require);
+                module.imports.push(
+                    'import "' +
+                    Utilities.relative(modulePath, require, true) +
+                    '";'
+                );
+            }
+        }
+        if (declaration.hasChildren) {
+            declaration.getChildren().forEach(c => updateImports(modulePath, module, c));
+        }
+    };
+
+    for (const modulePath in declarationModules) {
+        updateImports(modulePath, declarationModules[modulePath]);
+    }
+}
+
 
 /* *
  *
@@ -457,6 +456,11 @@ class Generator {
                     Config.mainModule.replace(/highcharts$/, 'globals'),
                     true
                 ) + '";'),
+                ('import * as Highcharts from "' + Utilities.relative(
+                    modulePath,
+                    Config.mainModule,
+                    true
+                ) + '";')
             );
 
             this.moduleNamespace.exports.push(
@@ -487,11 +491,6 @@ class Generator {
             }
 
             this.moduleNamespace.imports.push(
-                ('import * as globals from "' + Utilities.relative(
-                    modulePath,
-                    Config.mainModule.replace(/highcharts$/, 'globals'),
-                    true
-                ) + '";'),
                 ('import * as _Highcharts from "' + Utilities.relative(
                     modulePath, Config.mainModule, true
                 ) + '";')
@@ -562,7 +561,7 @@ class Generator {
                 console.error(
                     'Unknown kind: ' + kind,
                     this.modulePath,
-                    sourceNode,
+                    JSON.stringify(sourceNode),
                 );
                 break;
             case 'class':
@@ -883,6 +882,10 @@ class Generator {
             declaration.see.push(...doclet.see);
         }
 
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
+        }
+
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
             this.setDeclared(declaration);
@@ -909,6 +912,10 @@ class Generator {
 
         if (typeof doclet.deprecated === 'string') {
             declaration.deprecated = doclet.deprecated;
+        }
+
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
         }
 
         if (doclet.description) {
@@ -1094,6 +1101,10 @@ class Generator {
             }
         }
 
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
+        }
+
         if (!functionDeclaration.parent) {
             declaration.addChildren(functionDeclaration);
             this.setDeclared(functionDeclaration);
@@ -1214,6 +1225,10 @@ class Generator {
             declaration.types.push(...mergedTypes);
         }
 
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
+        }
+
         if (!declaration.parent) {
             targetDeclaration.addChildren(declaration);
             this.setDeclared(declaration);
@@ -1249,6 +1264,10 @@ class Generator {
 
         if (this._moduleNamespace.hasChildren) {
             declaration.addChildren(...this._moduleNamespace.removeChildren());
+        }
+
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
         }
 
         this._moduleNamespace = declaration;
@@ -1311,6 +1330,10 @@ class Generator {
 
         if (doclet.see) {
             declaration.see.push(...doclet.see);
+        }
+
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
         }
 
         if (!declaration.parent) {
@@ -1419,6 +1442,10 @@ class Generator {
             );
             declaration.types.length = 0;
             declaration.types.push(...mergedTypes);
+        }
+
+        if (doclet.requires) {
+            declaration.requires = doclet.requires.slice();
         }
 
         if (!declaration.parent) {

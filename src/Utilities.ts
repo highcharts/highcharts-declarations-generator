@@ -279,6 +279,7 @@ export function isCoreType (name: string): boolean {
         case 'Number':
         case 'NaN':
         case 'Object':
+        case 'PointerEvent':
         case 'RegExp':
         case 'String':
         case 'Symbol':
