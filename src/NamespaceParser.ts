@@ -85,6 +85,7 @@ class NamespaceParser {
     public constructor (sourceNode: INode) {
 
         this._modules = {};
+        this._sourceNode = sourceNode;
 
         this.transferNodes(sourceNode);
     }
@@ -101,6 +102,8 @@ class NamespaceParser {
         return this._modules;
     }
     private _modules: Utilities.Dictionary<INode>;
+
+    private _sourceNode: INode;
 
 
     /* *
@@ -172,8 +175,11 @@ class NamespaceParser {
                 }
                 else if (index !== indexEnd) {
 
-                    let referenceNode = this.findNodeInMainModules(
-                        spaceName
+                    // Fall back to the source tree for nodes declared in
+                    // other modules, e.g. members of a module class.
+                    let referenceNode = (
+                        this.findNodeInMainModules(spaceName) ||
+                        this.findNodeInSource(spaceName)
                     );
 
                     if (referenceNode &&
@@ -195,6 +201,42 @@ class NamespaceParser {
         });
 
         return node;
+    }
+
+
+    /**
+     * Finds a node in the source tree of all modules for reference.
+     *
+     * @param nodeName
+     *        The full name of the node to find.
+     */
+    private findNodeInSource (nodeName: string): (INode|undefined) {
+
+        const search = (node: INode): (INode|undefined) => {
+
+            for (const child of (node.children || [])) {
+
+                if (!child.doclet) {
+                    continue;
+                }
+
+                if (child.doclet.name === nodeName) {
+                    return child;
+                }
+
+                if (nodeName.startsWith(child.doclet.name + '.')) {
+                    const found = search(child);
+
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+
+            return void 0;
+        };
+
+        return search(this._sourceNode);
     }
 
 

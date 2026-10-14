@@ -612,7 +612,9 @@ class Generator {
             declaration = existingChild;
         }
         else if (!(existingChild instanceof TSD.InterfaceDeclaration) &&
-            this.isDeclaredSomewhere(targetDeclaration, declaration)
+            // Interface augmentations from other modules do not replace the
+            // class itself.
+            this.isDeclaredSomewhere(targetDeclaration, declaration, 'class')
         ) {
             return;
         }
@@ -1467,7 +1469,7 @@ class Generator {
         }
         else {
             return declarationKind.some(
-                kind => dictionary[fullName].some(
+                kind => (dictionary[fullName] || []).some(
                     declaration => declaration.kind === kind
                 )
             );
